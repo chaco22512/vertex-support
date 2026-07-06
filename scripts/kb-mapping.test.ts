@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { toKbRuleRow, type RawKbRule } from './kb-mapping';
+import { normalizeDate, toKbRuleRow, type RawKbRule } from './kb-mapping';
 
 const base: RawKbRule = {
   id: 'R001',
@@ -33,6 +33,10 @@ describe('toKbRuleRow', () => {
     expect(toKbRuleRow({ ...base, date_updated: '2025-01-15' }).date_updated).toBe('2025-01-15');
   });
 
+  it('normalizes YYYY-DD-MM dates in the source data', () => {
+    expect(toKbRuleRow({ ...base, date_updated: '2023-27-10' }).date_updated).toBe('2023-10-27');
+  });
+
   it('drops the needs_review field (not a column)', () => {
     expect(toKbRuleRow({ ...base, needs_review: true })).not.toHaveProperty('needs_review');
   });
@@ -49,5 +53,25 @@ describe('toKbRuleRow', () => {
     expect(row.links).toEqual(['https://x']);
     expect(row.audience).toBe('internal');
     expect(row.review_reason).toBe('auto-tagged internal');
+  });
+});
+
+describe('normalizeDate', () => {
+  it('returns null for empty', () => {
+    expect(normalizeDate('')).toBeNull();
+  });
+
+  it('keeps a valid YYYY-MM-DD', () => {
+    expect(normalizeDate('2025-01-15')).toBe('2025-01-15');
+  });
+
+  it('swaps an unambiguous YYYY-DD-MM (month > 12)', () => {
+    expect(normalizeDate('2022-18-11')).toBe('2022-11-18');
+    expect(normalizeDate('2023-21-04')).toBe('2023-04-21');
+  });
+
+  it('returns null for a non-date string', () => {
+    expect(normalizeDate('not-a-date')).toBeNull();
+    expect(normalizeDate('2025-13-40')).toBeNull();
   });
 });
