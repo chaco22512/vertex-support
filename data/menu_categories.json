@@ -1,0 +1,138 @@
+{
+ "version": "1.0",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files.",
+ "categories": [
+  {
+   "id": "internet",
+   "icon": "ti-wifi",
+   "label_en": "Internet not working / APN setup",
+   "kb_categories": [
+    "APN SETTINGS",
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "How do I set up APN on my phone?",
+    "My SIM has no signal",
+    "Pocket wifi won't connect to my device"
+   ]
+  },
+  {
+   "id": "payment",
+   "icon": "ti-credit-card",
+   "label_en": "Payment & monthly bill",
+   "kb_categories": [
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "How do I pay my monthly bill?",
+    "What happens if I pay late?",
+    "My signal stopped — is it because of payment?",
+    "Can I pay by bank transfer?"
+   ]
+  },
+  {
+   "id": "lost",
+   "icon": "ti-search",
+   "label_en": "Lost SIM or device",
+   "kb_categories": [
+    "LOST ITEM RULES",
+    "DEVICE LOSTREPLACEMENTRENTAL FE",
+    "RE-ISSUE  RULE"
+   ],
+   "sub_questions": [
+    "I lost my SIM card",
+    "I lost my pocket wifi",
+    "How much is the lost fee?"
+   ]
+  },
+  {
+   "id": "cancel",
+   "icon": "ti-circle-x",
+   "label_en": "Cancellation",
+   "kb_categories": [
+    "GENERAL RULES",
+    "New Plan C and Plan SK",
+    "Short Term Plan"
+   ],
+   "sub_questions": [
+    "How do I cancel my plan?",
+    "Is there a cancellation fee?",
+    "When do I need to return the item?"
+   ]
+  },
+  {
+   "id": "return",
+   "icon": "ti-package",
+   "label_en": "Returning SIM / device",
+   "kb_categories": [
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "How do I return by post?",
+    "How do I return at a convenience store?",
+    "What do I need to send back?"
+   ]
+  },
+  {
+   "id": "replace",
+   "icon": "ti-refresh",
+   "label_en": "Replacement / change plan",
+   "kb_categories": [
+    "REPLACEMENT AND CHANGE PLAN RUL",
+    "Replacement_Plan change Product",
+    "DEVICE LOSTREPLACEMENTRENTAL FE",
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "My SIM/device is broken",
+    "I want to change my plan",
+    "Is replacement free?"
+   ]
+  },
+  {
+   "id": "reissue",
+   "icon": "ti-alert-triangle",
+   "label_en": "Signal stopped / re-issue",
+   "kb_categories": [
+    "RE-ISSUE  RULE",
+    "KINTONE STATUS",
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "My signal was stopped, how do I restore it?",
+    "What is the re-issue (termination) fee?"
+   ]
+  },
+  {
+   "id": "refund",
+   "icon": "ti-receipt",
+   "label_en": "Refund / deposit / cashback",
+   "kb_categories": [
+    "REFUNDDEPOSIT CASHBACK",
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "When will I get my cashback?",
+    "How do I get my deposit back?"
+   ]
+  },
+  {
+   "id": "plans",
+   "icon": "ti-file-description",
+   "label_en": "Plans & prices",
+   "kb_categories": [],
+   "behavior": "always_escalate",
+   "note": "Monthly prices are never answered by AI. Selecting this shows a short message and goes straight to the escalation contact card."
+  },
+  {
+   "id": "others",
+   "icon": "ti-message-circle",
+   "label_en": "Others",
+   "kb_categories": [
+    "*"
+   ],
+   "behavior": "free_text",
+   "note": "Opens the free-text input: 'Please tell us your question.' AI uses ALL active customer rules."
+  }
+ ]
+}

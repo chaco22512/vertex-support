@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const d=require\\('./data/kb_rules_import.json'\\); const a=Array.isArray\\(d\\)?d:d.rules||Object.values\\(d\\)[0]; console.log\\('count:',a.length\\); console.log\\(JSON.stringify\\(a[0],null,2\\)\\); console.log\\('needs_review count:', a.filter\\(r=>r.needs_review\\).length\\)\")",
+      "Bash(npm -v)",
+      "Bash(mkdir -p scripts)",
+      "Bash(pnpm install *)"
+    ]
+  }
+}
