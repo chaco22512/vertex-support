@@ -1,0 +1,18 @@
+{
+  "name": "@vertex/scripts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "import:kb": "tsx import_kb.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@vertex/shared": "workspace:*",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.0",
+    "tsx": "^4.19.0"
+  }
+}
