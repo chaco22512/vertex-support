@@ -14,7 +14,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "import:kb": "pnpm --filter @vertex/scripts import:kb"
+    "import:kb": "pnpm --filter @vertex/scripts import:kb",
+    "smoke:gemini": "pnpm --filter @vertex/scripts smoke:gemini"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",

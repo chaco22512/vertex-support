@@ -84,6 +84,18 @@ importers:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@22.20.0)
 
+  packages/ai:
+    dependencies:
+      '@supabase/supabase-js':
+        specifier: ^2.45.0
+        version: 2.110.0
+      '@vertex/shared':
+        specifier: workspace:*
+        version: link:../shared
+      zod:
+        specifier: ^3.23.0
+        version: 3.25.76
+
   packages/shared:
     dependencies:
       '@supabase/supabase-js':
@@ -92,6 +104,9 @@ importers:
 
   scripts:
     dependencies:
+      '@vertex/ai':
+        specifier: workspace:*
+        version: link:../packages/ai
       '@vertex/shared':
         specifier: workspace:*
         version: link:../packages/shared
@@ -2063,6 +2078,9 @@ packages:
   zod@3.22.3:
     resolution: {integrity: sha512-EjIevzuJRiRPbVH4mGc8nApb/lVLKVpmUhAaR5R5doKGfAnGJ6Gr3CViAVjP+4FWSxCsybeWQdcgCtbX+7oZug==}
 
+  zod@3.25.76:
+    resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
+
 snapshots:
 
   '@babel/code-frame@7.29.7':
@@ -3864,3 +3882,5 @@ snapshots:
   zimmerframe@1.1.4: {}
 
   zod@3.22.3: {}
+
+  zod@3.25.76: {}
