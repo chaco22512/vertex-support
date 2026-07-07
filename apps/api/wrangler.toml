@@ -4,6 +4,14 @@ compatibility_date = "2024-10-04"
 compatibility_flags = ["nodejs_compat"]
 
 # Secrets (SUPABASE_*, GEMINI_API_KEY, SLACK_WEBHOOK_URL, RESEND_API_KEY) are set via
-# `wrangler secret put` or the Cloudflare dashboard — never committed here (Hard rule 1).
+# `wrangler secret put` / the dashboard for deploy, and via .dev.vars locally — never
+# committed here (Hard rule 1).
 [vars]
 ADMIN_BASE_URL = "http://localhost:5174"
+CHAT_BASE_URL = "http://localhost:5173"
+
+# Per-session rate limiting store (§2, 10 req/min). Local dev uses Miniflare's
+# in-memory KV; the real namespace id is filled in at M8 deploy.
+[[kv_namespaces]]
+binding = "RATE_LIMIT"
+id = "rate_limit_placeholder"

@@ -48,6 +48,7 @@ export class GeminiClient implements LlmClient {
         'x-goog-api-key': this.#apiKey,
       },
       body: JSON.stringify(body),
+      signal: req.signal,
     });
 
     if (!resp.ok) {

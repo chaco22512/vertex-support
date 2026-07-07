@@ -19,6 +19,14 @@ export default tseslint.config(
     },
   },
   {
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrors: 'none' },
+      ],
+    },
+  },
+  {
     files: ['**/*.config.{js,ts}', 'eslint.config.js'],
     languageOptions: {
       globals: { ...globals.node },

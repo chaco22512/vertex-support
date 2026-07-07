@@ -9,6 +9,7 @@ dist/
 # env & secrets (never commit)
 .env
 .env.local
+.dev.vars
 *.local
 
 # misc

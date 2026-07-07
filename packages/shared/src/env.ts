@@ -18,6 +18,12 @@ export interface Env {
   SLACK_WEBHOOK_URL: string;
   RESEND_API_KEY: string;
   ADMIN_BASE_URL: string;
+  /**
+   * Optional (not required by parseEnv). Chat front-end origin for CORS.
+   * Set as a Worker var, defaulted to localhost in dev. Kept out of ENV_KEYS so
+   * scripts/import that call parseEnv are not forced to define it.
+   */
+  CHAT_BASE_URL?: string;
 }
 
 export const ENV_KEYS = [
@@ -34,13 +40,13 @@ export const ENV_KEYS = [
  * Validate and extract the required environment. Throws a single error naming
  * every missing key. An empty string is treated as missing.
  */
-export function parseEnv(source: Record<string, string | undefined>): Env {
+export function parseEnv(source: Record<string, unknown>): Env {
   const out = {} as Record<keyof Env, string>;
   const missing: string[] = [];
 
   for (const key of ENV_KEYS) {
     const value = source[key];
-    if (value === undefined || value === '') {
+    if (typeof value !== 'string' || value === '') {
       missing.push(key);
     } else {
       out[key] = value;

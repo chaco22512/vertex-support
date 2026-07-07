@@ -10,6 +10,8 @@ export interface LlmGenerateRequest {
   system: string;
   messages: LlmMessage[];
   temperature?: number;
+  /** Optional abort signal so callers can enforce a timeout (§6.3, 15s). */
+  signal?: AbortSignal;
 }
 
 export interface LlmClient {

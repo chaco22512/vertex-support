@@ -10,8 +10,10 @@
     "deploy": "wrangler deploy"
   },
   "dependencies": {
+    "@vertex/ai": "workspace:*",
     "@vertex/shared": "workspace:*",
-    "hono": "^4.6.0"
+    "hono": "^4.6.0",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241004.0",

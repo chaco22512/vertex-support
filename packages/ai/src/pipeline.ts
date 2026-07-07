@@ -12,6 +12,8 @@ export interface RunAiReplyInput {
   /** Conversation language, used for the fallback message if parsing fails. */
   language: string;
   llm: LlmClient;
+  /** Optional abort signal forwarded to the LLM (timeout enforcement, §6.3). */
+  signal?: AbortSignal;
 }
 
 export interface AiReplyResult {
@@ -36,7 +38,7 @@ export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult>
 
   let parsed: AiResponse | null = null;
   for (let attempt = 0; attempt < MAX_ATTEMPTS && parsed === null; attempt++) {
-    const raw = await input.llm.generate({ system, messages });
+    const raw = await input.llm.generate({ system, messages, signal: input.signal });
     parsed = parseAiResponse(raw);
   }
 
