@@ -2,13 +2,15 @@ import menuData from '../../../../data/menu_categories.json';
 
 interface MenuCategory {
   id: string;
-  icon: string;
-  label_en: string;
-  kb_categories: string[];
-  sub_questions: string[];
+  icon?: string;
+  label_en?: string;
+  kb_categories?: string[];
+  sub_questions?: string[];
 }
 
-const categories = menuData as unknown as MenuCategory[];
+// menu_categories.json is { version, note, categories: [...] } — the array is
+// nested under `categories`, not the top-level value.
+const categories = (menuData as { categories: MenuCategory[] }).categories;
 const byId = new Map(categories.map((c) => [c.id, c]));
 
 /** Human label for a conversation's topic_category (falls back to the raw id). */
