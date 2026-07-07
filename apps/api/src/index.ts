@@ -58,6 +58,9 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   // Admin API (§7/§9): JWT-authenticated. Knowledge & staff are admin-only.
   const admin = new Hono<AppEnv>();
   admin.use('*', authMiddleware);
+  // Who am I: the browser resolves the signed-in staff profile (role gate) here,
+  // via the service client, instead of a browser-side RLS read.
+  admin.get('/me', (c) => c.json({ staff: c.get('staff') }));
   admin.get('/conversations', listConversations);
   admin.get('/conversations/:id', getConversation);
   admin.patch('/conversations/:id', patchConversation);

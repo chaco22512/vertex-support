@@ -95,7 +95,12 @@ function qs(filters: InboxFilters): string {
   return s ? `?${s}` : '';
 }
 
+export interface MeResult {
+  staff: { userId: string; name: string; role: Role; isActive: boolean };
+}
+
 export const api = {
+  me: () => request<MeResult>(`/api/admin/me`),
   listConversations: (f: InboxFilters = {}) =>
     request<{ conversations: InboxRow[] }>(`/api/admin/conversations${qs(f)}`),
   getConversation: (id: string) =>
