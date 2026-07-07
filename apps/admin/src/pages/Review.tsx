@@ -5,18 +5,9 @@ import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
 import { Dialog } from '../components/Dialog';
 import { useToast } from '../components/Toast';
+import { classify, type ReasonTab } from '../lib/reviewClassify';
 
 type Load = 'loading' | 'ready' | 'error';
-type ReasonTab = 'A' | 'B';
-
-// Tab A: confirm strikethrough removal. Tab B: confirm internal auto-classification.
-// The DB review_reason is free text; classify by whether it concerns internal
-// audience (B) vs. everything else (A).
-function classify(rule: KbRule): ReasonTab {
-  const reason = (rule.review_reason ?? '').toLowerCase();
-  if (reason.startsWith('b') || reason.includes('internal') || rule.audience === 'internal') return 'B';
-  return 'A';
-}
 
 export function Review() {
   const toast = useToast();
