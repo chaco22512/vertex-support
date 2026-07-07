@@ -12,10 +12,20 @@ interface Result {
 }
 
 export class FakeSupabase {
-  tables: { conversations: Row[]; messages: Row[]; kb_rules: Row[] } & Record<string, Row[]> = {
+  tables: {
+    conversations: Row[];
+    messages: Row[];
+    kb_rules: Row[];
+    kb_change_log: Row[];
+    staff: Row[];
+    reply_drafts: Row[];
+  } & Record<string, Row[]> = {
     conversations: [],
     messages: [],
     kb_rules: [],
+    kb_change_log: [],
+    staff: [],
+    reply_drafts: [],
   };
   private seq: Record<string, number> = {};
 
@@ -40,6 +50,7 @@ class FakeQuery implements PromiseLike<Result> {
   private eqs: [string, unknown][] = [];
   private ins: [string, unknown[]][] = [];
   private gts: [string, number][] = [];
+  private ilikes: [string, string][] = [];
   private orderCol: string | null = null;
   private orderAsc = true;
   private limitN: number | null = null;
@@ -75,6 +86,10 @@ class FakeQuery implements PromiseLike<Result> {
     this.gts.push([col, val]);
     return this;
   }
+  ilike(col: string, pattern: string): this {
+    this.ilikes.push([col, pattern]);
+    return this;
+  }
   order(col: string, opts?: { ascending?: boolean }): this {
     this.orderCol = col;
     this.orderAsc = opts?.ascending !== false;
@@ -108,6 +123,10 @@ class FakeQuery implements PromiseLike<Result> {
     for (const [c, v] of this.eqs) if (row[c] !== v) return false;
     for (const [c, vals] of this.ins) if (!vals.includes(row[c])) return false;
     for (const [c, v] of this.gts) if (!(Number(row[c]) > v)) return false;
+    for (const [c, pattern] of this.ilikes) {
+      const re = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$', 'i');
+      if (!re.test(String(row[c] ?? ''))) return false;
+    }
     return true;
   }
 
@@ -137,11 +156,18 @@ class FakeQuery implements PromiseLike<Result> {
     return { ...row };
   }
 
+  // Return shallow copies so callers cannot mutate stored rows (real Supabase
+  // returns fresh objects; without this a fetched row aliases the stored one).
+  private out(rows: Row[]): Row[] {
+    return rows.map((r) => ({ ...r }));
+  }
+
   private async run(): Promise<Result> {
     if (this.op === 'insert') {
       const inserted = this.payload.map((r) => this.applyInsertDefaults(r));
       this.table().push(...inserted);
-      return { data: this.singleMode !== 'none' ? (inserted[0] ?? null) : inserted, error: null };
+      const copies = this.out(inserted);
+      return { data: this.singleMode !== 'none' ? (copies[0] ?? null) : copies, error: null };
     }
     if (this.op === 'update') {
       const patch = this.payload[0] ?? {};
@@ -152,7 +178,8 @@ class FakeQuery implements PromiseLike<Result> {
           updated.push(row);
         }
       }
-      return { data: updated, error: null };
+      const copies = this.out(updated);
+      return { data: this.singleMode !== 'none' ? (copies[0] ?? null) : copies, error: null };
     }
     let rows = this.table().filter((r) => this.matches(r));
     if (this.orderCol) {
@@ -162,7 +189,8 @@ class FakeQuery implements PromiseLike<Result> {
       );
     }
     if (this.limitN !== null) rows = rows.slice(0, this.limitN);
-    if (this.singleMode !== 'none') return { data: rows[0] ?? null, error: null };
-    return { data: rows, error: null };
+    const copies = this.out(rows);
+    if (this.singleMode !== 'none') return { data: copies[0] ?? null, error: null };
+    return { data: copies, error: null };
   }
 }

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Conversation } from '@vertex/shared';
 import { FakeSupabase } from '../testing/fakeSupabase';
-import { goodResponse, hangingLlm, mockLlm } from '../testing/mocks';
+import { fakeVerifyStaff, goodResponse, hangingLlm, mockLlm } from '../testing/mocks';
 import type { Deps } from '../types';
 import { AI_TIMEOUT_MS, generateAiReply } from './aiTurn';
 
@@ -35,7 +35,14 @@ function deps(llm: Deps['llm'], db = new FakeSupabase()): Deps {
     audience: 'customer',
     status: 'active',
   });
-  return { db: db.asClient(), llm, kv: {} as KVNamespace, adminOrigin: '', chatOrigin: '' };
+  return {
+    db: db.asClient(),
+    llm,
+    kv: {} as KVNamespace,
+    adminOrigin: '',
+    chatOrigin: '',
+    verifyStaff: fakeVerifyStaff(),
+  };
 }
 
 afterEach(() => vi.useRealTimers());

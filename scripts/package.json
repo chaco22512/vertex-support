@@ -6,6 +6,7 @@
   "scripts": {
     "import:kb": "tsx import_kb.ts",
     "smoke:gemini": "tsx smoke_gemini.ts",
+    "seed:admin": "tsx seed_admin.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

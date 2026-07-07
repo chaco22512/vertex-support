@@ -37,7 +37,7 @@ export class GeminiClient implements LlmClient {
       contents: req.messages.map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
       generationConfig: {
         temperature: req.temperature ?? 0.2,
-        responseMimeType: 'application/json',
+        ...(req.json === false ? {} : { responseMimeType: 'application/json' }),
       },
     };
 

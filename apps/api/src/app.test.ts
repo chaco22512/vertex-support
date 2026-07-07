@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { LlmClient } from '@vertex/ai';
 import { createApp } from './index';
 import { FakeSupabase } from './testing/fakeSupabase';
-import { fakeKv, goodResponse, mockLlm } from './testing/mocks';
+import { fakeKv, fakeVerifyStaff, goodResponse, mockLlm } from './testing/mocks';
 import type { ApiBindings } from './types';
 
 const CHAT_ORIGIN = 'http://localhost:5173';
@@ -36,6 +36,7 @@ function setup(llm: LlmClient = mockLlm([goodResponse()])) {
     kv,
     adminOrigin: e.ADMIN_BASE_URL,
     chatOrigin: e.CHAT_BASE_URL ?? '',
+    verifyStaff: fakeVerifyStaff(),
   }));
   return { app, db, env };
 }

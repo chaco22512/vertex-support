@@ -12,6 +12,9 @@ export interface LlmGenerateRequest {
   temperature?: number;
   /** Optional abort signal so callers can enforce a timeout (§6.3, 15s). */
   signal?: AbortSignal;
+  /** Force JSON output. Defaults to true (the chat pipeline). Set false for
+   *  plain-text uses like translation / staff-reply drafts (§7.3). */
+  json?: boolean;
 }
 
 export interface LlmClient {

@@ -1,4 +1,12 @@
 import type { LlmClient, LlmGenerateRequest } from '@vertex/ai';
+import type { Role } from '@vertex/shared';
+import type { StaffAuth } from '../types';
+
+/** verifyStaff stub: any non-empty token resolves to a staff/admin, empty → null. */
+export function fakeVerifyStaff(role: Role = 'admin') {
+  return async (token: string): Promise<StaffAuth | null> =>
+    token ? { userId: 'staff-1', role, isActive: true, name: 'Test Staff' } : null;
+}
 
 /** In-memory KV implementing the subset of KVNamespace the API uses. */
 export function fakeKv(): KVNamespace {

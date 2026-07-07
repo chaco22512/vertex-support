@@ -12,3 +12,4 @@ export { parseAiResponse, aiResponseSchema, ESCALATION_REASONS, type AiResponse 
 export { fallbackEscalationMessage, FALLBACK_ESCALATION_MESSAGE } from './locales';
 export { runAiReply, type RunAiReplyInput, type AiReplyResult } from './pipeline';
 export { GeminiClient, GeminiError, DEFAULT_GEMINI_MODEL, type GeminiConfig } from './gemini';
+export { translateToEnglish, draftStaffReply } from './admin';
