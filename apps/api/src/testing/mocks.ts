@@ -1,6 +1,25 @@
 import type { LlmClient, LlmGenerateRequest } from '@vertex/ai';
 import type { Role } from '@vertex/shared';
 import type { StaffAuth } from '../types';
+import type { EmailMessage } from '../lib/email';
+
+/** Recording Slack sender for tests: assert on `.calls`. */
+export function fakeSendSlack(): ((text: string) => Promise<void>) & { calls: string[] } {
+  const calls: string[] = [];
+  const send = async (text: string): Promise<void> => {
+    calls.push(text);
+  };
+  return Object.assign(send, { calls });
+}
+
+/** Recording email sender for tests: assert on `.calls`. */
+export function fakeSendEmail(): ((msg: EmailMessage) => Promise<void>) & { calls: EmailMessage[] } {
+  const calls: EmailMessage[] = [];
+  const send = async (msg: EmailMessage): Promise<void> => {
+    calls.push(msg);
+  };
+  return Object.assign(send, { calls });
+}
 
 /** verifyStaff stub: any non-empty token resolves to a staff/admin, empty → null. */
 export function fakeVerifyStaff(role: Role = 'admin') {

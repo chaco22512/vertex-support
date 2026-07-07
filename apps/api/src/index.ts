@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { ApiBindings, AppEnv, Deps } from './types';
+import { runReminders } from './lib/reminders';
 import { corsMiddleware } from './middleware/cors';
 import { rateLimitMiddleware } from './middleware/rateLimit';
 import { sessionMiddleware } from './middleware/session';
@@ -83,4 +84,14 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
 }
 
 const app = createApp();
-export default app;
+
+/**
+ * Worker entry: HTTP via Hono, plus an hourly Cron trigger (§8) that re-notifies
+ * Slack about escalations nearing or past their reply deadline.
+ */
+export default {
+  fetch: app.fetch,
+  async scheduled(_event: ScheduledEvent, env: ApiBindings, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runReminders(defaultDeps(env), Date.now()));
+  },
+};

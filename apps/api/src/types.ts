@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { LlmClient } from '@vertex/ai';
 import type { Conversation, Env, Role } from '@vertex/shared';
+import type { EmailMessage } from './lib/email';
 
 /** Worker bindings: the parseEnv secrets/vars plus the KV rate-limit store. */
 export interface ApiBindings extends Env {
@@ -24,6 +25,10 @@ export interface Deps {
   chatOrigin: string;
   /** Validate a Supabase Auth JWT and resolve the staff row, or null. */
   verifyStaff: (token: string) => Promise<StaffAuth | null>;
+  /** Post mrkdwn text to Slack (§8). No-op if unconfigured; never throws. */
+  sendSlack: (text: string) => Promise<void>;
+  /** Send a customer email via Resend (§8). No-op if unconfigured; never throws. */
+  sendEmail: (msg: EmailMessage) => Promise<void>;
 }
 
 export interface Variables {

@@ -20,3 +20,7 @@ CHAT_BASE_URL = "http://localhost:5173"
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
 id = "rate_limit_placeholder"
+
+# Hourly reminder sweep (§8): re-notify Slack about escalations nearing/past due.
+[triggers]
+crons = ["0 * * * *"]

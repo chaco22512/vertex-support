@@ -1,29 +1,63 @@
 import type { EscalationReason } from '@vertex/shared';
+import type { Deps } from '../types';
+import { buildEscalationMessage } from './slackMessage';
+import { buildStaffReplyEmail } from './emailTemplates';
+
+/** Whole hours until an ISO deadline, as a Slack label like "24h" (min "0h"). */
+function hoursLabel(iso: string): string {
+  const ms = new Date(iso).getTime() - Date.now();
+  return `${Math.max(0, Math.round(ms / 3_600_000))}h`;
+}
 
 export interface EscalationNotice {
   conversationId: string;
   reason: EscalationReason;
   replyDueAt: string;
+  language: string;
+  channel: string;
+  sourceTag: string;
+  /** Slack member id of the assignee, or null when unassigned. */
+  assigneeSlackId: string | null;
 }
 
-/**
- * Escalation notification hook. M3 provides the call site only; the Slack webhook
- * and Resend email are implemented in M6 (§8). Intentionally a no-op for now.
- */
-export async function notifyEscalation(_notice: EscalationNotice): Promise<void> {
-  // M6: send Slack webhook + assign staff + (on staff reply) Resend email.
+/** Slack notification on escalation (§8). Never throws (sendSlack swallows). */
+export async function notifyEscalation(deps: Deps, notice: EscalationNotice): Promise<void> {
+  const { data } = await deps.db
+    .from('messages')
+    .select('sender,body')
+    .eq('conversation_id', notice.conversationId)
+    .eq('sender', 'customer')
+    .order('id', { ascending: true })
+    .limit(1);
+  const question = ((data ?? []) as { body: string }[])[0]?.body ?? '';
+
+  const text = buildEscalationMessage(
+    {
+      channel: notice.channel,
+      sourceTag: notice.sourceTag,
+      language: notice.language,
+      question,
+      reason: notice.reason,
+      assigneeSlackId: notice.assigneeSlackId,
+      conversationId: notice.conversationId,
+      adminUrl: deps.adminOrigin,
+    },
+    hoursLabel(notice.replyDueAt),
+  );
+  await deps.sendSlack(text);
 }
 
 export interface StaffReplyNotice {
   conversationId: string;
   contactEmail: string;
   language: string;
+  sessionToken: string;
 }
 
-/**
- * Customer email on staff reply (§8). M5 provides the call site; the Resend
- * email is implemented in M6. No-op for now.
- */
-export async function notifyStaffReply(_notice: StaffReplyNotice): Promise<void> {
-  // M6: send Resend email (5-language template) when contact_email is present.
+/** Customer email on staff reply (§8). Never throws (sendEmail swallows). */
+export async function notifyStaffReply(deps: Deps, notice: StaffReplyNotice): Promise<void> {
+  const chatUrl = `${deps.chatOrigin.replace(/\/$/, '')}/?t=${notice.sessionToken}`;
+  const logoUrl = `${deps.adminOrigin.replace(/\/$/, '')}/logo-horizontal.webp`;
+  const { subject, html } = buildStaffReplyEmail(notice.language, { chatUrl, logoUrl });
+  await deps.sendEmail({ to: notice.contactEmail, subject, html });
 }

@@ -154,7 +154,8 @@ export async function patchConversation(c: Context<AppEnv>): Promise<Response> {
 
 /** POST /api/admin/conversations/:id/reply — staff reply (§7.3). */
 export async function replyConversation(c: Context<AppEnv>): Promise<Response> {
-  const { db } = c.get('deps');
+  const deps = c.get('deps');
+  const { db } = deps;
   const staff = c.get('staff');
   const id = c.req.param('id') ?? '';
   const parsed = replySchema.safeParse(await c.req.json().catch(() => null));
@@ -172,12 +173,17 @@ export async function replyConversation(c: Context<AppEnv>): Promise<Response> {
 
   const { data: conv } = await db
     .from('conversations')
-    .select('contact_email,language')
+    .select('contact_email,language,session_token')
     .eq('id', id)
     .maybeSingle();
-  const c2 = conv as { contact_email: string; language: string } | null;
+  const c2 = conv as { contact_email: string; language: string; session_token: string } | null;
   if (c2?.contact_email) {
-    await notifyStaffReply({ conversationId: id, contactEmail: c2.contact_email, language: c2.language });
+    await notifyStaffReply(deps, {
+      conversationId: id,
+      contactEmail: c2.contact_email,
+      language: c2.language,
+      sessionToken: c2.session_token,
+    });
   }
   return c.json({ message: msg });
 }

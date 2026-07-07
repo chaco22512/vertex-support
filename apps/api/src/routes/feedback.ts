@@ -6,7 +6,8 @@ import { escalateConversation } from '../lib/escalation';
 /** POST /api/conversations/:token/feedback — Solved / Still need help (§9, §6.1). */
 export async function postFeedback(c: Context<AppEnv>): Promise<Response> {
   const conversation = c.get('conversation');
-  const { db } = c.get('deps');
+  const deps = c.get('deps');
+  const { db } = deps;
 
   const raw = await c.req.json().catch(() => null);
   const parsed = feedbackSchema.safeParse(raw);
@@ -20,6 +21,6 @@ export async function postFeedback(c: Context<AppEnv>): Promise<Response> {
     return c.json({ status: 'resolved' });
   }
 
-  const result = await escalateConversation(db, conversation, parsed.data.reason ?? 'not_in_manual');
+  const result = await escalateConversation(deps, conversation, parsed.data.reason ?? 'not_in_manual');
   return c.json({ status: 'escalated', reply_due_at: result.reply_due_at });
 }

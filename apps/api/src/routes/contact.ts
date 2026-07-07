@@ -6,7 +6,8 @@ import { escalateConversation } from '../lib/escalation';
 /** POST /api/conversations/:token/contact — store contact + finalize escalation (§9, §6.1). */
 export async function postContact(c: Context<AppEnv>): Promise<Response> {
   const conversation = c.get('conversation');
-  const { db } = c.get('deps');
+  const deps = c.get('deps');
+  const { db } = deps;
 
   const raw = await c.req.json().catch(() => null);
   const parsed = contactSchema.safeParse(raw);
@@ -19,7 +20,7 @@ export async function postContact(c: Context<AppEnv>): Promise<Response> {
 
   let replyDueAt = conversation.reply_due_at;
   if (conversation.status !== 'escalated') {
-    const result = await escalateConversation(db, conversation, parsed.data.reason ?? 'other');
+    const result = await escalateConversation(deps, conversation, parsed.data.reason ?? 'other');
     replyDueAt = result.reply_due_at;
   }
 

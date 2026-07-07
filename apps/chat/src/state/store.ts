@@ -39,6 +39,15 @@ function sourceTag(): string {
   }
 }
 
+/** session_token from the email deep link (?t=…, §8). Restores a prior chat. */
+function linkToken(): string | null {
+  try {
+    return new URLSearchParams(window.location.search).get('t');
+  } catch {
+    return null;
+  }
+}
+
 function toChatMessages(msgs: api.ApiMessage[]): ChatMessage[] {
   return msgs
     .filter((m) => !(m.sender === 'system' && m.body === '')) // hide escalation markers
@@ -47,25 +56,31 @@ function toChatMessages(msgs: api.ApiMessage[]): ChatMessage[] {
 
 export function useChat() {
   const persisted = loadPersisted();
+  // A ?t= link (from a staff-reply email) wins over localStorage so the customer
+  // can reopen the conversation from the email on any device (§8).
+  const restoreToken = linkToken() ?? persisted?.token ?? null;
+  const restoreLanguage = persisted?.language ?? null;
   const [state, dispatch] = useReducer(
     reducer,
-    initialState(persisted?.language ?? null, persisted?.token ?? null),
+    initialState(restoreLanguage, restoreToken),
   );
   const t = getMessages(state.language ?? 'en');
   const lastFailedBody = useRef<string | null>(null);
 
   // Restore a prior session's messages (§6.3 session_token history restore).
   useEffect(() => {
-    if (!persisted?.token) return;
+    if (!restoreToken) return;
     let cancelled = false;
     api
-      .getMessages(persisted.token)
+      .getMessages(restoreToken)
       .then((res) => {
         if (cancelled) return;
         const msgs = toChatMessages(res.messages);
         const lastId = res.messages.reduce((m, x) => Math.max(m, x.id), 0);
         dispatch({ type: 'MERGE_MESSAGES', messages: msgs, lastMessageId: lastId, hasNewStaff: false });
-        dispatch({ type: 'SELECT_LANGUAGE', language: persisted.language });
+        if (restoreLanguage) dispatch({ type: 'SELECT_LANGUAGE', language: restoreLanguage });
+        // Persist the link token so polling/resend and later visits keep working.
+        savePersisted({ token: restoreToken, language: restoreLanguage ?? 'en' });
       })
       .catch(() => {
         /* stale token — start fresh silently */

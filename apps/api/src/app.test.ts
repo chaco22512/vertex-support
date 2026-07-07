@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import type { LlmClient } from '@vertex/ai';
 import { createApp } from './index';
 import { FakeSupabase } from './testing/fakeSupabase';
-import { fakeKv, fakeVerifyStaff, goodResponse, mockLlm } from './testing/mocks';
+import {
+  fakeKv,
+  fakeSendEmail,
+  fakeSendSlack,
+  fakeVerifyStaff,
+  goodResponse,
+  mockLlm,
+} from './testing/mocks';
 import type { ApiBindings } from './types';
 
 const CHAT_ORIGIN = 'http://localhost:5173';
@@ -19,6 +26,8 @@ function setup(llm: LlmClient = mockLlm([goodResponse()])) {
     status: 'active',
   });
   const kv = fakeKv();
+  const slack = fakeSendSlack();
+  const email = fakeSendEmail();
   const env: ApiBindings = {
     SUPABASE_URL: 'x',
     SUPABASE_ANON_KEY: 'x',
@@ -37,8 +46,10 @@ function setup(llm: LlmClient = mockLlm([goodResponse()])) {
     adminOrigin: e.ADMIN_BASE_URL,
     chatOrigin: e.CHAT_BASE_URL ?? '',
     verifyStaff: fakeVerifyStaff(),
+    sendSlack: slack,
+    sendEmail: email,
   }));
-  return { app, db, env };
+  return { app, db, env, slack, email };
 }
 
 const jsonHeaders = { 'Content-Type': 'application/json', Origin: CHAT_ORIGIN };
@@ -82,9 +93,9 @@ describe('message flow', () => {
     expect(db.tables.messages.filter((m) => m.sender === 'ai')).toHaveLength(1);
   });
 
-  it('escalates when the model asks (status + reply_due_at set)', async () => {
+  it('escalates when the model asks + Slack-notifies with the reason (criteria 2/8)', async () => {
     const escalated = goodResponse({ escalate: true, reason: 'price_question', rule_ids: [] });
-    const { app, db, env } = setup(mockLlm([escalated]));
+    const { app, db, env, slack } = setup(mockLlm([escalated]));
     const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
 
     const res = await app.request(
@@ -98,6 +109,9 @@ describe('message flow', () => {
     const conv = db.tables.conversations[0]!;
     expect(conv.status).toBe('escalated');
     expect(conv.reply_due_at).not.toBeNull();
+    // §8: Slack notified with the AI reason (criterion 2).
+    expect(slack.calls).toHaveLength(1);
+    expect(slack.calls[0]!).toContain('AI reason: price_question');
   });
 
   it('rejects an empty message body', async () => {

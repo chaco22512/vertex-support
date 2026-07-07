@@ -43,7 +43,7 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
 
   if (ai.aiMeta.escalate) {
     const reason = ai.aiMeta.reason === 'none' ? 'other' : ai.aiMeta.reason;
-    await escalateConversation(db, conversation, reason);
+    await escalateConversation(deps, conversation, reason);
   }
 
   const { data: aiMsg, error: e2 } = await db

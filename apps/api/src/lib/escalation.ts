@@ -1,6 +1,7 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Conversation, EscalationReason } from '@vertex/shared';
+import type { Deps } from '../types';
 import { notifyEscalation } from './notify';
+import { pickAssignee } from './assign';
 
 /** 24-hour reply SLA (§8). */
 export const REPLY_SLA_MS = 24 * 60 * 60 * 1000;
@@ -11,18 +12,20 @@ export interface EscalationResult {
   reason: EscalationReason;
 }
 
+type EscalatableConversation = Pick<Conversation, 'id' | 'language' | 'channel' | 'source_tag'>;
+
 /**
- * Escalate a conversation (§8) — M3 scope: set status + timestamps only.
- * status='escalated', escalated_at=now, reply_due_at=now+24h. The reason is
- * recorded on a system marker message's ai_meta so M6 can surface it in Slack.
- * Staff auto-assignment and the actual notification are M6 (notifyEscalation is
- * a no-op hook for now).
+ * Escalate a conversation (§8): set status='escalated', escalated_at=now,
+ * reply_due_at=now+24h; record the reason on a system marker message; auto-assign
+ * the least-loaded matching staff member; then Slack-notify. Notification/assign
+ * failures never break escalation (sendSlack swallows; assign is best-effort).
  */
 export async function escalateConversation(
-  db: SupabaseClient,
-  conversation: Pick<Conversation, 'id'>,
+  deps: Deps,
+  conversation: EscalatableConversation,
   reason: EscalationReason,
 ): Promise<EscalationResult> {
+  const { db } = deps;
   const now = new Date();
   const nowIso = now.toISOString();
   const dueIso = new Date(now.getTime() + REPLY_SLA_MS).toISOString();
@@ -46,6 +49,20 @@ export async function escalateConversation(
     ai_meta: { escalate: true, reason, rule_ids: [], model: '' },
   });
 
-  await notifyEscalation({ conversationId: conversation.id, reason, replyDueAt: dueIso });
+  // Auto-assign the least-loaded staff member who speaks the customer language.
+  const assignee = await pickAssignee(db, conversation.language);
+  if (assignee) {
+    await db.from('conversations').update({ assigned_staff: assignee.id }).eq('id', conversation.id);
+  }
+
+  await notifyEscalation(deps, {
+    conversationId: conversation.id,
+    reason,
+    replyDueAt: dueIso,
+    language: conversation.language,
+    channel: conversation.channel,
+    sourceTag: conversation.source_tag,
+    assigneeSlackId: assignee?.slackMemberId || null,
+  });
   return { escalated_at: nowIso, reply_due_at: dueIso, reason };
 }

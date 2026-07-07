@@ -3,11 +3,20 @@ import type { LlmClient } from '@vertex/ai';
 import type { Role } from '@vertex/shared';
 import { createApp } from '../../index';
 import { FakeSupabase } from '../../testing/fakeSupabase';
-import { fakeKv, fakeVerifyStaff, goodResponse, mockLlm } from '../../testing/mocks';
+import {
+  fakeKv,
+  fakeSendEmail,
+  fakeSendSlack,
+  fakeVerifyStaff,
+  goodResponse,
+  mockLlm,
+} from '../../testing/mocks';
 import type { ApiBindings } from '../../types';
 
 function setup(role: Role = 'admin', llm: LlmClient = mockLlm([goodResponse()])) {
   const db = new FakeSupabase();
+  const slack = fakeSendSlack();
+  const email = fakeSendEmail();
   const env: ApiBindings = {
     SUPABASE_URL: 'x',
     SUPABASE_ANON_KEY: 'x',
@@ -26,8 +35,10 @@ function setup(role: Role = 'admin', llm: LlmClient = mockLlm([goodResponse()]))
     adminOrigin: e.ADMIN_BASE_URL,
     chatOrigin: e.CHAT_BASE_URL ?? '',
     verifyStaff: fakeVerifyStaff(role),
+    sendSlack: slack,
+    sendEmail: email,
   }));
-  return { app, db, env };
+  return { app, db, env, slack, email };
 }
 
 const admin = { Authorization: 'Bearer tok', Origin: 'http://localhost:5174' };
@@ -105,5 +116,39 @@ describe('admin translate', () => {
     );
     expect(res.status).toBe(200);
     expect(((await res.json()) as { translation: string }).translation).toBe('How do I pay?');
+  });
+});
+
+describe('staff reply email (§8, criterion 6)', () => {
+  it('emails the customer with a session-token chat link when contact_email is set', async () => {
+    const { app, db, env, email } = setup('staff');
+    db.tables.conversations.push({
+      id: 'x1',
+      status: 'escalated',
+      language: 'vi',
+      contact_email: 'customer@example.com',
+      session_token: 'sess-xyz',
+    });
+    const res = await app.request(
+      '/api/admin/conversations/x1/reply',
+      { method: 'POST', headers: { ...admin, 'Content-Type': 'application/json' }, body: JSON.stringify({ body: 'Here is your answer.' }) },
+      env,
+    );
+    expect(res.status).toBe(200);
+    expect(email.calls).toHaveLength(1);
+    expect(email.calls[0]!.to).toBe('customer@example.com');
+    expect(email.calls[0]!.subject).toContain('Vertex Support');
+    expect(email.calls[0]!.html).toContain('/?t=sess-xyz');
+  });
+
+  it('does not email when there is no contact_email', async () => {
+    const { app, db, env, email } = setup('staff');
+    db.tables.conversations.push({ id: 'x2', status: 'escalated', language: 'en', contact_email: '', session_token: 't' });
+    await app.request(
+      '/api/admin/conversations/x2/reply',
+      { method: 'POST', headers: { ...admin, 'Content-Type': 'application/json' }, body: JSON.stringify({ body: 'hi' }) },
+      env,
+    );
+    expect(email.calls).toHaveLength(0);
   });
 });

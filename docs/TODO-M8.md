@@ -22,3 +22,19 @@ must be appended here so nothing is silently dropped.
 - [ ] Set Worker **secrets** (`wrangler secret put`) and local `.dev.vars` for
       running the real Worker (SUPABASE_*, GEMINI_API_KEY, SLACK_WEBHOOK_URL,
       RESEND_API_KEY) (from M3).
+
+## Notifications (from M6, spec §8)
+- [ ] **Email sender domain**: `apps/api/src/lib/email.ts` uses
+      `Vertex Support <onboarding@resend.dev>` (test-only; delivers to the Resend
+      account owner). Verify a Vertex domain in Resend and set the real `from`.
+- [ ] **Email logo URL**: `notifyStaffReply` builds `${ADMIN_BASE_URL}/logo-horizontal.webp`.
+      On localhost this won't load in mail clients; confirm it resolves once the
+      admin app is deployed (or host the logo on a public CDN/asset URL).
+- [ ] **Cron**: `[triggers] crons = ["0 * * * *"]` is set in wrangler.toml. Confirm
+      the hourly reminder actually fires on the deployed Worker (Miniflare does not
+      run crons locally). Reminder logic is unit-tested (`reminders.test.ts`).
+- [ ] **Slack `@channel`**: unassigned escalations post `@channel`; confirm the
+      Slack app/webhook has permission to notify the channel, and that assignee
+      `slack_member_id` values are real member IDs for `<@…>` mentions.
+- [ ] **Criterion 13 (real-device)**: from the Slack notification link, an already
+      logged-in staff reaches reply-send within 3 clicks (deep link → /inbox/:id).
