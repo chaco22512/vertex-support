@@ -3,6 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2024-10-04"
 compatibility_flags = ["nodejs_compat"]
 
+# Pin the local dev address/port so the chat's default API base matches.
+[dev]
+ip = "127.0.0.1"
+port = 8787
+
 # Secrets (SUPABASE_*, GEMINI_API_KEY, SLACK_WEBHOOK_URL, RESEND_API_KEY) are set via
 # `wrangler secret put` / the dashboard for deploy, and via .dev.vars locally — never
 # committed here (Hard rule 1).

@@ -1,7 +1,9 @@
 import type { EscalationReason } from '@vertex/shared';
 
+// Default to the IPv4 loopback: `wrangler dev` binds 127.0.0.1 only, while
+// browsers resolve "localhost" to IPv6 (::1) first and would fail to connect.
 const API_BASE =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:8787';
+  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://127.0.0.1:8787';
 
 export interface ApiMessage {
   id: number;

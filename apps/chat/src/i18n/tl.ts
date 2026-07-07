@@ -6,6 +6,7 @@ export const tl: Messages = {
     languagePrompt: 'Piliin ang iyong wika',
     categoryPrompt: 'Tungkol saan ang iyong tanong?',
     somethingElse: 'Iba pa',
+    changeTopic: 'Palitan ang paksa',
     othersPrompt: 'Pakisabi sa amin ang iyong tanong.',
     plansMessage: 'Tutulungan ka ng aming staff sa presyo ng mga plan. Mangyaring iwan ang iyong kontak sa ibaba.',
     inputPlaceholder: 'I-type ang iyong mensahe',

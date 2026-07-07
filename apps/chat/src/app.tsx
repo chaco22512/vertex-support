@@ -60,6 +60,7 @@ export function App(): JSX.Element {
             feedbackSolved: chat.feedbackSolved,
             stillNeedHelp: chat.stillNeedHelp,
             openComposer: chat.openComposer,
+            changeTopic: chat.changeTopic,
             newQuestion: chat.newQuestion,
             retry: chat.retry,
           }}

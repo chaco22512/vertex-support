@@ -4,6 +4,7 @@ export interface UiStrings {
   languagePrompt: string;
   categoryPrompt: string;
   somethingElse: string;
+  changeTopic: string;
   othersPrompt: string;
   plansMessage: string;
   inputPlaceholder: string;

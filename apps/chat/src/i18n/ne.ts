@@ -6,6 +6,7 @@ export const ne: Messages = {
     languagePrompt: 'आफ्नो भाषा छान्नुहोस्',
     categoryPrompt: 'तपाईंको प्रश्न केबारे हो?',
     somethingElse: 'अरू केही',
+    changeTopic: 'विषय परिवर्तन गर्नुहोस्',
     othersPrompt: 'कृपया आफ्नो प्रश्न भन्नुहोस्।',
     plansMessage: 'हाम्रो स्टाफले योजनाको मूल्यबारे सहयोग गर्नेछ। कृपया तल आफ्नो सम्पर्क छोड्नुहोस्।',
     inputPlaceholder: 'आफ्नो सन्देश टाइप गर्नुहोस्',

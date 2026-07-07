@@ -22,6 +22,7 @@ export interface State {
   awaitingAi: boolean;
   showFeedback: boolean;
   showEscalation: boolean;
+  firstMessageSent: boolean;
   escalated: boolean;
   resolved: boolean;
   teamReplied: boolean;
@@ -46,6 +47,7 @@ export type Action =
   | { type: 'AI_REPLY'; body: string; escalated: boolean; messageId: number }
   | { type: 'AI_ERROR' }
   | { type: 'OPEN_COMPOSER' }
+  | { type: 'CHANGE_TOPIC' }
   | { type: 'SHOW_ESCALATION' }
   | { type: 'CONTACT_SENT' }
   | { type: 'FEEDBACK_SOLVED' }
@@ -67,6 +69,7 @@ export function initialState(language: LanguageCode | null, token: string | null
     awaitingAi: false,
     showFeedback: false,
     showEscalation: false,
+    firstMessageSent: false,
     escalated: false,
     resolved: false,
     teamReplied: false,
@@ -146,6 +149,7 @@ export function reducer(state: State, action: Action): State {
         ...state,
         chips: [],
         awaitingAi: true,
+        firstMessageSent: true,
         showFeedback: false,
         showComposer: true,
         error: null,
@@ -174,6 +178,11 @@ export function reducer(state: State, action: Action): State {
 
     case 'OPEN_COMPOSER':
       return { ...state, chips: [], showComposer: true };
+
+    case 'CHANGE_TOPIC':
+      // Allowed only before the first message is sent (§ spec addendum). Abandon
+      // the (empty) conversation and return to category selection.
+      return { ...initialState(state.language, null), view: 'category' };
 
     case 'SHOW_ESCALATION':
       return { ...state, showEscalation: true, showFeedback: false };

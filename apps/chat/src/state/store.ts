@@ -76,7 +76,11 @@ export function useChat() {
   }, []);
 
   // Offline / online banner + auto-resend on reconnect (§5.4/§6.3).
+  // Driven solely by the browser's connectivity events, never by request errors.
   useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      dispatch({ type: 'SET_OFFLINE', offline: true });
+    }
     const goOffline = () => dispatch({ type: 'SET_OFFLINE', offline: true });
     const goOnline = () => {
       dispatch({ type: 'SET_OFFLINE', offline: false });
@@ -113,7 +117,10 @@ export function useChat() {
           const hasNewStaff = res.messages.some((m) => m.sender === 'staff');
           dispatch({ type: 'MERGE_MESSAGES', messages: dedupe(merged), lastMessageId: lastId, hasNewStaff });
         })
-        .catch(() => dispatch({ type: 'SET_OFFLINE', offline: true }));
+        .catch(() => {
+          /* Transient poll error — retry next tick. Offline state is driven only
+             by the browser's online/offline events, not by request failures. */
+        });
     }, POLL_MS);
     return () => clearInterval(id);
   }, [state.token, state.escalated, state.resolved, state.lastMessageId, state.messages]);
@@ -217,6 +224,14 @@ export function useChat() {
 
   const stillNeedHelp = useCallback(() => dispatch({ type: 'SHOW_ESCALATION' }), []);
   const openComposer = useCallback(() => dispatch({ type: 'OPEN_COMPOSER' }), []);
+  const changeTopic = useCallback(() => {
+    try {
+      localStorage.removeItem(STORAGE_KEY); // abandon the empty conversation
+    } catch {
+      /* ignore */
+    }
+    dispatch({ type: 'CHANGE_TOPIC' });
+  }, []);
   const changeLanguage = useCallback(() => dispatch({ type: 'CHANGE_LANGUAGE' }), []);
   const newQuestion = useCallback(() => {
     try {
@@ -242,6 +257,7 @@ export function useChat() {
     feedbackSolved,
     stillNeedHelp,
     openComposer,
+    changeTopic,
     changeLanguage,
     newQuestion,
     retry,

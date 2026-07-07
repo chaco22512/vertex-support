@@ -5,6 +5,7 @@ export const en: Messages = {
     languagePrompt: 'Choose your language',
     categoryPrompt: 'What is your question about?',
     somethingElse: 'Something else',
+    changeTopic: 'Change topic',
     othersPrompt: 'Please tell us your question.',
     plansMessage: 'Our staff will help you with plan prices. Please leave your contact below.',
     inputPlaceholder: 'Type your message',

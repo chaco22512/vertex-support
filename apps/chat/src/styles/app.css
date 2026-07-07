@@ -168,6 +168,13 @@ body {
   font-size: 14px;
 }
 
+.btn--change-topic {
+  margin-bottom: var(--sp-3);
+  padding: 6px 12px;
+  min-height: 36px;
+  font-size: var(--font-aux);
+}
+
 /* Chat */
 .messages {
   display: flex;

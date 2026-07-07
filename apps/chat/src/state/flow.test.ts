@@ -78,6 +78,22 @@ describe('reducer', () => {
     expect(s.chips).toEqual([]);
   });
 
+  it('tracks firstMessageSent only after a send', () => {
+    const before = withCategory(undefined, ['q']);
+    expect(before.firstMessageSent).toBe(false);
+    const after = reducer(before, { type: 'SEND_START', body: 'hi' });
+    expect(after.firstMessageSent).toBe(true);
+  });
+
+  it('CHANGE_TOPIC returns to category with a fresh conversation', () => {
+    let s = reducer(withCategory(undefined, ['q']), { type: 'CONVERSATION_CREATED', token: 'abc' });
+    s = reducer(s, { type: 'CHANGE_TOPIC' });
+    expect(s.view).toBe('category');
+    expect(s.token).toBeNull();
+    expect(s.firstMessageSent).toBe(false);
+    expect(s.language).toBe('en');
+  });
+
   it('NEW_QUESTION returns to category with a fresh (tokenless) conversation', () => {
     let s = reducer(withCategory('free_text'), { type: 'CONVERSATION_CREATED', token: 'abc' });
     s = reducer(s, { type: 'NEW_QUESTION' });

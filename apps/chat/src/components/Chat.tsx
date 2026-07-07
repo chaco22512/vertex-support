@@ -11,6 +11,7 @@ export interface ChatHandlers {
   feedbackSolved: () => void;
   stillNeedHelp: () => void;
   openComposer: () => void;
+  changeTopic: () => void;
   newQuestion: () => void;
   retry: () => void;
 }
@@ -22,6 +23,13 @@ export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers 
   return (
     <>
       <div class="scroll">
+        {/* Return to category selection — only before the first message is sent. */}
+        {!state.firstMessageSent && !state.resolved && (
+          <button class="btn btn--ghost btn--change-topic" onClick={handlers.changeTopic}>
+            ← {t.ui.changeTopic}
+          </button>
+        )}
+
         <div class="messages">
           {state.messages.map((m) => (
             <Bubble key={m.key} message={m} answeredByAiLabel={t.ui.answeredByAi} lang={lang} />

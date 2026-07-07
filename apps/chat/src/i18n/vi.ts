@@ -6,6 +6,7 @@ export const vi: Messages = {
     languagePrompt: 'Chọn ngôn ngữ của bạn',
     categoryPrompt: 'Bạn cần hỏi về vấn đề gì?',
     somethingElse: 'Vấn đề khác',
+    changeTopic: 'Đổi chủ đề',
     othersPrompt: 'Vui lòng cho chúng tôi biết câu hỏi của bạn.',
     plansMessage: 'Nhân viên của chúng tôi sẽ hỗ trợ về giá gói cước. Vui lòng để lại thông tin liên hệ bên dưới.',
     inputPlaceholder: 'Nhập tin nhắn của bạn',

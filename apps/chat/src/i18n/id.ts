@@ -6,6 +6,7 @@ export const id: Messages = {
     languagePrompt: 'Pilih bahasa Anda',
     categoryPrompt: 'Pertanyaan Anda tentang apa?',
     somethingElse: 'Hal lain',
+    changeTopic: 'Ganti topik',
     othersPrompt: 'Silakan sampaikan pertanyaan Anda.',
     plansMessage: 'Staf kami akan membantu soal harga paket. Silakan tinggalkan kontak Anda di bawah.',
     inputPlaceholder: 'Ketik pesan Anda',
