@@ -23,6 +23,17 @@ must be appended here so nothing is silently dropped.
       running the real Worker (SUPABASE_*, GEMINI_API_KEY, SLACK_WEBHOOK_URL,
       RESEND_API_KEY) (from M3).
 
+## Documentation (from M7, spec §11)
+- [ ] **Capture the screenshots** marked `> 📷 [SCREENSHOT — …]` in
+      `docs/cs-staff-rulebook.md` and `docs/test-guide.md` (each placeholder states
+      exactly which screen/state to capture) and place them inline.
+- [ ] **Generate the PDFs** `docs/cs-staff-rulebook.pdf` and `docs/test-guide.pdf`
+      once screenshots are in (PDF is a §11 deliverable; only meaningful after images).
+- [ ] Build the actual onboarding slides from `docs/training-deck-outline.md`.
+- [ ] **Acceptance criterion 24 (human UAT)**: one non-engineer staff member, using
+      only the Rulebook, completes (a) a reply to a test escalation and (b) one fee
+      change in Knowledge. Record sign-off in the Test Guide §8 table.
+
 ## Notifications (from M6, spec §8)
 - [ ] **Email sender domain**: `apps/api/src/lib/email.ts` uses
       `Vertex Support <onboarding@resend.dev>` (test-only; delivers to the Resend
