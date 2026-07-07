@@ -1,0 +1,72 @@
+import type { Messages } from './messages';
+
+// Tiếng Việt. AI-translated — pending native review (M7 multilingual testing).
+export const vi: Messages = {
+  ui: {
+    languagePrompt: 'Chọn ngôn ngữ của bạn',
+    categoryPrompt: 'Bạn cần hỏi về vấn đề gì?',
+    somethingElse: 'Vấn đề khác',
+    othersPrompt: 'Vui lòng cho chúng tôi biết câu hỏi của bạn.',
+    plansMessage: 'Nhân viên của chúng tôi sẽ hỗ trợ về giá gói cước. Vui lòng để lại thông tin liên hệ bên dưới.',
+    inputPlaceholder: 'Nhập tin nhắn của bạn',
+    send: 'Gửi',
+    solved: 'Đã giải quyết',
+    stillNeedHelp: 'Vẫn cần trợ giúp',
+    answeredByAi: 'Được trả lời bởi AI',
+    newQuestion: 'Câu hỏi mới',
+    escalationTitle: 'Để lại thông tin liên hệ, nhân viên của chúng tôi sẽ trả lời trong vòng 24 giờ.',
+    emailPlaceholder: 'Email',
+    whatsappPlaceholder: 'Số WhatsApp',
+    contactSend: 'Gửi',
+    contactValidation: 'Nhập email hoặc số WhatsApp.',
+    offline: 'Bạn đang ngoại tuyến. Chúng tôi sẽ tự động kết nối lại.',
+    teamReplied: 'Đội ngũ của chúng tôi đã trả lời',
+    errorGeneric: 'Đã xảy ra lỗi. Vui lòng thử lại.',
+    retry: 'Thử lại',
+    statusAi: 'Trợ lý AI',
+    statusWaitingStaff: 'Đang chờ nhân viên',
+    thinking: 'Trợ lý đang nhập',
+  },
+  categories: {
+    internet: 'Internet không hoạt động / cài đặt APN',
+    payment: 'Thanh toán & hóa đơn hàng tháng',
+    lost: 'Mất SIM hoặc thiết bị',
+    cancel: 'Hủy dịch vụ',
+    return: 'Trả lại SIM / thiết bị',
+    replace: 'Thay thế / đổi gói',
+    reissue: 'Mất tín hiệu / cấp lại',
+    refund: 'Hoàn tiền / tiền cọc / hoàn tiền mặt',
+    plans: 'Gói cước & giá',
+    others: 'Khác',
+  },
+  subQuestions: {
+    internet: [
+      'Làm thế nào để cài đặt APN trên điện thoại của tôi?',
+      'SIM của tôi không có tín hiệu',
+      'Pocket wifi không kết nối với thiết bị của tôi',
+    ],
+    payment: [
+      'Làm thế nào để thanh toán hóa đơn hàng tháng?',
+      'Điều gì xảy ra nếu tôi thanh toán trễ?',
+      'Tín hiệu của tôi bị ngừng — có phải do thanh toán không?',
+      'Tôi có thể thanh toán bằng chuyển khoản ngân hàng không?',
+    ],
+    lost: ['Tôi bị mất thẻ SIM', 'Tôi bị mất pocket wifi', 'Phí mất là bao nhiêu?'],
+    cancel: [
+      'Làm thế nào để hủy gói của tôi?',
+      'Có phí hủy không?',
+      'Khi nào tôi cần trả lại thiết bị?',
+    ],
+    return: [
+      'Làm thế nào để trả lại qua bưu điện?',
+      'Làm thế nào để trả lại tại cửa hàng tiện lợi?',
+      'Tôi cần gửi lại những gì?',
+    ],
+    replace: ['SIM/thiết bị của tôi bị hỏng', 'Tôi muốn đổi gói', 'Thay thế có miễn phí không?'],
+    reissue: [
+      'Tín hiệu của tôi đã bị ngừng, làm thế nào để khôi phục?',
+      'Phí cấp lại (chấm dứt) là bao nhiêu?',
+    ],
+    refund: ['Khi nào tôi nhận được tiền hoàn lại?', 'Làm thế nào để lấy lại tiền cọc?'],
+  },
+};

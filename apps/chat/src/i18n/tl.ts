@@ -1,0 +1,72 @@
+import type { Messages } from './messages';
+
+// Tagalog. AI-translated — pending native review (M7 multilingual testing).
+export const tl: Messages = {
+  ui: {
+    languagePrompt: 'Piliin ang iyong wika',
+    categoryPrompt: 'Tungkol saan ang iyong tanong?',
+    somethingElse: 'Iba pa',
+    othersPrompt: 'Pakisabi sa amin ang iyong tanong.',
+    plansMessage: 'Tutulungan ka ng aming staff sa presyo ng mga plan. Mangyaring iwan ang iyong kontak sa ibaba.',
+    inputPlaceholder: 'I-type ang iyong mensahe',
+    send: 'Ipadala',
+    solved: 'Nalutas na',
+    stillNeedHelp: 'Kailangan pa ng tulong',
+    answeredByAi: 'Sinagot ng AI',
+    newQuestion: 'Bagong tanong',
+    escalationTitle: 'Iwan ang iyong kontak at sasagutin ka ng aming staff sa loob ng 24 oras.',
+    emailPlaceholder: 'Email',
+    whatsappPlaceholder: 'WhatsApp number',
+    contactSend: 'Ipadala',
+    contactValidation: 'Maglagay ng email o WhatsApp number.',
+    offline: 'Offline ka. Awtomatiko kaming muling kokonekta.',
+    teamReplied: 'Sumagot na ang aming team',
+    errorGeneric: 'May nangyaring mali. Pakisubukan muli.',
+    retry: 'Subukan muli',
+    statusAi: 'AI assistant',
+    statusWaitingStaff: 'Naghihintay ng staff',
+    thinking: 'Nagta-type ang assistant',
+  },
+  categories: {
+    internet: 'Hindi gumagana ang internet / APN setup',
+    payment: 'Bayad & buwanang bill',
+    lost: 'Nawalang SIM o device',
+    cancel: 'Pagkansela',
+    return: 'Pagbabalik ng SIM / device',
+    replace: 'Palit / baguhin ang plan',
+    reissue: 'Huminto ang signal / re-issue',
+    refund: 'Refund / deposito / cashback',
+    plans: 'Mga plan & presyo',
+    others: 'Iba pa',
+  },
+  subQuestions: {
+    internet: [
+      'Paano i-set up ang APN sa aking telepono?',
+      'Walang signal ang aking SIM',
+      'Hindi kumokonekta ang pocket wifi sa aking device',
+    ],
+    payment: [
+      'Paano magbayad ng aking buwanang bill?',
+      'Ano ang mangyayari kung ma-late ako sa bayad?',
+      'Huminto ang aking signal — dahil ba ito sa bayad?',
+      'Pwede ba akong magbayad sa pamamagitan ng bank transfer?',
+    ],
+    lost: ['Nawala ang aking SIM card', 'Nawala ang aking pocket wifi', 'Magkano ang bayad sa pagkawala?'],
+    cancel: [
+      'Paano kanselahin ang aking plan?',
+      'May bayad ba sa pagkansela?',
+      'Kailan ko kailangang isauli ang item?',
+    ],
+    return: [
+      'Paano magbalik sa pamamagitan ng koreo?',
+      'Paano magbalik sa convenience store?',
+      'Ano ang kailangan kong ibalik?',
+    ],
+    replace: ['Sira ang aking SIM/device', 'Gusto kong baguhin ang aking plan', 'Libre ba ang palit?'],
+    reissue: [
+      'Huminto ang aking signal, paano ko ito maibabalik?',
+      'Magkano ang bayad sa re-issue (pagtatapos)?',
+    ],
+    refund: ['Kailan ko makukuha ang aking cashback?', 'Paano ko makukuha ang aking deposito?'],
+  },
+};

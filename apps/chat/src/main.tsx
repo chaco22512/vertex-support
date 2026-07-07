@@ -1,8 +1,6 @@
 import { render } from 'preact';
-
-function App() {
-  return <p>Vertex Support — customer chat (skeleton). Guided flow arrives in M4.</p>;
-}
+import { App } from './app';
+import './styles/app.css';
 
 const root = document.getElementById('app');
 if (root) {

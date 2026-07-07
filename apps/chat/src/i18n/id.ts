@@ -1,0 +1,72 @@
+import type { Messages } from './messages';
+
+// Bahasa Indonesia. AI-translated — pending native review (M7 multilingual testing).
+export const id: Messages = {
+  ui: {
+    languagePrompt: 'Pilih bahasa Anda',
+    categoryPrompt: 'Pertanyaan Anda tentang apa?',
+    somethingElse: 'Hal lain',
+    othersPrompt: 'Silakan sampaikan pertanyaan Anda.',
+    plansMessage: 'Staf kami akan membantu soal harga paket. Silakan tinggalkan kontak Anda di bawah.',
+    inputPlaceholder: 'Ketik pesan Anda',
+    send: 'Kirim',
+    solved: 'Selesai',
+    stillNeedHelp: 'Masih perlu bantuan',
+    answeredByAi: 'Dijawab oleh AI',
+    newQuestion: 'Pertanyaan baru',
+    escalationTitle: 'Tinggalkan kontak Anda dan staf kami akan membalas dalam 24 jam.',
+    emailPlaceholder: 'Email',
+    whatsappPlaceholder: 'Nomor WhatsApp',
+    contactSend: 'Kirim',
+    contactValidation: 'Masukkan email atau nomor WhatsApp.',
+    offline: 'Anda sedang offline. Kami akan menyambung kembali secara otomatis.',
+    teamReplied: 'Tim kami telah membalas',
+    errorGeneric: 'Terjadi kesalahan. Silakan coba lagi.',
+    retry: 'Coba lagi',
+    statusAi: 'Asisten AI',
+    statusWaitingStaff: 'Menunggu staf',
+    thinking: 'Asisten sedang mengetik',
+  },
+  categories: {
+    internet: 'Internet tidak berfungsi / setelan APN',
+    payment: 'Pembayaran & tagihan bulanan',
+    lost: 'SIM atau perangkat hilang',
+    cancel: 'Pembatalan',
+    return: 'Mengembalikan SIM / perangkat',
+    replace: 'Penggantian / ganti paket',
+    reissue: 'Sinyal terhenti / penerbitan ulang',
+    refund: 'Pengembalian dana / deposit / cashback',
+    plans: 'Paket & harga',
+    others: 'Lainnya',
+  },
+  subQuestions: {
+    internet: [
+      'Bagaimana cara mengatur APN di ponsel saya?',
+      'SIM saya tidak ada sinyal',
+      'Pocket wifi tidak terhubung ke perangkat saya',
+    ],
+    payment: [
+      'Bagaimana cara membayar tagihan bulanan saya?',
+      'Apa yang terjadi jika saya terlambat membayar?',
+      'Sinyal saya terhenti — apakah karena pembayaran?',
+      'Bisakah saya membayar lewat transfer bank?',
+    ],
+    lost: ['Saya kehilangan kartu SIM saya', 'Saya kehilangan pocket wifi saya', 'Berapa biaya kehilangan?'],
+    cancel: [
+      'Bagaimana cara membatalkan paket saya?',
+      'Apakah ada biaya pembatalan?',
+      'Kapan saya harus mengembalikan barang?',
+    ],
+    return: [
+      'Bagaimana cara mengembalikan lewat pos?',
+      'Bagaimana cara mengembalikan di minimarket?',
+      'Apa yang harus saya kirim kembali?',
+    ],
+    replace: ['SIM/perangkat saya rusak', 'Saya ingin ganti paket', 'Apakah penggantian gratis?'],
+    reissue: [
+      'Sinyal saya dihentikan, bagaimana cara memulihkannya?',
+      'Berapa biaya penerbitan ulang (penghentian)?',
+    ],
+    refund: ['Kapan saya menerima cashback saya?', 'Bagaimana cara mendapatkan deposit saya kembali?'],
+  },
+};

@@ -1,0 +1,30 @@
+/* Design tokens (build_spec_v1_4.md §5.1.1). Never hardcode colors elsewhere. */
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --ink: #1e262c;
+  --ink-muted: #6b7680;
+  --brand-red: #ff1616; /* logo/identity only */
+  --accent: #c81010; /* primary buttons, links, selected state (AA on white) */
+  --accent-soft: #fdecec; /* selected pill bg, hover */
+  --brand-yellow: #ffcf00; /* small accents only */
+  --bubble-customer: #fff8e1; /* customer bubble (pale yellow, avoids red/warning feel) */
+  --success: #2e7d32;
+  --warning: #b26a00;
+  --danger: #c62828;
+  --radius: 12px;
+  --radius-bubble: 16px;
+  --radius-control: 10px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  --shadow-header: 0 1px 0 rgba(0, 0, 0, 0.06);
+
+  --font-body: 16px;
+  --font-aux: 13px;
+}
