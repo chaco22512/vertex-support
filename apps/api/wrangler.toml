@@ -11,15 +11,17 @@ port = 8787
 # Secrets (SUPABASE_*, GEMINI_API_KEY, SLACK_WEBHOOK_URL, RESEND_API_KEY) are set via
 # `wrangler secret put` / the dashboard for deploy, and via .dev.vars locally — never
 # committed here (Hard rule 1).
+# Production origins (used by the deployed Worker for CORS, Slack links, email
+# links/logo). Local `wrangler dev` overrides these with localhost via .dev.vars.
 [vars]
-ADMIN_BASE_URL = "http://localhost:5174"
-CHAT_BASE_URL = "http://localhost:5173"
+ADMIN_BASE_URL = "https://vertex-support-admin.pages.dev"
+CHAT_BASE_URL = "https://vertex-support-chat.pages.dev"
 
 # Per-session rate limiting store (§2, 10 req/min). Local dev uses Miniflare's
-# in-memory KV; the real namespace id is filled in at M8 deploy.
+# in-memory KV; this id is the production namespace (not a secret).
 [[kv_namespaces]]
 binding = "RATE_LIMIT"
-id = "rate_limit_placeholder"
+id = "f88d672fd26947ba830a02a1214ae476"
 
 # Hourly reminder sweep (§8): re-notify Slack about escalations nearing/past due.
 [triggers]

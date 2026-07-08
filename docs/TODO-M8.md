@@ -3,25 +3,32 @@
 Running list of items intentionally postponed. Anything deferred in later milestones
 must be appended here so nothing is silently dropped.
 
+## ✅ Deployed (M8 pilot) — live URLs
+- API (Worker): https://vertex-support-api.chaco22512.workers.dev
+- Chat (Pages): https://vertex-support-chat.pages.dev
+- Admin (Pages): https://vertex-support-admin.pages.dev
+- KV `RATE_LIMIT` created; id committed in `apps/api/wrangler.toml`.
+- 6 Worker secrets set from `.env`. Cron `0 * * * *` registered in production.
+- Verified: `/health` 200, Pages 200, fonts 200, production admin sign-in →
+  `/api/admin/me` 200 (role=admin) with correct CORS.
+
+Remaining before general-customer launch: real-device acceptance (9/13/14/18),
+human UAT (24), screenshots + PDFs, Resend domain, optional custom domains.
+
 ## Fonts (from M4, spec §5.2 / acceptance criterion 14)
-- [ ] Obtain **Noto Sans Devanagari** subset **woff2** (Devanagari block only) and
-      place it under `apps/chat/public/fonts/` (and `apps/admin` if admin needs it).
-- [ ] Wire the self-hosted `@font-face` (currently the CSS uses the font-family
-      stack `'Noto Sans','Noto Sans Devanagari',system-ui,sans-serif` with
-      `font-display: swap`, relying on system fonts as a fallback).
+- [x] Self-host **Noto Sans Devanagari** (devanagari subset, 400) and **Noto Sans
+      Vietnamese** (400/600) woff2 under `apps/chat/public/fonts/` and `apps/admin`.
+- [x] Wire self-hosted `@font-face` (`font-display: swap`, unicode-range) via
+      bundled `src/styles/fonts.css`. English/Indonesian/Tagalog use system-ui.
 - [ ] **Real-device check of acceptance criterion 14**: Nepali (Devanagari) and
-      Vietnamese (diacritics) render correctly on the customer chat AND admin.
-      M4 status: wiring only — provisionally passing via system fonts; final
-      verification belongs here at M8.
-- [ ] Consider a subset **Noto Sans** (Latin + Vietnamese) woff2 if system-font
-      Vietnamese rendering proves inconsistent on target devices.
+      Vietnamese (diacritics) render correctly on the deployed chat AND admin, on a
+      real phone. (Wiring + fonts confirmed served in production; visual confirm pending.)
 
 ## Infrastructure (to be filled as milestones progress)
-- [ ] Create real Cloudflare **KV namespace** for rate limiting and replace the
-      `rate_limit_placeholder` id in `apps/api/wrangler.toml` (from M3).
-- [ ] Set Worker **secrets** (`wrangler secret put`) and local `.dev.vars` for
-      running the real Worker (SUPABASE_*, GEMINI_API_KEY, SLACK_WEBHOOK_URL,
-      RESEND_API_KEY) (from M3).
+- [x] Create Cloudflare **KV namespace** for rate limiting; id committed in
+      `apps/api/wrangler.toml` (from M3).
+- [x] Set Worker **secrets** from `.env` (SUPABASE_*, GEMINI_API_KEY,
+      SLACK_WEBHOOK_URL, RESEND_API_KEY); `.dev.vars` holds local dev values.
 
 ## Documentation (from M7, spec §11)
 - [ ] **Capture the screenshots** marked `> 📷 [SCREENSHOT — …]` in
