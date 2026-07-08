@@ -1,4 +1,4 @@
-name = "vertex-support-api"
+name = "simpoint-support-api"
 main = "src/index.ts"
 compatibility_date = "2024-10-04"
 compatibility_flags = ["nodejs_compat"]
@@ -14,8 +14,8 @@ port = 8787
 # Production origins (used by the deployed Worker for CORS, Slack links, email
 # links/logo). Local `wrangler dev` overrides these with localhost via .dev.vars.
 [vars]
-ADMIN_BASE_URL = "https://vertex-support-admin.pages.dev"
-CHAT_BASE_URL = "https://vertex-support-chat.pages.dev"
+ADMIN_BASE_URL = "https://simpoint-support-admin.pages.dev"
+CHAT_BASE_URL = "https://simpoint-support-chat.pages.dev"
 
 # Per-session rate limiting store (§2, 10 req/min). Local dev uses Miniflare's
 # in-memory KV; this id is the production namespace (not a secret).
