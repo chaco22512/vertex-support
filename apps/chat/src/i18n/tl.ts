@@ -16,6 +16,7 @@ export const tl: Messages = {
     answeredByAi: 'Sinagot ng AI',
     newQuestion: 'Bagong tanong',
     escalationTitle: 'Iwan ang iyong kontak at sasagutin ka ng aming staff sa loob ng 24 oras.',
+    namePlaceholder: 'Iyong pangalan (opsyonal)',
     emailPlaceholder: 'Email',
     whatsappPlaceholder: 'WhatsApp number',
     contactSend: 'Ipadala',

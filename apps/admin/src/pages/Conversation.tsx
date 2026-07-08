@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import type { ConvStatus, KbRule, Staff } from '@vertex/shared';
 import { api, type ConversationDetail, type DetailMessage } from '../lib/api';
 import { languageName, topicLabel } from '../lib/categories';
+import { contactLine, customerLabel } from '../lib/customer';
 import { formatTime } from '../lib/time';
 import { templatesFor } from '../lib/templates';
 import { markSeen } from '../lib/seen';
@@ -187,6 +188,15 @@ export function Conversation() {
           <input type="checkbox" checked={translateOn} onChange={() => void toggleTranslate()} />
           Translate
         </label>
+      </div>
+
+      <div className="row wrap" style={{ gap: 8, marginBottom: 'var(--sp-4)' }}>
+        <strong>{customerLabel(conversation)}</strong>
+        {contactLine(conversation) ? (
+          <span className="muted">· {contactLine(conversation)}</span>
+        ) : (
+          <span className="muted">· no contact left</span>
+        )}
       </div>
 
       <div className="detail-grid">

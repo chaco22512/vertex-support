@@ -66,7 +66,7 @@ export function getMessages(token: string, since?: number): Promise<MessagesResu
 
 export function postContact(
   token: string,
-  input: { email?: string; whatsapp?: string; reason?: EscalationReason },
+  input: { name?: string; email?: string; whatsapp?: string; reason?: EscalationReason },
 ): Promise<{ status: string; reply_due_at: string | null }> {
   return request(`/api/conversations/${token}/contact`, {
     method: 'POST',

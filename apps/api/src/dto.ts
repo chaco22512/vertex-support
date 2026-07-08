@@ -15,6 +15,7 @@ const reasonSchema = z.enum(ESCALATION_REASONS);
 
 export const contactSchema = z
   .object({
+    name: z.string().trim().max(120).optional(),
     email: z.string().email().max(320).optional(),
     whatsapp: z.string().min(3).max(32).optional(),
     reason: reasonSchema.optional(),

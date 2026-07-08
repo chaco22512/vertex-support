@@ -16,6 +16,7 @@ export const ne: Messages = {
     answeredByAi: 'AI द्वारा उत्तर दिइयो',
     newQuestion: 'नयाँ प्रश्न',
     escalationTitle: 'आफ्नो सम्पर्क छोड्नुहोस्, हाम्रो स्टाफले २४ घण्टाभित्र जवाफ दिनेछ।',
+    namePlaceholder: 'तपाईंको नाम (वैकल्पिक)',
     emailPlaceholder: 'इमेल',
     whatsappPlaceholder: 'WhatsApp नम्बर',
     contactSend: 'पठाउनुहोस्',

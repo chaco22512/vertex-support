@@ -14,6 +14,7 @@ export async function postContact(c: Context<AppEnv>): Promise<Response> {
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
 
   const update: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (parsed.data.name) update.customer_name = parsed.data.name;
   if (parsed.data.email !== undefined) update.contact_email = parsed.data.email;
   if (parsed.data.whatsapp !== undefined) update.contact_whatsapp = parsed.data.whatsapp;
   await db.from('conversations').update(update).eq('id', conversation.id);

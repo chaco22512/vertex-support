@@ -46,6 +46,10 @@ export interface InboxRow {
   channel: Channel;
   source_tag: string;
   topic_category: string;
+  customer_name: string;
+  contact_email: string;
+  contact_whatsapp: string;
+  short_id: string;
   reply_due_at: string | null;
   created_at: string;
   question: string;
@@ -70,7 +74,9 @@ export interface ConversationDetail {
     channel: Channel;
     source_tag: string;
     topic_category: string;
+    customer_name: string;
     contact_email: string;
+    contact_whatsapp: string;
     assigned_staff: string | null;
     reply_due_at: string | null;
     created_at: string;

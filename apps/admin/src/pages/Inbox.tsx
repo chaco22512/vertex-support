@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { api, type InboxFilters, type InboxRow } from '../lib/api';
 import { languageName, topicLabel } from '../lib/categories';
+import { customerLabel } from '../lib/customer';
 import { formatDue } from '../lib/time';
 import { isSeen } from '../lib/seen';
 import { StatusBadge } from '../components/StatusBadge';
@@ -183,7 +184,7 @@ export function Inbox() {
       </div>
 
       {load === 'loading' ? (
-        <TableSkeleton cols={7} />
+        <TableSkeleton cols={8} />
       ) : load === 'error' ? (
         <ErrorState onRetry={() => void fetchRows()} />
       ) : rows.length === 0 ? (
@@ -194,6 +195,7 @@ export function Inbox() {
             <thead>
               <tr>
                 <th>Source</th>
+                <th>Customer</th>
                 <th>Category</th>
                 <th>Question</th>
                 <th>Lang</th>
@@ -218,6 +220,7 @@ export function Inbox() {
                       {r.channel}
                       {r.source_tag ? <span className="muted"> · {r.source_tag}</span> : null}
                     </td>
+                    <td>{customerLabel(r)}</td>
                     <td>{topicLabel(r.topic_category)}</td>
                     <td>{r.question || <span className="muted">—</span>}</td>
                     <td title={languageName(r.language)}>{r.language.toUpperCase()}</td>

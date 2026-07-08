@@ -139,18 +139,19 @@ describe('feedback & contact', () => {
     expect(db.tables.conversations[0]!.status).toBe('resolved');
   });
 
-  it('stores contact and escalates', async () => {
+  it('stores contact (+ optional name) and escalates', async () => {
     const { app, db, env } = setup();
     const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
     const res = await app.request(
       `/api/conversations/${token}/contact`,
-      { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ email: 'a@b.com' }) },
+      { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ name: 'Aiko', email: 'a@b.com' }) },
       env,
     );
     expect(res.status).toBe(200);
     const conv = db.tables.conversations[0]!;
     expect(conv.status).toBe('escalated');
     expect(conv.contact_email).toBe('a@b.com');
+    expect(conv.customer_name).toBe('Aiko');
   });
 });
 

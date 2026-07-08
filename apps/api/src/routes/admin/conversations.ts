@@ -19,10 +19,17 @@ interface ConversationRow {
   channel: string;
   source_tag: string;
   topic_category: string;
+  customer_name: string;
   contact_email: string;
+  contact_whatsapp: string;
   assigned_staff: string | null;
   reply_due_at: string | null;
   created_at: string;
+}
+
+/** Short human-friendly id from the conversation uuid, e.g. "#4F2A" (§Inbox). */
+function shortId(id: string): string {
+  return `#${id.replace(/[^0-9a-f]/gi, '').slice(0, 4).toUpperCase()}`;
 }
 
 async function history(db: SupabaseClient, conversationId: string): Promise<HistoryMessage[]> {
@@ -95,6 +102,10 @@ export async function listConversations(c: Context<AppEnv>): Promise<Response> {
     channel: r.channel,
     source_tag: r.source_tag,
     topic_category: r.topic_category,
+    customer_name: r.customer_name ?? '',
+    contact_email: r.contact_email ?? '',
+    contact_whatsapp: r.contact_whatsapp ?? '',
+    short_id: shortId(r.id),
     reply_due_at: r.reply_due_at,
     created_at: r.created_at,
     question: (questions.get(r.id) ?? '').slice(0, 40),

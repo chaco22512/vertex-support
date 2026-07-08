@@ -14,6 +14,7 @@ export interface UiStrings {
   answeredByAi: string;
   newQuestion: string;
   escalationTitle: string;
+  namePlaceholder: string;
   emailPlaceholder: string;
   whatsappPlaceholder: string;
   contactSend: string;

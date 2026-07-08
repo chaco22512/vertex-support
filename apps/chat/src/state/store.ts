@@ -214,7 +214,7 @@ export function useChat() {
   );
 
   const submitContact = useCallback(
-    async (contact: { email?: string; whatsapp?: string }) => {
+    async (contact: { name?: string; email?: string; whatsapp?: string }) => {
       if (!state.token) return;
       const reason = state.behavior === 'always_escalate' ? 'price_question' : 'not_in_manual';
       try {

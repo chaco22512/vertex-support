@@ -7,7 +7,7 @@ import { EscalationCard } from './EscalationCard';
 
 export interface ChatHandlers {
   send: (body: string) => void;
-  submitContact: (contact: { email?: string; whatsapp?: string }) => void;
+  submitContact: (contact: { name?: string; email?: string; whatsapp?: string }) => void;
   feedbackSolved: () => void;
   stillNeedHelp: () => void;
   openComposer: () => void;

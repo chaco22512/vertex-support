@@ -16,6 +16,7 @@ export const vi: Messages = {
     answeredByAi: 'Được trả lời bởi AI',
     newQuestion: 'Câu hỏi mới',
     escalationTitle: 'Để lại thông tin liên hệ, nhân viên của chúng tôi sẽ trả lời trong vòng 24 giờ.',
+    namePlaceholder: 'Tên của bạn (không bắt buộc)',
     emailPlaceholder: 'Email',
     whatsappPlaceholder: 'Số WhatsApp',
     contactSend: 'Gửi',

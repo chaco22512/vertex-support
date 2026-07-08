@@ -15,6 +15,7 @@ export const en: Messages = {
     answeredByAi: 'Answered by AI',
     newQuestion: 'New question',
     escalationTitle: 'Leave your contact and our staff will reply within 24 hours.',
+    namePlaceholder: 'Your name (optional)',
     emailPlaceholder: 'Email',
     whatsappPlaceholder: 'WhatsApp number',
     contactSend: 'Send',

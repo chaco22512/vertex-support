@@ -16,6 +16,7 @@ export const id: Messages = {
     answeredByAi: 'Dijawab oleh AI',
     newQuestion: 'Pertanyaan baru',
     escalationTitle: 'Tinggalkan kontak Anda dan staf kami akan membalas dalam 24 jam.',
+    namePlaceholder: 'Nama Anda (opsional)',
     emailPlaceholder: 'Email',
     whatsappPlaceholder: 'Nomor WhatsApp',
     contactSend: 'Kirim',
