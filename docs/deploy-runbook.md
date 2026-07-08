@@ -81,6 +81,18 @@ cd apps/api
 wrangler deploy
 ```
 
+## 6b. Configure Supabase Auth URLs (REQUIRED — do not skip)
+Invitation and password-reset emails use Supabase's redirect settings. If these
+still point at localhost, invite links open `http://localhost` and fail with
+ERR_CONNECTION_REFUSED. In the Supabase dashboard → **Authentication → URL
+Configuration**:
+- **Site URL:** `<ADMIN_URL>` (e.g. `https://vertex-support-admin.pages.dev`)
+- **Redirect URLs:** add `<ADMIN_URL>/set-password` and `<ADMIN_URL>/*`
+
+The invite API also pins `redirectTo` to `<ADMIN_URL>/set-password`
+(`apps/api/src/routes/admin/staff.ts`), so links are correct even if this setting
+drifts — but keep Site URL current for password-reset and other Auth emails.
+
 ## 7. Verify
 - `curl <API_URL>/health` → `{"status":"ok",...}`.
 - Open **CHAT_URL** — language selection appears; run one lost-SIM question end to end.

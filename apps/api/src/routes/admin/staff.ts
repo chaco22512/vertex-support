@@ -12,12 +12,17 @@ export async function listStaff(c: Context<AppEnv>): Promise<Response> {
 
 /** POST /api/admin/staff — invite + create staff row (§7.6). */
 export async function createStaff(c: Context<AppEnv>): Promise<Response> {
-  const { db } = c.get('deps');
+  const deps = c.get('deps');
+  const { db } = deps;
   const parsed = createStaffSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
 
   // Send a Supabase Auth invitation email; the returned user id links the staff row.
-  const invite = await db.auth.admin.inviteUserByEmail(parsed.data.email);
+  // Pin redirectTo to the admin set-password page so the link never depends solely
+  // on Supabase's Site URL config (which caused invites to point at localhost).
+  const invite = await db.auth.admin.inviteUserByEmail(parsed.data.email, {
+    redirectTo: `${deps.adminOrigin.replace(/\/$/, '')}/set-password`,
+  });
   if (invite.error || !invite.data.user) {
     return c.json({ error: 'invite_failed', detail: invite.error?.message }, 502);
   }

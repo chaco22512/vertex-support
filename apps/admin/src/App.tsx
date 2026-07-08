@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './lib/auth';
 import { Layout } from './components/Layout';
 import { Login } from './pages/Login';
+import { SetPassword } from './pages/SetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { Inbox } from './pages/Inbox';
 import { Conversation } from './pages/Conversation';
@@ -46,6 +47,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/set-password" element={<SetPassword />} />
       <Route
         element={
           <RequireAuth>
