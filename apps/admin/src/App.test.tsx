@@ -35,7 +35,7 @@ describe('admin App', () => {
     );
     expect(html).toContain('Sign in');
     expect(html).toContain('Email');
-    // The Vertex Digital Marketing wordmark logo is present on login (§7).
+    // The SIM Point wordmark logo is present on login (§7).
     expect(html).toContain('logo-horizontal.webp');
   });
 });

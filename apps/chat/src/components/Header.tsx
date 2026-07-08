@@ -10,7 +10,7 @@ export function Header(props: {
     <header class="header">
       <LogoMark class="header__logo" />
       <div>
-        <div class="header__title">Vertex Support</div>
+        <div class="header__title">SIM Point Support</div>
         <div class="header__status">{props.statusText}</div>
       </div>
       <div class="header__spacer" />

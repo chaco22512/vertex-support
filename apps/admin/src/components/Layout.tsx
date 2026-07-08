@@ -26,8 +26,8 @@ export function Layout() {
     <div className="shell">
       <nav className="sidebar" aria-label="Main">
         <div className="sidebar-brand">
-          <img src="/logo-mark.svg" width={28} height={28} alt="" />
-          <span>Vertex Support</span>
+          <img src="/logo-mark.png" width={28} height={28} alt="" />
+          <span>SIM Point Support</span>
         </div>
         {NAV.filter((n) => !n.adminOnly || isAdmin).map((n) => (
           <NavLink

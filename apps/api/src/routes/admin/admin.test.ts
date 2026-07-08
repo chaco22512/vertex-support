@@ -137,7 +137,7 @@ describe('staff reply email (§8, criterion 6)', () => {
     expect(res.status).toBe(200);
     expect(email.calls).toHaveLength(1);
     expect(email.calls[0]!.to).toBe('customer@example.com');
-    expect(email.calls[0]!.subject).toContain('Vertex Support');
+    expect(email.calls[0]!.subject).toContain('SIM Point Support');
     expect(email.calls[0]!.html).toContain('/?t=sess-xyz');
   });
 

@@ -1,4 +1,4 @@
-# Deploy Runbook — Vertex Support (M8)
+# Deploy Runbook — SIM Point Support (M8)
 
 Production for the pilot: **API** on Cloudflare Workers, **chat** and **admin** on
 Cloudflare Pages, **DB/Auth** on the existing Supabase project, and Gemini / Slack
@@ -36,7 +36,7 @@ for K in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY \
 done
 ```
 `EMAIL_FROM` is optional (defaults to the Resend test sender) — set it only once a
-verified Vertex domain sender exists.
+verified SIM Point domain sender exists.
 
 ## 3. Deploy the Worker (first pass)
 ```
@@ -117,6 +117,6 @@ drifts — but keep Site URL current for password-reset and other Auth emails.
 - Pages: in the dashboard, promote a previous deployment.
 
 ## Still open before public launch (see docs/TODO-M8.md)
-- Verify a Vertex domain in Resend and set `EMAIL_FROM` (pilot uses the test sender,
+- Verify a SIM Point domain in Resend and set `EMAIL_FROM` (pilot uses the test sender,
   which only delivers to the sending-account owner).
 - Optional custom domains for chat/admin/API.

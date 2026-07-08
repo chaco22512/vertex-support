@@ -1,27 +1,8 @@
 import type { JSX } from 'preact';
 
-/** Brand logo mark (assets/logo-mark.svg), inline so there is no image request. */
+/** SIM Point logo mark (public/logo-mark.png — the S/P mark cropped from the logo). */
 export function LogoMark(props: { class?: string }): JSX.Element {
-  return (
-    <svg class={props.class} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M15.0008 42.3019L0 27.3011L3.99947 23.3016C7.31048 19.9906 12.6868 19.9906 15.9979 23.3016L30.9987 38.3025L26.9992 42.3019C23.6882 45.6129 18.3119 45.613 15.0008 42.3019Z"
-        fill="#FF1616"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M26.9991 42.3019L47.9999 21.3011L44.0004 17.3016C40.6894 13.9906 35.3131 13.9906 32.002 17.3016L11.0012 38.3024L15.0007 42.3019C18.3117 45.6129 23.6881 45.613 26.9991 42.3019Z"
-        fill="#FFCF00"
-      />
-      <path
-        d="M20.9998 18.3008C25.1419 18.3008 28.4998 14.9429 28.4998 10.8008C28.4998 6.65865 25.1419 3.30078 20.9998 3.30078C16.8576 3.30078 13.4998 6.65865 13.4998 10.8008C13.4998 14.9429 16.8576 18.3008 20.9998 18.3008Z"
-        fill="#FF1616"
-      />
-    </svg>
-  );
+  return <img class={props.class} src="/logo-mark.png" alt="" aria-hidden="true" />;
 }
 
 /** Tabler-style stroke icon paths for the menu categories (menu_categories.json icon ids). */

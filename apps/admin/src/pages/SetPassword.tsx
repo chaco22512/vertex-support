@@ -48,7 +48,7 @@ export function SetPassword() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={onSubmit}>
-        <img className="login-logo" src="/logo-horizontal.webp" alt="Vertex Digital Marketing" />
+        <img className="login-logo" src="/logo-horizontal.webp" alt="SIM Point" />
         <h1 style={{ fontSize: 18, margin: 0 }}>Set your password</h1>
 
         {checked && !session ? (

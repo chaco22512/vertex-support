@@ -3,6 +3,12 @@
 Running list of items intentionally postponed. Anything deferred in later milestones
 must be appended here so nothing is silently dropped.
 
+## Future optional (rebrand follow-up — intentionally out of scope)
+- Internal package names `@vertex/*` (api, shared, ai, chat, admin, scripts) and the
+  git repo/folder name still say "vertex". These are not user-visible. Renaming them
+  is high-churn (imports, tsconfig paths, lockfile) for low benefit, so it is
+  deliberately deferred. Do it only if a clean-identifier pass is later desired.
+
 ## ✅ Deployed (M8 pilot) — live URLs
 - API (Worker): https://vertex-support-api.chaco22512.workers.dev
 - Chat (Pages): https://vertex-support-chat.pages.dev
@@ -43,8 +49,8 @@ human UAT (24), screenshots + PDFs, Resend domain, optional custom domains.
 
 ## Notifications (from M6, spec §8)
 - [ ] **Email sender domain**: `apps/api/src/lib/email.ts` uses
-      `Vertex Support <onboarding@resend.dev>` (test-only; delivers to the Resend
-      account owner). Verify a Vertex domain in Resend and set the real `from`.
+      `SIM Point Support <onboarding@resend.dev>` (test-only; delivers to the Resend
+      account owner). Verify a SIM Point domain in Resend and set the real `from`.
 - [ ] **Email logo URL**: `notifyStaffReply` builds `${ADMIN_BASE_URL}/logo-horizontal.webp`.
       On localhost this won't load in mail clients; confirm it resolves once the
       admin app is deployed (or host the logo on a public CDN/asset URL).

@@ -3,11 +3,11 @@
  * Like Slack, failures are logged and swallowed so they never break the reply.
  *
  * NOTE (M8): `onboarding@resend.dev` only delivers to the Resend account owner's
- * address and is for testing. Replace with a verified Vertex domain sender at
+ * address and is for testing. Replace with a verified SIM Point domain sender at
  * deploy time (see docs/TODO-M8.md).
  */
 /** Test sender: only delivers to the Resend account owner. Override via EMAIL_FROM. */
-export const DEFAULT_EMAIL_FROM = 'Vertex Support <onboarding@resend.dev>';
+export const DEFAULT_EMAIL_FROM = 'SIM Point Support <onboarding@resend.dev>';
 
 export interface EmailMessage {
   to: string;

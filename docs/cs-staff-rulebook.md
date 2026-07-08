@@ -1,4 +1,4 @@
-# Vertex Support — CS Staff Rulebook
+# SIM Point Support — CS Staff Rulebook
 
 *For the customer-support team. This is the bot you will be testing. You do not need any technical background to read this — everything is described by the buttons you see on screen and the steps you take.*
 
@@ -21,7 +21,7 @@
 - It guides the customer with buttons and questions, then answers from our approved rules.
 - When it can't or shouldn't answer, it hands the conversation to you.
 
-Vertex Support is a chat window on our website. A customer opens it and is guided step by step — they rarely type at first. The flow is:
+SIM Point Support is a chat window on our website. A customer opens it and is guided step by step — they rarely type at first. The flow is:
 
 1. **Pick a language** — English, Bahasa Indonesia, Tagalog, Nepali, or Vietnamese.
 2. **Pick a topic** — a grid of tiles: *Internet not working / APN setup, Payment & monthly bill, Lost SIM or device, Cancellation, Returning SIM / device, Replacement / change plan, Signal stopped / re-issue, Refund / deposit / cashback, Plans & prices, Others.*

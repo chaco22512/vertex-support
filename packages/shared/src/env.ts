@@ -26,7 +26,7 @@ export interface Env {
   CHAT_BASE_URL?: string;
   /**
    * Optional customer-email sender (Resend). Defaults to a test sender in dev;
-   * set to a verified Vertex domain sender before public launch. Read directly
+   * set to a verified SIM Point domain sender before public launch. Read directly
    * (like CHAT_BASE_URL), not via ENV_KEYS.
    */
   EMAIL_FROM?: string;

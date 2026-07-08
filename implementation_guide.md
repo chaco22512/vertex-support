@@ -1,4 +1,4 @@
-# Claude Code 実装ガイド — Vertex Support Bot
+# Claude Code 実装ガイド — SIM Point Support Bot
 
 このガイドの通りに準備し、最後の「キックオフプロンプト」をClaude Codeに貼り付ければ実装が始まります。
 
@@ -15,7 +15,7 @@
 - [ ] **Cloudflare**: アカウント作成（Pages/Workersデプロイ用。ローカル開発が終わってからでも可）
 
 ### 決めておくこと
-- [ ] サービス表示名（仕様書では仮に "Vertex Support"）
+- [ ] サービス表示名（仕様書では仮に "SIM Point Support"）
 - [ ] 顧客通知メールの送信元アドレス
 
 ### ローカル環境
@@ -58,7 +58,7 @@ ADMIN_BASE_URL=http://localhost:5174
 ## 3. CLAUDE.md（リポジトリ直下に置く。Claude Codeが毎回読む指示書）
 
 ```markdown
-# Project: Vertex Support Bot
+# Project: SIM Point Support Bot
 
 ## Source of truth
 - docs/build_spec_v1_4.md がこのプロジェクトの唯一の仕様。実装判断に迷ったら必ずここに戻る。

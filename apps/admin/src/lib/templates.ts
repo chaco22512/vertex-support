@@ -8,19 +8,19 @@ export interface Template {
 type ByLang = Record<string, Template[]>;
 
 const GREETINGS: ByLang = {
-  en: [{ label: 'Greeting', text: 'Hi, thanks for reaching out to Vertex Support.\n\n' }],
-  id: [{ label: 'Greeting', text: 'Halo, terima kasih telah menghubungi Vertex Support.\n\n' }],
-  tl: [{ label: 'Greeting', text: 'Kumusta, salamat sa pakikipag-ugnayan sa Vertex Support.\n\n' }],
-  ne: [{ label: 'Greeting', text: 'नमस्ते, Vertex Support मा सम्पर्क गर्नुभएकोमा धन्यवाद।\n\n' }],
-  vi: [{ label: 'Greeting', text: 'Xin chào, cảm ơn bạn đã liên hệ Vertex Support.\n\n' }],
+  en: [{ label: 'Greeting', text: 'Hi, thanks for reaching out to SIM Point Support.\n\n' }],
+  id: [{ label: 'Greeting', text: 'Halo, terima kasih telah menghubungi SIM Point Support.\n\n' }],
+  tl: [{ label: 'Greeting', text: 'Kumusta, salamat sa pakikipag-ugnayan sa SIM Point Support.\n\n' }],
+  ne: [{ label: 'Greeting', text: 'नमस्ते, SIM Point Support मा सम्पर्क गर्नुभएकोमा धन्यवाद।\n\n' }],
+  vi: [{ label: 'Greeting', text: 'Xin chào, cảm ơn bạn đã liên hệ SIM Point Support.\n\n' }],
 };
 
 const CLOSINGS: ByLang = {
-  en: [{ label: 'Closing', text: '\n\nPlease let us know if you need anything else.\nVertex Support' }],
-  id: [{ label: 'Closing', text: '\n\nBeri tahu kami jika Anda butuh bantuan lain.\nVertex Support' }],
-  tl: [{ label: 'Closing', text: '\n\nIpaalam lang kung may iba pa kayong kailangan.\nVertex Support' }],
-  ne: [{ label: 'Closing', text: '\n\nथप केही चाहिएमा हामीलाई भन्नुहोस्।\nVertex Support' }],
-  vi: [{ label: 'Closing', text: '\n\nHãy cho chúng tôi biết nếu bạn cần thêm hỗ trợ.\nVertex Support' }],
+  en: [{ label: 'Closing', text: '\n\nPlease let us know if you need anything else.\nSIM Point Support' }],
+  id: [{ label: 'Closing', text: '\n\nBeri tahu kami jika Anda butuh bantuan lain.\nSIM Point Support' }],
+  tl: [{ label: 'Closing', text: '\n\nIpaalam lang kung may iba pa kayong kailangan.\nSIM Point Support' }],
+  ne: [{ label: 'Closing', text: '\n\nथप केही चाहिएमा हामीलाई भन्नुहोस्।\nSIM Point Support' }],
+  vi: [{ label: 'Closing', text: '\n\nHãy cho chúng tôi biết nếu bạn cần thêm hỗ trợ.\nSIM Point Support' }],
 };
 
 export function templatesFor(language: string): Template[] {

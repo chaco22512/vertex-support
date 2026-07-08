@@ -1,7 +1,7 @@
-# Project: Vertex Support Bot
+# Project: SIM Point Support Bot
 
 ## Source of truth
-- docs/build_spec_v1_4.md がこのプロジェクトの唯一の仕様。実装判断に迷ったら必ずここに戻る。
+- docs/build_spec_v1_5.md がこのプロジェクトの唯一の仕様（v1.4はリブランド前の履歴）。実装判断に迷ったら必ずここに戻る。
 - 仕様と矛盾する実装をしない。仕様が不明瞭・実装不能な場合は、勝手に解釈せず人間に質問する。
 
 ## Hard rules（違反禁止）

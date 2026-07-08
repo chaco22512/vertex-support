@@ -25,7 +25,7 @@ export function Login() {
   return (
     <div className="login-wrap">
       <form className="login-card" onSubmit={onSubmit}>
-        <img className="login-logo" src="/logo-horizontal.webp" alt="Vertex Digital Marketing" />
+        <img className="login-logo" src="/logo-horizontal.webp" alt="SIM Point" />
         <div className="field">
           <label htmlFor="email">Email</label>
           <input

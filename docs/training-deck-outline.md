@@ -1,4 +1,4 @@
-# Vertex Support — Staff Onboarding Training Deck (Outline)
+# SIM Point Support — Staff Onboarding Training Deck (Outline)
 
 *A slide-by-slide plan for the staff onboarding session. Build the actual slides from this. Each slide lists its **Title**, the **Key points** to show (with the Rulebook chapter they come from), and the **Visual** to place on the slide. Keep it visual and plain — the audience is CS staff, not engineers. Target length: 18 slides (~30–40 min with a short live demo).*
 
@@ -7,8 +7,8 @@ Source of truth: `docs/cs-staff-rulebook.md` (referenced as "Rulebook Ch.N"). Sc
 ---
 
 ### Slide 1 — Title
-- **Key points:** Vertex Support — Staff Onboarding. Presenter name, date. "You'll be testing our new support bot."
-- **Visual:** Vertex horizontal logo on a plain background.
+- **Key points:** SIM Point Support — Staff Onboarding. Presenter name, date. "You'll be testing our new support bot."
+- **Visual:** SIM Point horizontal logo on a plain background.
 
 ### Slide 2 — What we'll cover today
 - **Key points:** The 7 things you'll leave knowing: what the bot is, what it answers, when it calls you, how to reply, (admins) how to edit rules, do & don'ts, where to get help.

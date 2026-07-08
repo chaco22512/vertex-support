@@ -1,4 +1,4 @@
-# Vertex Support — Test Guide
+# SIM Point Support — Test Guide
 
 *A step-by-step test plan you can run without any technical background. Work through the scenarios, tick the box, and write what you saw. If anything looks wrong, fill in the report template at the end.*
 

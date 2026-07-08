@@ -1,15 +1,15 @@
-/* Design tokens (build_spec_v1_4.md §5.1.1). Shared with /apps/chat. Never
+/* Design tokens (build_spec_v1_5.md §5.1.1). Shared with /apps/chat. Never
    hardcode colors elsewhere — reference these CSS variables. */
 :root {
   --bg: #fafaf8;
   --surface: #ffffff;
   --ink: #1e262c;
   --ink-muted: #6b7680;
-  --brand-red: #ff1616; /* logo/identity only */
-  --accent: #c81010; /* primary buttons, links, selected state (AA on white) */
-  --accent-soft: #fdecec; /* selected pill bg, hover */
+  --brand-orange: #e89828; /* SIM Point logo primary; identity only */
+  --accent: #c2410c; /* primary buttons, links, selected state (white text AA 5.2:1) */
+  --accent-soft: #fdece0; /* selected pill bg, hover (pale orange) */
   --brand-yellow: #ffcf00; /* small accents only (unread bar, "Answered by AI" dot) */
-  --bubble-customer: #fff8e1; /* customer bubble (pale yellow, avoids red/warning feel) */
+  --bubble-customer: #fff3e6; /* customer bubble (pale orange, avoids red/warning feel) */
   --success: #2e7d32;
   --warning: #b26a00;
   --danger: #c62828;
