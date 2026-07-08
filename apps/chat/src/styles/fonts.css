@@ -1,0 +1,35 @@
+/* Self-hosted Noto Sans subsets for the two scripts that system fonts don't
+   render reliably (spec §5.2 / acceptance criterion 14). English, Indonesian and
+   Tagalog use system-ui (the fallback in the font-family stack), so the default
+   load carries zero extra font bytes and stays within the 150KB budget (§5.3).
+   - Vietnamese subset (Noto Sans): loaded only when Vietnamese glyphs render.
+   - Devanagari (Noto Sans Devanagari): loaded only for Nepali. Weight 400 file
+     serves 400–700; bold is synthesized to spare ~120KB on cheap Android / limited data.
+   All font-display: swap, so nothing blocks first paint. */
+
+@font-face {
+  font-family: 'Noto Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/notosans-vietnamese-400.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Noto Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/notosans-vietnamese-600.woff2') format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+
+@font-face {
+  font-family: 'Noto Sans Devanagari';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/notosansdevanagari-devanagari-400.woff2') format('woff2');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF, U+11B00-11B09;
+}

@@ -2,7 +2,7 @@ import { GeminiClient } from '@vertex/ai';
 import { createAnonClient, createServiceClient, parseEnv, type Role } from '@vertex/shared';
 import type { ApiBindings, Deps, StaffAuth } from '../types';
 import { postSlack } from './slack';
-import { sendResend } from './email';
+import { DEFAULT_EMAIL_FROM, sendResend } from './email';
 
 /** Build the real per-request dependencies from Worker bindings. */
 export function defaultDeps(env: ApiBindings): Deps {
@@ -28,6 +28,6 @@ export function defaultDeps(env: ApiBindings): Deps {
       return { userId: s.id, role: s.role, isActive: s.is_active, name: s.name };
     },
     sendSlack: (text: string) => postSlack(env.SLACK_WEBHOOK_URL, text),
-    sendEmail: (msg) => sendResend(env.RESEND_API_KEY, msg),
+    sendEmail: (msg) => sendResend(env.RESEND_API_KEY, env.EMAIL_FROM || DEFAULT_EMAIL_FROM, msg),
   };
 }

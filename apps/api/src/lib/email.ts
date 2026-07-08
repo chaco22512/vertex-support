@@ -6,7 +6,8 @@
  * address and is for testing. Replace with a verified Vertex domain sender at
  * deploy time (see docs/TODO-M8.md).
  */
-export const EMAIL_FROM = 'Vertex Support <onboarding@resend.dev>';
+/** Test sender: only delivers to the Resend account owner. Override via EMAIL_FROM. */
+export const DEFAULT_EMAIL_FROM = 'Vertex Support <onboarding@resend.dev>';
 
 export interface EmailMessage {
   to: string;
@@ -14,7 +15,7 @@ export interface EmailMessage {
   html: string;
 }
 
-export async function sendResend(apiKey: string, msg: EmailMessage): Promise<void> {
+export async function sendResend(apiKey: string, from: string, msg: EmailMessage): Promise<void> {
   if (!apiKey) return;
   try {
     const res = await fetch('https://api.resend.com/emails', {
@@ -23,7 +24,7 @@ export async function sendResend(apiKey: string, msg: EmailMessage): Promise<voi
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ from: EMAIL_FROM, to: msg.to, subject: msg.subject, html: msg.html }),
+      body: JSON.stringify({ from, to: msg.to, subject: msg.subject, html: msg.html }),
     });
     if (!res.ok) {
       console.error(`resend returned ${res.status}`);

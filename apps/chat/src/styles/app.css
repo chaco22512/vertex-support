@@ -1,5 +1,6 @@
 /* Layout & components. Colors come only from tokens.css variables (§5.1). */
 @import './tokens.css';
+@import './fonts.css';
 
 * {
   box-sizing: border-box;
