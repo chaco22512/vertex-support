@@ -51,7 +51,7 @@ function linkToken(): string | null {
 function toChatMessages(msgs: api.ApiMessage[]): ChatMessage[] {
   return msgs
     .filter((m) => !(m.sender === 'system' && m.body === '')) // hide escalation markers
-    .map((m) => ({ key: `srv-${m.id}`, sender: m.sender, body: m.body }));
+    .map((m) => ({ key: `srv-${m.id}`, sender: m.sender, body: m.body, at: m.created_at || undefined }));
 }
 
 export function useChat() {
@@ -125,7 +125,7 @@ export function useChat() {
           const merged = toChatMessages([
             ...state.messages
               .filter((m) => m.key.startsWith('srv-'))
-              .map((m) => ({ id: Number(m.key.slice(4)), sender: m.sender, body: m.body, ai_meta: null, created_at: '' })),
+              .map((m) => ({ id: Number(m.key.slice(4)), sender: m.sender, body: m.body, ai_meta: null, created_at: m.at ?? '' })),
             ...res.messages,
           ]);
           const lastId = res.messages.reduce((mx, x) => Math.max(mx, x.id), state.lastMessageId);
@@ -186,7 +186,7 @@ export function useChat() {
       const token = state.token ?? (await ensureConversation(state.topicCategory ?? 'others'));
       if (!token) return;
 
-      dispatch({ type: 'SEND_START', body: trimmed });
+      dispatch({ type: 'SEND_START', body: trimmed, at: new Date().toISOString() });
       const controller = new AbortController();
       const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
       try {
@@ -198,12 +198,13 @@ export function useChat() {
           body: res.reply.body,
           escalated: res.escalated,
           messageId: res.reply.id,
+          at: res.reply.created_at || new Date().toISOString(),
         });
       } catch {
         clearTimeout(timer);
         if (controller.signal.aborted) {
           // 15s timeout → auto-escalation (§6.3, criterion 10).
-          dispatch({ type: 'AI_REPLY', body: t.ui.escalationTitle, escalated: true, messageId: 0 });
+          dispatch({ type: 'AI_REPLY', body: t.ui.escalationTitle, escalated: true, messageId: 0, at: new Date().toISOString() });
         } else {
           lastFailedBody.current = trimmed;
           dispatch({ type: 'AI_ERROR' });
@@ -219,9 +220,10 @@ export function useChat() {
       const reason = state.behavior === 'always_escalate' ? 'price_question' : 'not_in_manual';
       try {
         await api.postContact(state.token, { ...contact, reason });
-        dispatch({ type: 'CONTACT_SENT' });
+        dispatch({ type: 'CONTACT_SENT', contact });
       } catch {
-        dispatch({ type: 'AI_ERROR' });
+        // Surface an error on the escalation card so the customer can retry (§5.4).
+        dispatch({ type: 'CONTACT_ERROR' });
       }
     },
     [state.token, state.behavior],

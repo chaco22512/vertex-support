@@ -270,10 +270,17 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 6. 会話がresolved/closedになった後の再訪では「New question」ボタンでカテゴリ選択に戻れる（新しいconversationを作成）
 
 ### 6.2 画面構成
-1. ヘッダー: ロゴマーク(logo-mark.svg, 28px) + SIM Point Support + ステータス表示。言語ピル
+1. ヘッダー: ロゴマーク(logo-mark.png, 28px) + SIM Point Support + ステータス表示。言語ピル
 2. カテゴリタイル: 44px以上のタッチ領域、アイコン（Tabler、menu_categories.json の icon 指定）+ ラベル。選択済みカテゴリは会話内にシステムメッセージ "Topic: Payment & monthly bill" として残す（スタッフ側でも文脈が分かる）
 3. チャット本文・バブル・リンクカード・"Answered by AI"表示は v1.2 と同一（第5章トークン準拠）
-4. エスカレーションカード・入力欄仕様も v1.2 と同一
+4. **エスカレーション成功状態（★v1.5明記）**: 名前(任意)・連絡先の送信が成功したら、エスカレーションカードを「成功カード」に置き換える。内容は顧客言語で:
+   - ✓ Thank you[, 名前]. Your question has been sent to our support team.
+   - We will reply within 24 hours.
+   - 連絡先がメールなら "We'll also send the reply to <入力メール>."／電話番号なら "Our staff may contact you on WhatsApp at <番号>."（メール/電話は既存の @ 自動判別を使用）
+   - 同時にヘッダーのステータスを「Our team will reply within 24 hours」に切替。
+   - 送信失敗時は §5.4 に従いエラー＋再試行を表示（無言で失敗しない）。locales に5言語のキーを追加。
+5. **メッセージのタイムスタンプ／日付区切り（★v1.5明記, WhatsApp風）**: 各バブル下に送信時刻(HH:MM, 端末TZ)を小さく表示(11px, muted)。日付が変わる位置に区切りチップ(Today / Yesterday / それ以前は日付)を表示。5言語対応（相対表記が難しい言語はロケール日付表記）。日付ライブラリは追加せず `Intl.DateTimeFormat` で実装（性能予算150KB維持）。admin 会話詳細と表記を揃える。
+6. 入力欄仕様は v1.2 と同一
 
 ### 6.3 UX挙動（v1.2から維持）
 - 楽観的送信 / タイピングインジケーター / 15秒タイムアウト→自動エスカレーション
@@ -403,6 +410,10 @@ UX（v1.1追加）:
 21. "Plans & prices" 選択 → AIを呼ばずにエスカレーションカードが即表示され、Slack通知の reason が price_question になる
 22. "Others" 選択で自由入力が開き、全カテゴリのルールで回答される
 23. admin Inbox に Category 列が表示され、会話詳細に "Topic: …" のシステムメッセージが残る
+
+チャットUX（★v1.5追加）:
+25. エスカレ（名前・連絡先）送信後に、確認（成功）カードが顧客言語で表示される（メール/電話で文面が出し分けられ、名前があれば宛名が入る）。送信失敗時はエラー＋再試行が表示される
+26. 各メッセージに送信時刻(HH:MM)が表示され、日付が変わる位置に区切り（Today / Yesterday / 日付）が表示される（顧客チャット・admin会話詳細の両方）
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

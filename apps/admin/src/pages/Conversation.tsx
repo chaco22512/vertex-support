@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { ConvStatus, KbRule, Staff } from '@vertex/shared';
 import { api, type ConversationDetail, type DetailMessage } from '../lib/api';
 import { languageName, topicLabel } from '../lib/categories';
 import { contactLine, customerLabel } from '../lib/customer';
-import { formatTime } from '../lib/time';
+import { clock, dayLabel, startsNewDay } from '../lib/time';
 import { templatesFor } from '../lib/templates';
 import { markSeen } from '../lib/seen';
 import { useAuth } from '../lib/auth';
@@ -201,15 +201,29 @@ export function Conversation() {
 
       <div className="detail-grid">
         <section className="thread" aria-label="Messages">
-          {messages.map((m) => (
-            <Message
-              key={m.id}
-              m={m}
-              translation={translateOn ? translations[m.id] : undefined}
-              isAdmin={isAdmin}
-              onRule={openRule}
-            />
-          ))}
+          {(() => {
+            const now = Date.now();
+            const visible = messages.filter((m) => !(m.sender === 'system' && !m.body));
+            return visible.map((m, i) => {
+              const prev = i > 0 ? visible[i - 1]!.created_at : null;
+              const sep = startsNewDay(m.created_at, prev) ? dayLabel(m.created_at, now) : null;
+              return (
+                <Fragment key={m.id}>
+                  {sep ? (
+                    <div className="day-sep">
+                      <span>{sep}</span>
+                    </div>
+                  ) : null}
+                  <Message
+                    m={m}
+                    translation={translateOn ? translations[m.id] : undefined}
+                    isAdmin={isAdmin}
+                    onRule={openRule}
+                  />
+                </Fragment>
+              );
+            });
+          })()}
         </section>
 
         <aside className="composer" aria-label="Reply">
@@ -307,7 +321,7 @@ function Message({
           {m.sender === 'ai' ? <span className="ai-dot" aria-hidden="true" /> : null}
           <span>{senderLabel}</span>
           <span>·</span>
-          <span>{formatTime(m.created_at)}</span>
+          <span>{clock(m.created_at)}</span>
         </div>
       ) : null}
       <div lang={m.sender === 'customer' ? undefined : 'en'}>{m.body}</div>

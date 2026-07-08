@@ -587,3 +587,17 @@ textarea {
   padding: var(--sp-2) 0;
   color: var(--ink-muted);
 }
+
+/* Date separator in the conversation thread (§6.2, matches chat) */
+.day-sep {
+  align-self: center;
+  margin: var(--sp-2) 0;
+}
+.day-sep span {
+  font-size: 11px;
+  color: var(--ink-muted);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 10px;
+}

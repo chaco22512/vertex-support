@@ -21,7 +21,12 @@ function Linkified(props: { text: string }): JSX.Element {
   );
 }
 
-export function Bubble(props: { message: ChatMessage; answeredByAiLabel: string; lang: string }): JSX.Element | null {
+export function Bubble(props: {
+  message: ChatMessage;
+  answeredByAiLabel: string;
+  lang: string;
+  time?: string;
+}): JSX.Element | null {
   const { message } = props;
   if (message.sender === 'system') {
     if (!message.body) return null; // hidden internal marker
@@ -41,6 +46,7 @@ export function Bubble(props: { message: ChatMessage; answeredByAiLabel: string;
         </div>
       )}
       <div>{isBot ? <Linkified text={message.body} /> : message.body}</div>
+      {props.time && !message.pending ? <div class="msg__time">{props.time}</div> : null}
     </div>
   );
 }

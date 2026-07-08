@@ -19,6 +19,13 @@ export interface UiStrings {
   whatsappPlaceholder: string;
   contactSend: string;
   contactValidation: string;
+  sentTitle: string;
+  sentTitleNamed: string;
+  sentWithin24: string;
+  sentEmailNote: string;
+  sentWhatsappNote: string;
+  today: string;
+  yesterday: string;
   offline: string;
   teamReplied: string;
   errorGeneric: string;

@@ -4,6 +4,7 @@ import type { UiStrings } from '../i18n';
 
 export function EscalationCard(props: {
   ui: UiStrings;
+  submitError?: boolean;
   onSubmit: (contact: { name?: string; email?: string; whatsapp?: string }) => void;
 }): JSX.Element {
   const [name, setName] = useState('');
@@ -45,8 +46,13 @@ export function EscalationCard(props: {
         }}
       />
       {error && <div class="error-note">{props.ui.contactValidation}</div>}
+      {props.submitError && !error && (
+        <div class="error-note" role="alert">
+          {props.ui.errorGeneric}
+        </div>
+      )}
       <button type="submit" class="btn btn--primary">
-        {props.ui.contactSend}
+        {props.submitError ? props.ui.retry : props.ui.contactSend}
       </button>
     </form>
   );

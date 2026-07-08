@@ -8,6 +8,14 @@ export interface ChatMessage {
   sender: 'customer' | 'ai' | 'staff' | 'system';
   body: string;
   pending?: boolean;
+  /** ISO timestamp for the bubble clock + date separators (§6.2). */
+  at?: string;
+}
+
+export interface SubmittedContact {
+  name?: string;
+  email?: string;
+  whatsapp?: string;
 }
 
 export interface State {
@@ -22,6 +30,11 @@ export interface State {
   awaitingAi: boolean;
   showFeedback: boolean;
   showEscalation: boolean;
+  /** Set once the escalation contact is accepted → show the success card (§6.2). */
+  contactSent: boolean;
+  contact: SubmittedContact | null;
+  /** A contact submit failed (network) — show error + retry, keep the card. */
+  contactError: boolean;
   firstMessageSent: boolean;
   escalated: boolean;
   resolved: boolean;
@@ -43,13 +56,14 @@ export type Action =
       plansMessage: string;
     }
   | { type: 'CONVERSATION_CREATED'; token: string }
-  | { type: 'SEND_START'; body: string }
-  | { type: 'AI_REPLY'; body: string; escalated: boolean; messageId: number }
+  | { type: 'SEND_START'; body: string; at: string }
+  | { type: 'AI_REPLY'; body: string; escalated: boolean; messageId: number; at: string }
   | { type: 'AI_ERROR' }
   | { type: 'OPEN_COMPOSER' }
   | { type: 'CHANGE_TOPIC' }
   | { type: 'SHOW_ESCALATION' }
-  | { type: 'CONTACT_SENT' }
+  | { type: 'CONTACT_SENT'; contact: SubmittedContact }
+  | { type: 'CONTACT_ERROR' }
   | { type: 'FEEDBACK_SOLVED' }
   | { type: 'MERGE_MESSAGES'; messages: ChatMessage[]; lastMessageId: number; hasNewStaff: boolean }
   | { type: 'SET_OFFLINE'; offline: boolean }
@@ -69,6 +83,9 @@ export function initialState(language: LanguageCode | null, token: string | null
     awaitingAi: false,
     showFeedback: false,
     showEscalation: false,
+    contactSent: false,
+    contact: null,
+    contactError: false,
     firstMessageSent: false,
     escalated: false,
     resolved: false,
@@ -155,13 +172,13 @@ export function reducer(state: State, action: Action): State {
         error: null,
         messages: [
           ...state.messages,
-          { key: `opt-${optimisticSeq}`, sender: 'customer', body: action.body, pending: true },
+          { key: `opt-${optimisticSeq}`, sender: 'customer', body: action.body, pending: true, at: action.at },
         ],
       };
 
     case 'AI_REPLY': {
       const messages = state.messages.map((m) => (m.pending ? { ...m, pending: false } : m));
-      messages.push({ key: `ai-${action.messageId}`, sender: 'ai', body: action.body });
+      messages.push({ key: `ai-${action.messageId}`, sender: 'ai', body: action.body, at: action.at });
       return {
         ...state,
         messages,
@@ -185,10 +202,22 @@ export function reducer(state: State, action: Action): State {
       return { ...initialState(state.language, null), view: 'category' };
 
     case 'SHOW_ESCALATION':
-      return { ...state, showEscalation: true, showFeedback: false };
+      return { ...state, showEscalation: true, showFeedback: false, contactError: false };
 
     case 'CONTACT_SENT':
-      return { ...state, showEscalation: false, escalated: true, showFeedback: false };
+      return {
+        ...state,
+        showEscalation: false,
+        contactSent: true,
+        contact: action.contact,
+        contactError: false,
+        escalated: true,
+        showFeedback: false,
+      };
+
+    case 'CONTACT_ERROR':
+      // Keep the escalation card visible so the customer can retry (§5.4).
+      return { ...state, contactError: true };
 
     case 'FEEDBACK_SOLVED':
       return { ...state, resolved: true, showFeedback: false, showComposer: false };

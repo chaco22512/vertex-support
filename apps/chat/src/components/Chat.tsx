@@ -4,6 +4,8 @@ import type { Messages } from '../i18n';
 import { Bubble, TypingIndicator } from './pieces';
 import { Composer } from './Composer';
 import { EscalationCard } from './EscalationCard';
+import { SuccessCard } from './SuccessCard';
+import { clock, withSeparators } from '../lib/format';
 
 export interface ChatHandlers {
   send: (body: string) => void;
@@ -19,6 +21,7 @@ export interface ChatHandlers {
 export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers }): JSX.Element {
   const { state, t, handlers } = props;
   const lang = state.language ?? 'en';
+  const feed = withSeparators(state.messages, Date.now(), lang, t.ui.today, t.ui.yesterday);
 
   return (
     <>
@@ -31,9 +34,21 @@ export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers 
         )}
 
         <div class="messages">
-          {state.messages.map((m) => (
-            <Bubble key={m.key} message={m} answeredByAiLabel={t.ui.answeredByAi} lang={lang} />
-          ))}
+          {feed.map((item) =>
+            item.kind === 'sep' ? (
+              <div key={item.key} class="day-sep">
+                <span>{item.label}</span>
+              </div>
+            ) : (
+              <Bubble
+                key={item.message.key}
+                message={item.message}
+                answeredByAiLabel={t.ui.answeredByAi}
+                lang={lang}
+                time={item.message.at ? clock(item.message.at, lang) : undefined}
+              />
+            ),
+          )}
           {state.awaitingAi && <TypingIndicator label={t.ui.thinking} />}
         </div>
 
@@ -61,7 +76,13 @@ export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers 
           </div>
         )}
 
-        {state.showEscalation && <EscalationCard ui={t.ui} onSubmit={handlers.submitContact} />}
+        {state.showEscalation && (
+          <EscalationCard ui={t.ui} submitError={state.contactError} onSubmit={handlers.submitContact} />
+        )}
+
+        {state.contactSent && state.contact && (
+          <SuccessCard ui={t.ui} contact={state.contact} lang={lang} />
+        )}
 
         {state.error && (
           <div class="error-note" role="alert">

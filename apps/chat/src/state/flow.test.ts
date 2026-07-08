@@ -40,7 +40,7 @@ describe('reducer', () => {
   });
 
   it('SEND_START adds a pending customer message and awaits AI', () => {
-    const s = reducer(withCategory(undefined, ['q']), { type: 'SEND_START', body: 'hi' });
+    const s = reducer(withCategory(undefined, ['q']), { type: 'SEND_START', body: 'hi', at: '2026-07-08T00:00:00Z' });
     expect(s.awaitingAi).toBe(true);
     expect(s.chips).toEqual([]);
     const last = s.messages[s.messages.length - 1]!;
@@ -49,8 +49,8 @@ describe('reducer', () => {
   });
 
   it('AI_REPLY (not escalated) shows feedback and clears pending', () => {
-    let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'hi' });
-    s = reducer(s, { type: 'AI_REPLY', body: 'answer', escalated: false, messageId: 5 });
+    let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'hi', at: '2026-07-08T00:00:00Z' });
+    s = reducer(s, { type: 'AI_REPLY', body: 'answer', escalated: false, messageId: 5, at: '2026-07-08T00:00:00Z' });
     expect(s.awaitingAi).toBe(false);
     expect(s.showFeedback).toBe(true);
     expect(s.messages.some((m) => m.pending)).toBe(false);
@@ -59,8 +59,8 @@ describe('reducer', () => {
   });
 
   it('AI_REPLY (escalated) shows escalation, not feedback', () => {
-    let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'price?' });
-    s = reducer(s, { type: 'AI_REPLY', body: 'staff soon', escalated: true, messageId: 1 });
+    let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'price?', at: '2026-07-08T00:00:00Z' });
+    s = reducer(s, { type: 'AI_REPLY', body: 'staff soon', escalated: true, messageId: 1, at: '2026-07-08T00:00:00Z' });
     expect(s.showEscalation).toBe(true);
     expect(s.showFeedback).toBe(false);
     expect(s.escalated).toBe(true);
@@ -81,7 +81,7 @@ describe('reducer', () => {
   it('tracks firstMessageSent only after a send', () => {
     const before = withCategory(undefined, ['q']);
     expect(before.firstMessageSent).toBe(false);
-    const after = reducer(before, { type: 'SEND_START', body: 'hi' });
+    const after = reducer(before, { type: 'SEND_START', body: 'hi', at: '2026-07-08T00:00:00Z' });
     expect(after.firstMessageSent).toBe(true);
   });
 
