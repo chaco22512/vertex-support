@@ -24,14 +24,14 @@
 SIM Point Support is a chat window on our website. A customer opens it and is guided step by step — they rarely type at first. The flow is:
 
 1. **Pick a language** — English, Bahasa Indonesia, Tagalog, Nepali, or Vietnamese.
-2. **Pick a topic** — a grid of tiles: *Internet not working / APN setup, Payment & monthly bill, Lost SIM or device, Cancellation, Returning SIM / device, Replacement / change plan, Signal stopped / re-issue, Refund / deposit / cashback, Plans & prices, Others.*
+2. **Pick a topic** — a grid of tiles: *Internet not working / APN setup, Payment & monthly bill, Lost SIM or device, Cancellation, Returning SIM / device, Replacement / change plan, Signal stopped / re-issue, Refund / deposit / cashback, Pension & tax refund (Nenkin), Plans & prices, Others.*
 3. **Pick a common question** (or choose *Something else* to type freely).
 4. **Read the AI answer.** The customer then taps **Solved** or **Still need help**.
 5. If they still need help — or the topic is one the AI must not handle — the chat is handed to our team and the customer leaves a contact email.
 
 > 📷 [SCREENSHOT — Customer chat, language-selection screen (the first full screen with the 5 language buttons).]
 
-> 📷 [SCREENSHOT — Customer chat, topic grid showing the 10 category tiles.]
+> 📷 [SCREENSHOT — Customer chat, topic grid showing the 11 category tiles.]
 
 > 📷 [SCREENSHOT — Customer chat, one AI answer with the **Solved** / **Still need help** buttons visible.]
 
@@ -152,7 +152,7 @@ A thick colored bar on the left marks chats you haven't opened yet.
 **Key points**
 - Rule and fee edits take effect for the AI immediately.
 - Every change is recorded in the change history.
-- The Review queue holds 42 rules waiting for a yes/no; you can approve many at once.
+- The Review queue holds 267 rules waiting for a yes/no; you can approve many at once.
 
 *This chapter is for staff with admin access (the **Knowledge**, **Review queue**, **Staff**, and **Change history** menus). Regular staff won't see these.*
 
@@ -170,13 +170,15 @@ A thick colored bar on the left marks chats you haven't opened yet.
 
 > 📷 [SCREENSHOT — **Change history** showing a fee change with the old amount struck through and the new amount highlighted.]
 
-**Work the Review queue.** **Review queue** holds **42** rules waiting for a decision, split into two tabs:
-- **A — Strikethrough removal (2):** confirm the current wording after struck-out text was removed.
-- **B — Internal classification (40):** confirm rules that were auto-marked as internal.
+**Work the Review queue.** **Review queue** holds **267** rules waiting for a decision (after the second, per-plan manual was added), split into four tabs:
+- **A — Strikethrough removal (4):** confirm the current wording after struck-out text was removed.
+- **B — Internal classification (103):** confirm rules that were auto-marked as internal.
+- **C — Price exposure / COD & discount (115):** rules that mention a COD price or discount amount. Because the AI must **never** state prices or discounts, don't approve these for customers — **Keep internal** or **Disable** them.
+- **D — "Don't use yet" sheet (45):** rules from an old sheet marked not-in-use. Usually **Disable**.
 
 For each rule you can: **Approve as-is**, **Edit & approve**, **Keep internal**, or **Disable**. You can tick several and **Approve** them together. For a B rule that mixes customer and internal wording, use **Split** to save the customer half and the internal half separately. When the queue reaches zero you'll see "Review queue is clear."
 
-> 📷 [SCREENSHOT — **Review queue** showing tab **A (2)** and tab **B (40)**, with the per-row action buttons.]
+> 📷 [SCREENSHOT — **Review queue** showing tabs **A (4)**, **B (103)**, **C (115)**, **D (45)**, with the per-row action buttons.]
 
 ---
 

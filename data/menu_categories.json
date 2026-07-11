@@ -1,6 +1,6 @@
 {
- "version": "1.0",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files.",
+ "version": "1.1",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx). 'PLAN FILE: General Rules …' categories are shared context for payment/cancel/replace/reissue/refund/return; per-plan sheets (VOICE SIM etc.) are only reachable via Others('*') until a plan-selection step is added (backlog). Added the Nenkin/Gensen topic.",
  "categories": [
   {
    "id": "internet",
@@ -21,7 +21,10 @@
    "icon": "ti-credit-card",
    "label_en": "Payment & monthly bill",
    "kb_categories": [
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)"
    ],
    "sub_questions": [
     "How do I pay my monthly bill?",
@@ -52,7 +55,10 @@
    "kb_categories": [
     "GENERAL RULES",
     "New Plan C and Plan SK",
-    "Short Term Plan"
+    "Short Term Plan",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)"
    ],
    "sub_questions": [
     "How do I cancel my plan?",
@@ -65,7 +71,10 @@
    "icon": "ti-package",
    "label_en": "Returning SIM / device",
    "kb_categories": [
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)"
    ],
    "sub_questions": [
     "How do I return by post?",
@@ -81,7 +90,11 @@
     "REPLACEMENT AND CHANGE PLAN RUL",
     "Replacement_Plan change Product",
     "DEVICE LOSTREPLACEMENTRENTAL FE",
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "PLAN FILE: Replacement and Change Plan Rul",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)"
    ],
    "sub_questions": [
     "My SIM/device is broken",
@@ -96,7 +109,10 @@
    "kb_categories": [
     "RE-ISSUE  RULE",
     "KINTONE STATUS",
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)"
    ],
    "sub_questions": [
     "My signal was stopped, how do I restore it?",
@@ -109,11 +125,28 @@
    "label_en": "Refund / deposit / cashback",
    "kb_categories": [
     "REFUNDDEPOSIT CASHBACK",
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)"
    ],
    "sub_questions": [
     "When will I get my cashback?",
     "How do I get my deposit back?"
+   ]
+  },
+  {
+   "id": "nenkin",
+   "icon": "ti-coin-yen",
+   "label_en": "Pension & tax refund (Nenkin)",
+   "kb_categories": [
+    "PLAN FILE: Nenkin and Gensen Rules and FAQ",
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "What is the Nenkin (pension) refund?",
+    "What documents do I need?",
+    "How much is the service fee?"
    ]
   },
   {

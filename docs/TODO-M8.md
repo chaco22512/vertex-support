@@ -3,6 +3,28 @@
 Running list of items intentionally postponed. Anything deferred in later milestones
 must be appended here so nothing is silently dropped.
 
+## Knowledge — per-plan manual (P-series, spec v1.5 §3/§4.1)
+- [ ] **Plan-selection step (improvement backlog).** The per-plan manual adds 30+
+      plan-specific sheets (`PLAN FILE: VOICE SIM`, `… POCKET WIFI`, `… eSIM Data Plan`,
+      etc.). They are currently reachable by the AI **only via the Others('*') topic**,
+      which loads ALL active/customer rules. A future step — after picking a topic, let
+      the customer pick their plan — would scope the prompt to that plan's sheet + General
+      rules, improving precision and cutting prompt size. Needs: a plan taxonomy, a menu
+      step, and `topic_category`/scope plumbing (today scope is a single topic id).
+- [x] **Prompt-size headroom measured** (`scripts/measure_prompt.ts`, spec v1.5 §4.1).
+      Others (worst case, all active/customer rules): **2,276 rules → 97,691 tokens**
+      (Gemini `countTokens`, gemini-2.5-flash), **9.3% of the 1,048,576-token context
+      window**. Comfortable; free-tier daily token budget is fine at ~10 conversations/day.
+      Re-run after large knowledge changes.
+- [x] **Fixed silent truncation in `fetchScopedRules`** (packages/ai/src/rules.ts).
+      PostgREST caps a select at ~1000 rows; once the two manuals pushed active/customer
+      past 1000, the Others prompt was silently dropping ~1,276 rules. Now paginates in
+      stable id order. (Discovered via the measurement above.)
+- [ ] **Admin Knowledge list is capped at 1000** (`apps/api/src/routes/admin/rules.ts`
+      `listRules` `.limit(1000)`). With 2,711 rules the "all rules" view no longer shows
+      everything. Add pagination/virtualized list or server-side search-only. (Review
+      queue is unaffected: it filters `status='pending_review'` = 267 rows.)
+
 ## Future optional (rebrand follow-up — intentionally out of scope)
 - Internal package names `@vertex/*` (api, shared, ai, chat, admin, scripts) and the
   git repo/folder name still say "vertex". These are not user-visible. Renaming them

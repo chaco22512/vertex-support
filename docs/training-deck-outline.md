@@ -22,8 +22,8 @@ Source of truth: `docs/cs-staff-rulebook.md` (referenced as "Rulebook Ch.N"). Sc
 - **Key points (Rulebook Ch.1):** Language → Topic → Common question → AI answer → Solved / Still need help → (if needed) handed to staff.
 - **Visual:** Left-to-right flow diagram of the 5 steps; below it, 📷 topic grid + 📷 an AI answer with Solved / Still need help.
 
-### Slide 5 — The 10 topics
-- **Key points (Rulebook Ch.1):** Show the 10 tiles; note that **Plans & prices** always goes to staff.
+### Slide 5 — The 11 topics
+- **Key points (Rulebook Ch.1):** Show the 11 tiles (incl. **Pension & tax refund (Nenkin)**); note that **Plans & prices** always goes to staff and **Others** is always last.
 - **Visual:** 📷 Customer chat topic grid; highlight the "Plans & prices" tile.
 
 ### Slide 6 — What the AI ANSWERS
@@ -67,8 +67,8 @@ Source of truth: `docs/cs-staff-rulebook.md` (referenced as "Rulebook Ch.N"). Sc
 - **Visual:** 📷 Rule edit box with the fee field and the "Changes apply to AI instantly." note.
 
 ### Slide 16 — (Admins) The Review queue
-- **Key points (Rulebook Ch.5):** 42 rules waiting — tab A (2) and tab B (40); Approve as-is / Edit & approve / Keep internal / Disable / Split; approve many at once.
-- **Visual:** 📷 Review queue showing tab A (2) and B (40) with the action buttons.
+- **Key points (Rulebook Ch.5):** 267 rules waiting — tabs A (4) / B (103) / C (115, COD & discount — never approve for customers) / D (45, "don't use yet"); Approve as-is / Edit & approve / Keep internal / Disable / Split; approve many at once.
+- **Visual:** 📷 Review queue showing tabs A (4), B (103), C (115), D (45) with the action buttons.
 
 ### Slide 17 — Do & Don't
 - **Key points (Rulebook Ch.6):** Do: edit drafts, report wrong answers with the rule ID, reply in time, plain language. Don't: send drafts unedited, state prices, use internal words with customers, delete rules.

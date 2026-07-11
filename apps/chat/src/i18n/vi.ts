@@ -45,6 +45,7 @@ export const vi: Messages = {
     replace: 'Thay thế / đổi gói',
     reissue: 'Mất tín hiệu / cấp lại',
     refund: 'Hoàn tiền / tiền cọc / hoàn tiền mặt',
+    nenkin: 'Hoàn tiền lương hưu & thuế (Nenkin)',
     plans: 'Gói cước & giá',
     others: 'Khác',
   },
@@ -77,5 +78,10 @@ export const vi: Messages = {
       'Phí cấp lại (chấm dứt) là bao nhiêu?',
     ],
     refund: ['Khi nào tôi nhận được tiền hoàn lại?', 'Làm thế nào để lấy lại tiền cọc?'],
+    nenkin: [
+      'Hoàn tiền lương hưu (Nenkin) là gì?',
+      'Tôi cần những giấy tờ nào?',
+      'Phí dịch vụ là bao nhiêu?',
+    ],
   },
 };

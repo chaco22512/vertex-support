@@ -1,6 +1,7 @@
 # SIM Customer Support Bot — 構築仕様書 v1.5
 
-作成日: 2026-07-08 / v1.4→v1.5 の変更（ブランド刷新）: サービス名を **Vertex Support → SIM Point Support**、運営元を **Vertex Digital Marketing → SIM Point** に全面変更。ロゴを新SIM Pointロゴ（`assets/image.avif`→webp/png、S/Pマークを正方形に切り出し）に差し替え。ブランドカラーをレッド系からオレンジ系へ（--brand-orange #E89828 / --accent #C2410C[白文字AA] / --accent-soft #FDECE0 / --bubble-customer #FFF3E6）。旧Vertexレッド（#FF1616/#C81010）は全廃。本番URLを vertex-* → simpoint-*（Cloudflare Workers/Pages）へ移行。内部パッケージ名 @vertex/* とgitリポジトリ名は変更対象外（将来の任意タスク）。
+作成日: 2026-07-08（最終更新 2026-07-11）/ v1.5 追補（第2マニュアル取込）: プラン別ルールブック（Pシリーズ 2,016件）をナレッジに追加。取込スクリプトを複数ファイル対応化。General系プラン規則を既存トピック（payment/cancel/replace/reissue/refund/return）のスコープに追加し、プラン個別シートは当面 Others('*') のみで到達可能（「プラン選択ステップ」を改善バックログ化）。11個目のトピックタイル **Nenkin/Gensen（年金・源泉還付）** を追加。Review queue に新review_reason（COD/discount 露出ポリシー確認・"dont use yet" シート）を分類。
+v1.4→v1.5 の変更（ブランド刷新）: サービス名を **Vertex Support → SIM Point Support**、運営元を **Vertex Digital Marketing → SIM Point** に全面変更。ロゴを新SIM Pointロゴ（`assets/image.avif`→webp/png、S/Pマークを正方形に切り出し）に差し替え。ブランドカラーをレッド系からオレンジ系へ（--brand-orange #E89828 / --accent #C2410C[白文字AA] / --accent-soft #FDECE0 / --bubble-customer #FFF3E6）。旧Vertexレッド（#FF1616/#C81010）は全廃。本番URLを vertex-* → simpoint-*（Cloudflare Workers/Pages）へ移行。内部パッケージ名 @vertex/* とgitリポジトリ名は変更対象外（将来の任意タスク）。
 v1.3→v1.4 の変更: 納品ドキュメント要件（第11章）を新設。非エンジニアのCSスタッフ向け「運用ルールブック」とテスト手順書を必須納品物に追加。
 v1.2→v1.3 の変更: 顧客チャットを「カテゴリ選択ファースト」のガイドフローに変更（第6章全面改訂）。カテゴリ定義 menu_categories.json を追加。AIプロンプトのカテゴリスコープ化（4.1）、conversations.topic_category 追加。
 本書は実装担当（Claude Code 等）にそのまま渡すことを想定した仕様書である。不明点は実装前に発注者へ確認すること。
@@ -135,16 +136,20 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 ```
 
 ### 初期データ投入
-- `kb_rules_import.json`（同梱、695件）をインポート
-- `needs_review = true` の42件は `status = 'pending_review'`（AIプロンプトに含めない）、それ以外は `status = 'active'`
-- インポートスクリプト `scripts/import_kb.ts`（idでupsert、再実行可能）
+- 第1マニュアル `kb_rules_import.json`（同梱、Rシリーズ 695件）をインポート
+  - `needs_review = true` の42件は `status = 'pending_review'`（AIプロンプトに含めない）、それ以外は `status = 'active'`
+- 第2マニュアル `kb_rules_per_plan_import.json`（同梱、Pシリーズ 2,016件・プラン別ルール）をインポート（★v1.5追補）
+  - `needs_review = true` の225件は `status = 'pending_review'`（内訳: COD/割引額の露出ポリシー確認115件、社内キーワード自動タグ63件、"dont use yet" シート45件、取り消し線除去確認2件）。それ以外は `status = 'active'`
+  - IDプレフィックスは `P`（Rシリーズと重複なし）。カテゴリは `PLAN FILE: …`（40字前後で切詰められた元シート名がそのまま値）
+- インポートスクリプト `scripts/import_kb.ts`（idでupsert、再実行可能。**複数ファイルを引数で指定可**。例: `pnpm import:kb data/kb_rules_import.json data/kb_rules_per_plan_import.json`）。取込後に total / pending_review 件数を検証する
 
 ---
 
 ## 4. AI回答パイプライン
 
 ### 4.1 プロンプト構築（リクエストごと）★v1.3変更: カテゴリスコープ化
-1. conversations.topic_category を参照し、`menu_categories.json` の kb_categories に該当する `kb_rules`（status='active' AND audience='customer'）を取得する。topic_category が 'others' または未設定の場合は全カテゴリを取得（約550件でも3万トークン弱なので許容）。スコープ化により該当カテゴリでは精度が上がり、トークンも減る
+1. conversations.topic_category を参照し、`menu_categories.json` の kb_categories に該当する `kb_rules`（status='active' AND audience='customer'）を取得する。topic_category が 'others' または未設定の場合は全カテゴリを取得。スコープ化により該当カテゴリでは精度が上がり、トークンも減る
+   - ★v1.5追補: 第2マニュアル取込で active/customer ルールが大幅に増えたため、'others'（全件）選択時のプロンプト規模を実測し Gemini（gemini-2.5-flash, 入力コンテキスト100万トークン）の余裕を確認すること（`scripts/measure_prompt.ts`）。プラン個別シート（VOICE SIM 等30超のプラン別カテゴリ）は当面 Others 経由でのみAIに渡る。将来「プラン選択ステップ」を追加してカテゴリを絞る案を改善バックログ（`docs/TODO-M8.md`）に記録
 2. カテゴリごとに整形してシステムプロンプトへ。各ルールは `[R123] rule_text (fees: ¥4,000) (link: URL)` 形式
 3. 会話履歴（当該conversationの直近20メッセージ）をmessages配列で渡す
 
@@ -260,9 +265,10 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 
 ### 6.1 フロー定義
 1. **言語選択**（初回のみ全画面。5言語をネイティブ表記の大ボタンで。ブラウザ言語から推定した言語を先頭に）
-2. **カテゴリ選択**: "What is your question about?" を表示し、`menu_categories.json` の10カテゴリをアイコン付きタイル（2列グリッド）で表示。選択値を conversations.topic_category に保存
+2. **カテゴリ選択**: "What is your question about?" を表示し、`menu_categories.json` の11カテゴリ（★v1.5: Nenkin/Gensen 追加）をアイコン付きタイル（2列グリッド）で表示。選択値を conversations.topic_category に保存。**Others は常に末尾**
 3. **カテゴリ別分岐**:
-   - 通常カテゴリ（8種）→ そのカテゴリの sub_questions をチップ表示 + "Something else" チップ。sub_question タップで定型質問として送信し、AIがカテゴリスコープのルールで回答。"Something else" タップで入力欄を表示
+   - 通常カテゴリ（9種）→ そのカテゴリの sub_questions をチップ表示 + "Something else" チップ。sub_question タップで定型質問として送信し、AIがカテゴリスコープのルールで回答。"Something else" タップで入力欄を表示
+     - **Nenkin/Gensen（年金・源泉還付）**（★v1.5追加）: kb_categories は `PLAN FILE: Nenkin and Gensen Rules and FAQ` + GENERAL RULES。sub_questions は「年金還付とは」「必要書類」「手数料」の3つ
    - **Plans & prices** → AIを呼ばず、固定メッセージ「料金プランはスタッフがご案内します」（顧客言語）+ エスカレーションカードを即表示（reason: price_question）
    - **Others** → "Please tell us your question." を表示して入力欄を開く。AIは全カテゴリのルールで回答
 4. **AI回答後**: "Solved 👍 / Still need help" ボタン + 入力欄を常時表示に切替（フォローアップの自由入力を許可。以降はスコープ維持のままAI回答）
@@ -322,7 +328,12 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 - 新規追加（id 'M001'〜）。破壊的操作は物理削除でなく status='disabled'（Undo可能に）
 
 ### 7.5 承認待ちキュー（Review queue）
-- pending_review 42件を reason 別タブ（A: 取り消し線除去の確認 / B: internal自動分類の確認）
+- pending_review を reason 別タブに分類（★v1.5: Pシリーズ取込で reason が増えたため4タブ化）:
+  - **A: 取り消し線除去の確認**（strikethrough）
+  - **B: internal自動分類の確認**（auto-tagged internal。Split補助あり）
+  - **C: 価格露出ポリシー確認**（COD/割引額を含む — 承認して active/customer にすると仕様4.2に抵触しうるため、原則 Keep internal か Disable）
+  - **D: "dont use yet" シート**（旧・不使用シート由来。原則 Disable）
+- 分類は `review_reason` 文字列で判定する（audience では判定しない）
 - 各項目: Approve as-is / Edit & approve / Keep internal / Disable。**複数選択で一括Approve**可
 - Bタイプに Split 補助: rule_text を2分割し、片方 customer/active・片方 internal で保存
 - キューが0件になったら空状態 "Review queue is clear. AI is using all approved rules." を表示
@@ -414,6 +425,11 @@ UX（v1.1追加）:
 チャットUX（★v1.5追加）:
 25. エスカレ（名前・連絡先）送信後に、確認（成功）カードが顧客言語で表示される（メール/電話で文面が出し分けられ、名前があれば宛名が入る）。送信失敗時はエラー＋再試行が表示される
 26. 各メッセージに送信時刻(HH:MM)が表示され、日付が変わる位置に区切り（Today / Yesterday / 日付）が表示される（顧客チャット・admin会話詳細の両方）
+
+第2マニュアル・11トピック（★v1.5追補）:
+27. カテゴリタイルが11個表示され、Others が末尾にある。**Nenkin/Gensen** タイルから定型質問を送ると、Nenkin カテゴリ + GENERAL RULES にスコープしたAI回答が返る
+28. Pシリーズ取込後、`kb_rules` 総件数がRシリーズと合算で一致し、pending_review が想定件数（R42 + P225）になる。pending_review のCOD/割引・"dont use yet" ルールがAIプロンプトに出ない（仕様Hardルール3）
+29. Review queue が4タブ（A/B/C/D）で、各 review_reason が正しいタブに入る
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

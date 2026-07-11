@@ -50,7 +50,15 @@ function mockClient() {
       calls[`in:${col}`] = val;
       return builder;
     },
+    order() {
+      return builder;
+    },
+    range(from: number, to: number) {
+      calls['range'] = [from, to];
+      return builder;
+    },
     then(resolve: (r: { data: unknown[]; error: null }) => unknown) {
+      // Empty page (< PAGE_SIZE) so fetchScopedRules stops after one request.
       return Promise.resolve({ data: [], error: null }).then(resolve);
     },
   };

@@ -5,7 +5,7 @@ import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
 import { Dialog } from '../components/Dialog';
 import { useToast } from '../components/Toast';
-import { classify, type ReasonTab } from '../lib/reviewClassify';
+import { classify, REVIEW_TABS, type ReasonTab } from '../lib/reviewClassify';
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -35,10 +35,9 @@ export function Review() {
   }, [fetchQueue]);
 
   const buckets = useMemo(() => {
-    const a: KbRule[] = [];
-    const b: KbRule[] = [];
-    for (const r of rules) (classify(r) === 'B' ? b : a).push(r);
-    return { A: a, B: b };
+    const b: Record<ReasonTab, KbRule[]> = { A: [], B: [], C: [], D: [] };
+    for (const r of rules) b[classify(r)].push(r);
+    return b;
   }, [rules]);
 
   const current = buckets[tab];
@@ -88,12 +87,15 @@ export function Review() {
       </div>
 
       <div className="tabs">
-        <button className={`tab${tab === 'A' ? ' active' : ''}`} onClick={() => setTab('A')}>
-          A · Strikethrough removal ({buckets.A.length})
-        </button>
-        <button className={`tab${tab === 'B' ? ' active' : ''}`} onClick={() => setTab('B')}>
-          B · Internal classification ({buckets.B.length})
-        </button>
+        {REVIEW_TABS.map((t) => (
+          <button
+            key={t.id}
+            className={`tab${tab === t.id ? ' active' : ''}`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label} ({buckets[t.id].length})
+          </button>
+        ))}
       </div>
 
       {load === 'loading' ? (

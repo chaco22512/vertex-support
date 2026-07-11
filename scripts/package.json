@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "import:kb": "tsx import_kb.ts",
+    "measure:prompt": "tsx measure_prompt.ts",
     "smoke:gemini": "tsx smoke_gemini.ts",
     "seed:admin": "tsx seed_admin.ts",
     "apply:migration": "tsx apply_migration.ts",

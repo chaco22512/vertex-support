@@ -22,6 +22,7 @@ const CATEGORY_ICON_PATHS: Record<string, string[]> = {
   'ti-receipt': ['M5 21v-16a2 2 0 0 1 2 -2h10a2 2 0 0 1 2 2v16l-3 -2l-2 2l-2 -2l-2 2l-2 -2l-3 2', 'M9 7l6 0', 'M9 11l6 0', 'M9 15l4 0'],
   'ti-file-description': ['M14 3v4a1 1 0 0 0 1 1h4', 'M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z', 'M9 17h6', 'M9 13h6'],
   'ti-message-circle': ['M3 20l1.3 -3.9a9 8 0 1 1 3.4 2.9l-4.7 1', 'M12 12l0 .01', 'M8 12l0 .01', 'M16 12l0 .01'],
+  'ti-coin-yen': ['M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', 'M9 9l3 3l3 -3', 'M12 12v5', 'M9.5 13.5h5', 'M9.5 16h5'],
 };
 
 export function CategoryIcon(props: { name: string; class?: string }): JSX.Element {

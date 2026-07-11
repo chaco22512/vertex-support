@@ -45,6 +45,7 @@ export const id: Messages = {
     replace: 'Penggantian / ganti paket',
     reissue: 'Sinyal terhenti / penerbitan ulang',
     refund: 'Pengembalian dana / deposit / cashback',
+    nenkin: 'Pengembalian pensiun & pajak (Nenkin)',
     plans: 'Paket & harga',
     others: 'Lainnya',
   },
@@ -77,5 +78,10 @@ export const id: Messages = {
       'Berapa biaya penerbitan ulang (penghentian)?',
     ],
     refund: ['Kapan saya menerima cashback saya?', 'Bagaimana cara mendapatkan deposit saya kembali?'],
+    nenkin: [
+      'Apa itu pengembalian dana pensiun (Nenkin)?',
+      'Dokumen apa saja yang saya perlukan?',
+      'Berapa biaya layanannya?',
+    ],
   },
 };

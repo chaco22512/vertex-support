@@ -54,6 +54,8 @@ class FakeQuery implements PromiseLike<Result> {
   private orderCol: string | null = null;
   private orderAsc = true;
   private limitN: number | null = null;
+  private rangeFrom: number | null = null;
+  private rangeTo: number | null = null;
   private singleMode: 'none' | 'single' | 'maybe' = 'none';
 
   constructor(
@@ -97,6 +99,11 @@ class FakeQuery implements PromiseLike<Result> {
   }
   limit(n: number): this {
     this.limitN = n;
+    return this;
+  }
+  range(from: number, to: number): this {
+    this.rangeFrom = from;
+    this.rangeTo = to;
     return this;
   }
   single(): Promise<Result> {
@@ -189,6 +196,8 @@ class FakeQuery implements PromiseLike<Result> {
       );
     }
     if (this.limitN !== null) rows = rows.slice(0, this.limitN);
+    // .range(from, to) is inclusive on both ends (PostgREST semantics).
+    if (this.rangeFrom !== null) rows = rows.slice(this.rangeFrom, (this.rangeTo ?? rows.length) + 1);
     const copies = this.out(rows);
     if (this.singleMode !== 'none') return { data: copies[0] ?? null, error: null };
     return { data: copies, error: null };

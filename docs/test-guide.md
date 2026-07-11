@@ -77,7 +77,7 @@ Each row of the checklist has **Steps** (what to do) and **Expected result** (wh
 | R3 | Open the admin pages using the **localhost** address, then again using the **127.0.0.1** address. | Both addresses open and let you sign in. | ☐ P ☐ F | |
 | R4 | Use the customer chat with a normal, working connection. | The "You're offline" banner does **not** show while you are actually online. | ☐ P ☐ F | |
 | R5 | Send a normal question in the chat (for example a lost-SIM question). | A real AI answer comes back. It does **not** jump straight to "handed to staff" for a normal, answerable question. | ☐ P ☐ F | |
-| R6 | *(Admin)* Open the **Review queue** and read the two tab counts. | Tab **A** shows **2** and tab **B** shows **40** (42 total). | ☐ P ☐ F | |
+| R6 | *(Admin)* Open the **Review queue** and read the four tab counts. | Tabs show **A 4 / B 103 / C 115 / D 45** (267 total, after the per-plan manual). | ☐ P ☐ F | |
 
 ---
 
