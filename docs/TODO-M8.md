@@ -40,6 +40,17 @@ must be appended here so nothing is silently dropped.
   `ai_can_answer=false` today (Others prompt count unchanged at 2,276). The filter guards
   future placeholder/disabled rules (e.g. the F-series Plans FAQ, Phase 4).
 
+## Knowledge — CS-feedback manual (v1.6 Phase 4)
+- **Disabled rules would revive on a full R/P re-import.** 7 rules were set to
+  `status='disabled'` (R034, R035, R082, R525, P013, P190, P986) because
+  `import_kb.ts` upserts status from the source file's `needs_review`. Re-importing
+  `kb_rules_import.json` / `kb_rules_per_plan_import.json` would flip them back to
+  active. The disable is recorded in `supabase/migrations/20260711120006_…`. If a
+  full re-import is ever needed, re-apply that migration afterwards (or scrub the
+  wrong wording from the source JSON).
+- **F070 (Plans FAQ placeholder) stays in pending_review** until the cheapest plan
+  name/price is filled in — tracked as the Phase 1-3 public blocker.
+
 ## Future optional (rebrand follow-up — intentionally out of scope)
 - Internal package names `@vertex/*` (api, shared, ai, chat, admin, scripts) and the
   git repo/folder name still say "vertex". These are not user-visible. Renaming them

@@ -1,6 +1,6 @@
 {
- "version": "1.1",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx). 'PLAN FILE: General Rules …' categories are shared context for payment/cancel/replace/reissue/refund/return; per-plan sheets (VOICE SIM etc.) are only reachable via Others('*') until a plan-selection step is added (backlog). Added the Nenkin/Gensen topic.",
+ "version": "1.2",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog); added Nenkin/Gensen. v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic.",
  "categories": [
   {
    "id": "internet",
@@ -8,7 +8,8 @@
    "label_en": "Internet not working / APN setup",
    "kb_categories": [
     "APN SETTINGS",
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "CS FEEDBACK: Internet / APN"
    ],
    "sub_questions": [
     "How do I set up APN on my phone?",
@@ -24,7 +25,8 @@
     "GENERAL RULES",
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)"
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Payment & monthly bill"
    ],
    "sub_questions": [
     "How do I pay my monthly bill?",
@@ -40,7 +42,8 @@
    "kb_categories": [
     "LOST ITEM RULES",
     "DEVICE LOSTREPLACEMENTRENTAL FE",
-    "RE-ISSUE  RULE"
+    "RE-ISSUE  RULE",
+    "CS FEEDBACK: Lost SIM or device"
    ],
    "sub_questions": [
     "I lost my SIM card",
@@ -58,7 +61,8 @@
     "Short Term Plan",
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)"
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Cancellation"
    ],
    "sub_questions": [
     "How do I cancel my plan?",
@@ -74,7 +78,8 @@
     "GENERAL RULES",
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)"
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Returning SIM / device"
    ],
    "sub_questions": [
     "How do I return by post?",
@@ -94,7 +99,8 @@
     "PLAN FILE: Replacement and Change Plan Rul",
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)"
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Replacement / change plan"
    ],
    "sub_questions": [
     "My SIM/device is broken",
@@ -112,7 +118,8 @@
     "GENERAL RULES",
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)"
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Signal stopped / re-issue"
    ],
    "sub_questions": [
     "My signal was stopped, how do I restore it?",
@@ -128,7 +135,8 @@
     "GENERAL RULES",
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)"
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Refund / deposit / cashback"
    ],
    "sub_questions": [
     "When will I get my cashback?",
@@ -153,9 +161,11 @@
    "id": "plans",
    "icon": "ti-file-description",
    "label_en": "Plans & prices",
-   "kb_categories": [],
+   "kb_categories": [
+    "CS FEEDBACK: Plans & prices"
+   ],
    "behavior": "always_escalate",
-   "note": "Monthly prices are never answered by AI. Selecting this shows a short message and goes straight to the escalation contact card."
+   "note": "Monthly prices are never answered by AI. Selecting this shows a short message and goes straight to the escalation contact card. The CS FEEDBACK: Plans & prices rules (needs_review) are staged for Phase 5's staged price unlock; behavior stays always_escalate here."
   },
   {
    "id": "others",

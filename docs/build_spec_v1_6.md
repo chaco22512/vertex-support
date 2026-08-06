@@ -144,6 +144,10 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
   - IDプレフィックスは `P`（Rシリーズと重複なし）。カテゴリは `PLAN FILE: …`（40字前後で切詰められた元シート名がそのまま値）
 - インポートスクリプト `scripts/import_kb.ts`（idでupsert、再実行可能。**複数ファイルを引数で指定可**。例: `pnpm import:kb data/kb_rules_import.json data/kb_rules_per_plan_import.json`）。取込後に total / pending_review 件数を検証する
 - **未記入プレースホルダ検出（★v1.6）**: `rule_text` が `[insert` / `[TBD` / `[TODO` / `xxx` 等のパターンを含むルールは、`needs_review` の値に関わらずインポート時に自動で `status='pending_review'` にし、警告リストを出力する（公開前ブロッカーの流入防止）。該当ルールは人が確認・修正するまでAIプロンプトに出ない
+- 第3マニュアル `kb_cs_feedback_import.json`（同梱、Fシリーズ 70件・CS実機レビューの修正/新規FAQ）をインポート（★v1.6 Phase 4）
+  - カテゴリは `CS FEEDBACK: …`（9種）で、`menu_categories.json` の対応トピック（internet/payment/reissue/lost/return/replace/refund/cancel/plans）の `kb_categories` に追加。`needs_review=true` の27件は `pending_review`（Plans FAQ の未記入プレースホルダ F070 含む）
+  - **古い記述の無効化（Phase 4-2）**: CSが誤答を実機確認した既存ルール7件を `status='disabled'` に（可逆・監査用マイグレーション `..._disable_superseded_rules.sql`）。銀行振込を月額手段と読める **R034/R035**（→F013/F014 が置換）、"OLD PLAN must be returned … within 7 days" の誤文言 **R082/R525/P013/P190/P986**（→F038 が置換）。旧返却先住所は顧客向けルールに存在せず、F033 が現行住所を追加するのみ
+  - 取込後 total 2,781 / disabled 7
 
 ---
 
