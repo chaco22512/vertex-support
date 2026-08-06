@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { hasUnfilledPlaceholder, normalizeDate, toKbRuleRow, type RawKbRule } from './kb-mapping';
+import {
+  hasSpreadsheetFormula,
+  hasUnfilledPlaceholder,
+  normalizeDate,
+  toKbRuleRow,
+  type RawKbRule,
+} from './kb-mapping';
 
 const base: RawKbRule = {
   id: 'R001',
@@ -79,6 +85,29 @@ describe('toKbRuleRow', () => {
     const row = toKbRuleRow({ ...base, rule_text: 'Pay by SmartPit before the due date.' });
     expect(row.status).toBe('active');
     expect(row.review_reason).toBe('');
+  });
+
+  it('quarantines an unprocessed spreadsheet formula to pending_review (§3 v1.6)', () => {
+    const row = toKbRuleRow({
+      ...base,
+      needs_review: false,
+      rule_text: '=IFERROR(__xludf.DUMMYFUNCTION("COMPUTED_VALUE"),"Requirements")',
+    });
+    expect(row.status).toBe('pending_review');
+    expect(row.review_reason).toContain('unprocessed spreadsheet formula');
+  });
+});
+
+describe('hasSpreadsheetFormula', () => {
+  it('detects a leading = or a DUMMYFUNCTION marker', () => {
+    expect(hasSpreadsheetFormula('=IFERROR(...)')).toBe(true);
+    expect(hasSpreadsheetFormula('x =IFERROR(__xludf.DUMMYFUNCTION("a"),"b")')).toBe(true); // DUMMYFUNCTION anywhere
+    expect(hasSpreadsheetFormula('  =SUM(A1:A2)')).toBe(true);
+  });
+
+  it('does not fire on ordinary text (incl. a mid-sentence equals sign)', () => {
+    expect(hasSpreadsheetFormula('The fee = 4000 yen after the change.')).toBe(false);
+    expect(hasSpreadsheetFormula('Pay by SmartPit.')).toBe(false);
   });
 });
 

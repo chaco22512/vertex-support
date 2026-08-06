@@ -14,7 +14,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config as loadEnv } from 'dotenv';
 import { createServiceClient, parseEnv } from '@vertex/shared';
-import { toKbRuleRow, hasUnfilledPlaceholder, type RawKbRule } from './kb-mapping';
+import { toKbRuleRow, hasUnfilledPlaceholder, hasSpreadsheetFormula, type RawKbRule } from './kb-mapping';
 
 const CHUNK_SIZE = 200;
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -64,6 +64,7 @@ async function main(): Promise<void> {
   const byId = new Map<string, ReturnType<typeof toKbRuleRow>>();
   const seen = new Set<string>();
   const placeholderIds: string[] = []; // §3 v1.6: rules quarantined for an unfilled placeholder
+  const formulaIds: string[] = []; // §3 v1.6: rules quarantined for a raw spreadsheet formula
   for (const file of files) {
     const path = resolve(REPO_ROOT, file);
     const raw = JSON.parse(readFileSync(path, 'utf8')) as RawKbRule[];
@@ -72,6 +73,7 @@ async function main(): Promise<void> {
       seen.add(r.id);
       byId.set(r.id, toKbRuleRow(r));
       if (hasUnfilledPlaceholder(r.rule_text)) placeholderIds.push(r.id);
+      if (hasSpreadsheetFormula(r.rule_text)) formulaIds.push(r.id);
     }
     const pending = raw.filter((r) => r.needs_review).length;
     console.log(
@@ -82,6 +84,13 @@ async function main(): Promise<void> {
     if (collisions.length) {
       throw new Error(`id collision across files: ${collisions.length} shared id(s), e.g. ${collisions.slice(0, 5).join(', ')}`);
     }
+  }
+
+  if (formulaIds.length > 0) {
+    console.warn(
+      `\n⚠️  ${formulaIds.length} rule(s) contain an UNPROCESSED SPREADSHEET FORMULA and were forced to ` +
+        `pending_review (excluded from AI until cleaned): ${formulaIds.join(', ')}`,
+    );
   }
 
   if (placeholderIds.length > 0) {

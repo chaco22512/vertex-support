@@ -71,25 +71,42 @@ export function hasUnfilledPlaceholder(text: string): boolean {
   return PLACEHOLDER_RE.test(text);
 }
 
+/**
+ * Unprocessed Google-Sheets formula detector (build_spec_v1_6.md §3, ★v1.6). A
+ * rule whose text is still a raw formula (starts with `=`, or contains the
+ * `DUMMYFUNCTION` export marker) is noise, not an answer, and must never reach
+ * the AI prompt — quarantine it to pending_review on import.
+ */
+const FORMULA_RE = /^\s*=|DUMMYFUNCTION/;
+
+export function hasSpreadsheetFormula(text: string): boolean {
+  return FORMULA_RE.test(text);
+}
+
 const PLACEHOLDER_REASON = 'contains an unfilled placeholder — fill in before approving';
+const FORMULA_REASON = 'contains an unprocessed spreadsheet formula — clean before approving';
+
+/** Append a quarantine reason to an existing review_reason without duplicating. */
+function withReason(base: string, reason: string): string {
+  if (base.includes(reason)) return base;
+  return base ? `${base}; ${reason}` : reason;
+}
 
 /**
  * Map an import record to a kb_rules row (build_spec_v1_6.md §3 "初期データ投入").
- * - needs_review === true, OR an unfilled placeholder in rule_text → status
- *   'pending_review' (excluded from the AI prompt until a human clears it)
+ * - needs_review === true, OR an unfilled placeholder, OR an unprocessed
+ *   spreadsheet formula in rule_text → status 'pending_review' (excluded from
+ *   the AI prompt until a human clears it)
  * - otherwise → status 'active'
  * - date_updated normalized via normalizeDate (empty/invalid → null)
  * The `needs_review` field is not a column and is dropped.
  */
 export function toKbRuleRow(raw: RawKbRule): KbRuleInsert {
   const placeholder = hasUnfilledPlaceholder(raw.rule_text);
-  const baseReason = raw.review_reason ?? '';
-  const review_reason =
-    placeholder && !baseReason.includes(PLACEHOLDER_REASON)
-      ? baseReason
-        ? `${baseReason}; ${PLACEHOLDER_REASON}`
-        : PLACEHOLDER_REASON
-      : baseReason;
+  const formula = hasSpreadsheetFormula(raw.rule_text);
+  let review_reason = raw.review_reason ?? '';
+  if (placeholder) review_reason = withReason(review_reason, PLACEHOLDER_REASON);
+  if (formula) review_reason = withReason(review_reason, FORMULA_REASON);
   return {
     id: raw.id,
     category: raw.category,
@@ -101,7 +118,7 @@ export function toKbRuleRow(raw: RawKbRule): KbRuleInsert {
     audience: raw.audience,
     ai_can_answer: raw.ai_can_answer,
     requires_fee_disclaimer: raw.requires_fee_disclaimer,
-    status: raw.needs_review || placeholder ? 'pending_review' : 'active',
+    status: raw.needs_review || placeholder || formula ? 'pending_review' : 'active',
     review_reason,
   };
 }
