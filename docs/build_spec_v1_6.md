@@ -165,22 +165,26 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 - Fixed fees listed in the rules MAY be quoted, but ALWAYS append: "Final amount will be confirmed by our staff."（顧客の言語で）
 - NEVER mention internal systems, staff names, Slack, Kintone, AR, or internal links
 - When a rule has a tutorial link, include the link in your answer
-- Keep answers short: 2-4 sentences per point, plain words, no jargon. Break steps into a numbered list
 - If about: billing disputes, refunds in progress, account-specific status, complaints, cancellation execution, or anything not covered by rules → escalate
-- 出力は必ず次のJSONのみ:
+- **診断フロー（★v1.6, 2-2）**: 毎ターン `action` を1つ選ぶ（answer / ask / escalate）。原因が複数ありうる問題（ネット不通・信号停止・ポケットWiFi不調・SIM認識不良 等）は即答せず、`action="ask"` で状況特定の質問を**1つだけ**返し、顧客がタップできる**3〜5個の選択肢**（follow_up.options）を付ける。単純な情報提供（APN手順・支払期日・返却先住所 等）は `action="answer"` で即答。特定できたら解決策を返し、提示後は解決確認を促す
+- **平易化（★v1.6, 2-4）**: 40代以上の非技術系顧客にも分かる平易な言葉。1ステップ1文、番号付きリスト、専門用語には短い説明。感嘆符・絵文字なし
+- 出力は必ず次のJSONのみ（★v1.6で `escalate` boolean を `action` に統合）:
 
 ```json
 {
+  "action": "answer | ask | escalate",
   "answer": "顧客向け回答文（顧客の言語）",
-  "escalate": false,
+  "follow_up": { "question": "…", "options": ["…", "…", "…"] },
   "reason": "none | price_question | not_in_manual | account_specific | complaint | other",
   "rule_ids": ["R045", "R102"],
   "detected_language": "en"
 }
 ```
 
-- `escalate: true` でも `answer` に「スタッフが24時間以内に回答します」の旨を顧客の言語で入れる
-- JSONパース失敗は1回リトライ、それでも失敗なら escalate にフォールバック
+- `follow_up` は `action="ask"` のときのみ必須（options 2〜5個、顧客の言語）。それ以外は `null`
+- `action="escalate"` でも `answer` に「スタッフが24時間以内に回答します」の旨を顧客の言語で入れる
+- JSONパース失敗は1回リトライ、それでも失敗なら escalate にフォールバック。パーサは寛容化（`action` 欠落時は legacy `escalate` から導出、options不足の `ask` は `answer` に降格）
+- `messages.ai_meta` に `action` と `follow_up` を保存（`escalate` は `action==='escalate'` の派生値として保持）
 
 ### 4.3 引用トレーサビリティ
 `rule_ids` を `messages.ai_meta` に保存。admin会話詳細で「AIの回答根拠ルール」を表示（誤答時のナレッジ修正を高速化）。
@@ -437,8 +441,12 @@ UX（v1.1追加）:
 CSフィードバック対応（★v1.6。括弧内は指示書 `claude_code_instruction_v1_6.md` の基準番号）:
 30. (指示#29) 通常カテゴリで「Something else」を押すと必ず自由入力が開く（エスカレ文言にならない）
 31. (指示#31) 未記入プレースホルダ（`[insert` 等）を含むルールがAI回答に使われない（インポート時に `pending_review` 化＋警告、`ai_can_answer=false` はプロンプト取得条件で除外）
-32. (指示#28, Phase 1で部分対応) 追い質問（「まだ繋がらない」等）で会話が無言終了しない。履歴40件・トピック文脈注入で文脈を保持。※選択肢付きの聞き返し（指示#27）とフル継続はPhase 2で完成
-<!-- 後続Phaseで追加予定: 33=指示#27(ask+選択肢) / 34=指示#28フル継続 / 35=指示#30(エスカレ前情報カード→Slack/admin) / 36=指示#32(固定手数料は付記なし・変動額は付記あり) -->
+32. (指示#28, Phase 1で部分対応) 追い質問（「まだ繋がらない」等）で会話が無言終了しない。履歴40件・トピック文脈注入で文脈を保持
+
+診断フロー（★v1.6 Phase 2）:
+33. (指示#27) 原因が複数ある問題（no signal / pocket wifi 不調 等）で、AIが解決策の前に**選択肢付きの質問**（action="ask"）を返し、チャットに選択肢チップが表示される。単純な情報提供（APN手順等）は即答のまま
+34. (指示#28 完全対応) 選択肢タップ／追い質問で会話が継続し、追加の切り分け→解決策→解決確認（Solved / Still need help）に進む
+<!-- 後続Phaseで追加予定: 35=指示#30(エスカレ前情報カード→Slack/admin) / 36=指示#32(固定手数料は付記なし・変動額は付記あり) -->
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

@@ -24,6 +24,15 @@ export type EscalationReason =
   | 'complaint'
   | 'other';
 
+/** AI turn outcome (spec §4.2, ★v1.6 diagnostic flow). */
+export type AiAction = 'answer' | 'ask' | 'escalate';
+
+/** A one-question clarifier the AI asks before answering (action='ask'). */
+export interface FollowUp {
+  question: string;
+  options: string[];
+}
+
 // --- table rows (§3) ---
 export interface KbRule {
   id: string; // 'R001' form
@@ -81,9 +90,14 @@ export interface Conversation {
 
 /** Persisted on AI messages (spec §4.2 / §4.3). */
 export interface AiMeta {
+  /** The turn outcome (★v1.6). `escalate` is kept as a derived convenience. */
+  action: AiAction;
+  /** Derived: action === 'escalate'. Retained for existing consumers. */
   escalate: boolean;
   reason: EscalationReason;
   rule_ids: string[];
+  /** Present only when action === 'ask' (the clarifier + its options). */
+  follow_up: FollowUp | null;
   model: string;
 }
 

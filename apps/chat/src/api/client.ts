@@ -9,7 +9,14 @@ export interface ApiMessage {
   id: number;
   sender: 'customer' | 'ai' | 'staff' | 'system';
   body: string;
-  ai_meta: { escalate: boolean; reason: string; rule_ids: string[]; model: string } | null;
+  ai_meta: {
+    action?: 'answer' | 'ask' | 'escalate';
+    escalate: boolean;
+    reason: string;
+    rule_ids: string[];
+    follow_up?: { question: string; options: string[] } | null;
+    model: string;
+  } | null;
   created_at: string;
 }
 

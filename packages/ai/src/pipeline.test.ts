@@ -45,8 +45,9 @@ const baseInput = (llm: LlmClient): RunAiReplyInput => ({
 });
 
 const good = JSON.stringify({
+  action: 'answer',
   answer: 'Set your APN to xyz.',
-  escalate: false,
+  follow_up: null,
   reason: 'none',
   rule_ids: ['R010'],
   detected_language: 'en',
@@ -58,11 +59,28 @@ describe('runAiReply', () => {
     expect(res.fellBack).toBe(false);
     expect(res.answer).toBe('Set your APN to xyz.');
     expect(res.aiMeta).toEqual({
+      action: 'answer',
       escalate: false,
       reason: 'none',
       rule_ids: ['R010'],
+      follow_up: null,
       model: 'mock-model',
     });
+  });
+
+  it('carries an "ask" action and its follow_up options into aiMeta', async () => {
+    const ask = JSON.stringify({
+      action: 'ask',
+      answer: 'Which best describes it?',
+      follow_up: { question: 'Which best describes it?', options: ['Not connecting', 'Slow', 'Wi-Fi only'] },
+      reason: 'none',
+      rule_ids: [],
+      detected_language: 'en',
+    });
+    const res = await runAiReply(baseInput(mockLlm([ask])));
+    expect(res.aiMeta.action).toBe('ask');
+    expect(res.aiMeta.escalate).toBe(false);
+    expect(res.aiMeta.follow_up?.options).toEqual(['Not connecting', 'Slow', 'Wi-Fi only']);
   });
 
   it('retries once when the first output is unparseable, then succeeds', async () => {

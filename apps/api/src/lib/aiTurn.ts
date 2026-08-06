@@ -44,7 +44,14 @@ export async function generateAiReply(
     return {
       answer: fallbackEscalationMessage(conversation.language),
       detected_language: conversation.language,
-      aiMeta: { escalate: true, reason: 'other', rule_ids: [], model: deps.llm.model },
+      aiMeta: {
+        action: 'escalate',
+        escalate: true,
+        reason: 'other',
+        rule_ids: [],
+        follow_up: null,
+        model: deps.llm.model,
+      },
       fellBack: true,
     };
   } finally {

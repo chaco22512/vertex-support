@@ -193,10 +193,13 @@ export function useChat() {
         const res = await api.postMessage(token, trimmed, controller.signal);
         clearTimeout(timer);
         lastFailedBody.current = null;
+        const meta = res.reply.ai_meta;
+        const action = meta?.action ?? (res.escalated ? 'escalate' : 'answer');
         dispatch({
           type: 'AI_REPLY',
           body: res.reply.body,
-          escalated: res.escalated,
+          action,
+          options: meta?.follow_up?.options ?? [],
           messageId: res.reply.id,
           at: res.reply.created_at || new Date().toISOString(),
         });
@@ -204,7 +207,7 @@ export function useChat() {
         clearTimeout(timer);
         if (controller.signal.aborted) {
           // 15s timeout → auto-escalation (§6.3, criterion 10).
-          dispatch({ type: 'AI_REPLY', body: t.ui.escalationTitle, escalated: true, messageId: 0, at: new Date().toISOString() });
+          dispatch({ type: 'AI_REPLY', body: t.ui.escalationTitle, action: 'escalate', options: [], messageId: 0, at: new Date().toISOString() });
         } else {
           lastFailedBody.current = trimmed;
           dispatch({ type: 'AI_ERROR' });

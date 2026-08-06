@@ -50,6 +50,14 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('price_question');
   });
 
+  it('describes the diagnostic ask flow and plain-language rule (§4.2 v1.6)', () => {
+    expect(prompt).toContain('"ask"');
+    expect(prompt).toContain('MULTIPLE possible causes');
+    expect(prompt).toContain('follow_up');
+    expect(prompt).toContain('3-5 concrete tappable choices');
+    expect(prompt).toContain('in their 40s or older');
+  });
+
   it('groups rules by category and lists ids', () => {
     expect(prompt).toContain('## APN SETTINGS');
     expect(prompt).toContain('[R010] Set APN.');

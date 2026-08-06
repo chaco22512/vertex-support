@@ -48,19 +48,37 @@ describe('reducer', () => {
     expect(last.pending).toBe(true);
   });
 
-  it('AI_REPLY (not escalated) shows feedback and clears pending', () => {
+  it('AI_REPLY action=answer shows feedback and clears pending', () => {
     let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'hi', at: '2026-07-08T00:00:00Z' });
-    s = reducer(s, { type: 'AI_REPLY', body: 'answer', escalated: false, messageId: 5, at: '2026-07-08T00:00:00Z' });
+    s = reducer(s, { type: 'AI_REPLY', body: 'answer', action: 'answer', options: [], messageId: 5, at: '2026-07-08T00:00:00Z' });
     expect(s.awaitingAi).toBe(false);
     expect(s.showFeedback).toBe(true);
+    expect(s.showEscalation).toBe(false);
+    expect(s.chips).toEqual([]);
     expect(s.messages.some((m) => m.pending)).toBe(false);
     expect(s.messages.some((m) => m.sender === 'ai' && m.body === 'answer')).toBe(true);
     expect(s.lastMessageId).toBe(5);
   });
 
-  it('AI_REPLY (escalated) shows escalation, not feedback', () => {
+  it('AI_REPLY action=ask shows option chips, keeps composer, no feedback/escalation (criteria 27/33)', () => {
+    let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'no signal', at: '2026-07-08T00:00:00Z' });
+    s = reducer(s, {
+      type: 'AI_REPLY',
+      body: 'Which best describes it?',
+      action: 'ask',
+      options: ['Not connecting', 'Slow', 'Wi-Fi only'],
+      messageId: 3,
+      at: '2026-07-08T00:00:00Z',
+    });
+    expect(s.chips).toEqual(['Not connecting', 'Slow', 'Wi-Fi only']);
+    expect(s.showFeedback).toBe(false);
+    expect(s.showEscalation).toBe(false);
+    expect(s.showComposer).toBe(true);
+  });
+
+  it('AI_REPLY action=escalate shows escalation, not feedback', () => {
     let s = reducer(withCategory(undefined), { type: 'SEND_START', body: 'price?', at: '2026-07-08T00:00:00Z' });
-    s = reducer(s, { type: 'AI_REPLY', body: 'staff soon', escalated: true, messageId: 1, at: '2026-07-08T00:00:00Z' });
+    s = reducer(s, { type: 'AI_REPLY', body: 'staff soon', action: 'escalate', options: [], messageId: 1, at: '2026-07-08T00:00:00Z' });
     expect(s.showEscalation).toBe(true);
     expect(s.showFeedback).toBe(false);
     expect(s.escalated).toBe(true);

@@ -46,7 +46,7 @@ export async function escalateConversation(
     conversation_id: conversation.id,
     sender: 'system',
     body: '',
-    ai_meta: { escalate: true, reason, rule_ids: [], model: '' },
+    ai_meta: { action: 'escalate', escalate: true, reason, rule_ids: [], follow_up: null, model: '' },
   });
 
   // Auto-assign the least-loaded staff member who speaks the customer language.

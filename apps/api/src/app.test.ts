@@ -8,6 +8,7 @@ import {
   fakeSendSlack,
   fakeVerifyStaff,
   goodResponse,
+  escalateResponse,
   mockLlm,
 } from './testing/mocks';
 import type { ApiBindings } from './types';
@@ -95,7 +96,7 @@ describe('message flow', () => {
   });
 
   it('escalates when the model asks + Slack-notifies with the reason (criteria 2/8)', async () => {
-    const escalated = goodResponse({ escalate: true, reason: 'price_question', rule_ids: [] });
+    const escalated = escalateResponse('price_question');
     const { app, db, env, slack } = setup(mockLlm([escalated]));
     const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
 

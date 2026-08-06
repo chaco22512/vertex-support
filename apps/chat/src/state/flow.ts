@@ -1,4 +1,4 @@
-import type { LanguageCode } from '@vertex/shared';
+import type { AiAction, LanguageCode } from '@vertex/shared';
 import type { CategoryBehavior } from '../data/menuLocalized';
 
 export type View = 'language' | 'category' | 'chat';
@@ -57,7 +57,7 @@ export type Action =
     }
   | { type: 'CONVERSATION_CREATED'; token: string }
   | { type: 'SEND_START'; body: string; at: string }
-  | { type: 'AI_REPLY'; body: string; escalated: boolean; messageId: number; at: string }
+  | { type: 'AI_REPLY'; body: string; action: AiAction; options: string[]; messageId: number; at: string }
   | { type: 'AI_ERROR' }
   | { type: 'OPEN_COMPOSER' }
   | { type: 'CHANGE_TOPIC' }
@@ -179,13 +179,21 @@ export function reducer(state: State, action: Action): State {
     case 'AI_REPLY': {
       const messages = state.messages.map((m) => (m.pending ? { ...m, pending: false } : m));
       messages.push({ key: `ai-${action.messageId}`, sender: 'ai', body: action.body, at: action.at });
+      // Three-way branch on the AI action (§4.2 v1.6):
+      //  - ask     → show the clarifier options as chips, keep the composer, no feedback/escalation
+      //  - answer  → show Solved / Still need help
+      //  - escalate→ show the escalation contact card
+      const asking = action.action === 'ask';
+      const escalated = action.action === 'escalate';
       return {
         ...state,
         messages,
         awaitingAi: false,
-        showFeedback: !action.escalated,
-        showEscalation: action.escalated,
-        escalated: state.escalated || action.escalated,
+        chips: asking ? action.options : [],
+        showFeedback: action.action === 'answer',
+        showEscalation: escalated,
+        showComposer: true,
+        escalated: state.escalated || escalated,
         lastMessageId: Math.max(state.lastMessageId, action.messageId),
       };
     }

@@ -69,11 +69,36 @@ export function hangingLlm(model = 'mock-model'): LlmClient {
 
 export function goodResponse(overrides: Record<string, unknown> = {}): string {
   return JSON.stringify({
+    action: 'answer',
     answer: 'Here is how to do it.',
-    escalate: false,
+    follow_up: null,
     reason: 'none',
     rule_ids: ['R010'],
     detected_language: 'en',
     ...overrides,
+  });
+}
+
+/** A clarifying "ask" turn with tappable options (§4.2 v1.6). */
+export function askResponse(options: string[] = ['Not connecting at all', 'It is slow', 'Wi-Fi only']): string {
+  return JSON.stringify({
+    action: 'ask',
+    answer: 'Which best describes what is happening?',
+    follow_up: { question: 'Which best describes what is happening?', options },
+    reason: 'none',
+    rule_ids: [],
+    detected_language: 'en',
+  });
+}
+
+/** An escalation turn (e.g. a price question). */
+export function escalateResponse(reason = 'price_question'): string {
+  return JSON.stringify({
+    action: 'escalate',
+    answer: 'Our staff will reply within 24 hours.',
+    follow_up: null,
+    reason,
+    rule_ids: [],
+    detected_language: 'en',
   });
 }
