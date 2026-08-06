@@ -6,7 +6,7 @@ import { postMessageSchema } from '../dto';
 import { generateAiReply } from '../lib/aiTurn';
 import { escalateConversation } from '../lib/escalation';
 
-const HISTORY_LIMIT = 20; // §4.1
+const HISTORY_LIMIT = 40; // §4.1 (★v1.6: raised 20→40 so troubleshooting threads keep context)
 
 async function fetchHistory(db: SupabaseClient, conversationId: string): Promise<HistoryMessage[]> {
   const { data } = await db

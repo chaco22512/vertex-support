@@ -11,6 +11,8 @@ export interface RunAiReplyInput {
   history: HistoryMessage[];
   /** Conversation language, used for the fallback message if parsing fails. */
   language: string;
+  /** Customer-selected topic label, injected into the prompt for context (★v1.6). */
+  topic?: string | null;
   llm: LlmClient;
   /** Optional abort signal forwarded to the LLM (timeout enforcement, §6.3). */
   signal?: AbortSignal;
@@ -33,7 +35,7 @@ const MAX_ATTEMPTS = 2; // initial try + one retry (§4.2)
  * then fall back to an escalation response.
  */
 export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult> {
-  const system = buildSystemPrompt(input.rules);
+  const system = buildSystemPrompt(input.rules, { topic: input.topic });
   const messages = buildLlmMessages(input.history);
 
   let parsed: AiResponse | null = null;

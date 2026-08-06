@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeDate, toKbRuleRow, type RawKbRule } from './kb-mapping';
+import { hasUnfilledPlaceholder, normalizeDate, toKbRuleRow, type RawKbRule } from './kb-mapping';
 
 const base: RawKbRule = {
   id: 'R001',
@@ -53,6 +53,46 @@ describe('toKbRuleRow', () => {
     expect(row.links).toEqual(['https://x']);
     expect(row.audience).toBe('internal');
     expect(row.review_reason).toBe('auto-tagged internal');
+  });
+
+  it('forces an unfilled-placeholder rule to pending_review even if needs_review=false (§3 v1.6)', () => {
+    const row = toKbRuleRow({
+      ...base,
+      needs_review: false,
+      rule_text: 'The cheapest plan is [insert cheapest plan name/price].',
+    });
+    expect(row.status).toBe('pending_review');
+    expect(row.review_reason).toContain('unfilled placeholder');
+  });
+
+  it('appends the placeholder note to an existing review_reason without duplicating', () => {
+    const row = toKbRuleRow({
+      ...base,
+      needs_review: true,
+      review_reason: 'contains COD/discount amount',
+      rule_text: 'Price: [TBD]',
+    });
+    expect(row.review_reason).toBe('contains COD/discount amount; contains an unfilled placeholder — fill in before approving');
+  });
+
+  it('leaves a normal rule active with its original reason', () => {
+    const row = toKbRuleRow({ ...base, rule_text: 'Pay by SmartPit before the due date.' });
+    expect(row.status).toBe('active');
+    expect(row.review_reason).toBe('');
+  });
+});
+
+describe('hasUnfilledPlaceholder', () => {
+  it('detects [insert / [TBD / [TODO / xxx (case-insensitive)', () => {
+    expect(hasUnfilledPlaceholder('[insert price]')).toBe(true);
+    expect(hasUnfilledPlaceholder('cost is [ TBD ]')).toBe(true);
+    expect(hasUnfilledPlaceholder('[todo: confirm]')).toBe(true);
+    expect(hasUnfilledPlaceholder('order number XXXX')).toBe(true);
+  });
+
+  it('does not fire on ordinary text', () => {
+    expect(hasUnfilledPlaceholder('Pay ¥4,000 by the due date.')).toBe(false);
+    expect(hasUnfilledPlaceholder('Set the APN to plus.jp')).toBe(false);
   });
 });
 

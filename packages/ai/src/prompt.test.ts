@@ -55,6 +55,17 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('[R010] Set APN.');
     expect(prompt).toContain('## GENERAL RULES');
   });
+
+  it('injects the selected topic when provided (§4.1 v1.6)', () => {
+    const withTopic = buildSystemPrompt([rule({ id: 'R1', category: 'X', rule_text: 'a' })], {
+      topic: 'Signal stopped / re-issue',
+    });
+    expect(withTopic).toContain('The customer chose this help topic: "Signal stopped / re-issue"');
+    // No topic → no topic line.
+    expect(buildSystemPrompt([rule({ id: 'R1', category: 'X', rule_text: 'a' })])).not.toContain(
+      'chose this help topic',
+    );
+  });
 });
 
 describe('buildLlmMessages', () => {
@@ -70,5 +81,23 @@ describe('buildLlmMessages', () => {
       { role: 'model', text: 'Sure, here is how.' },
       { role: 'model', text: 'Following up.' },
     ]);
+  });
+
+  it('trims oldest turns beyond the char budget but keeps recent ones (§4.1 v1.6)', () => {
+    // 12 turns × ~6k chars = ~72k > the 48k budget → oldest dropped, ≥8 kept.
+    const big = 'plain text no pii '.repeat(330); // ~6k chars, no email/phone to mask
+    const history = Array.from({ length: 12 }, (_, i) => ({
+      sender: (i % 2 === 0 ? 'customer' : 'ai') as 'customer' | 'ai',
+      body: `${big}#${i}`,
+    }));
+    const msgs = buildLlmMessages(history);
+    expect(msgs.length).toBeGreaterThanOrEqual(8);
+    expect(msgs.length).toBeLessThan(12);
+    expect(msgs.at(-1)!.text).toContain('#11');
+  });
+
+  it('never trims when at or below the minimum keep count', () => {
+    const history = Array.from({ length: 6 }, (_, i) => ({ sender: 'customer' as const, body: `msg ${i}` }));
+    expect(buildLlmMessages(history)).toHaveLength(6);
   });
 });

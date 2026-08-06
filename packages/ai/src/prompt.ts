@@ -43,8 +43,14 @@ Your output MUST be a single JSON object and nothing else, in exactly this shape
 - "rule_ids" lists the ids of the rules you used (may be empty).
 - "detected_language" is the ISO code of the customer's language (e.g. en, id, tl, ne, vi).`;
 
-/** Build the English system prompt with rules grouped by category (§4.1/§4.2). */
-export function buildSystemPrompt(rules: KbRule[]): string {
+/**
+ * Build the English system prompt with rules grouped by category (§4.1/§4.2).
+ *
+ * `options.topic` (★v1.6) injects the customer's selected topic label so the
+ * model keeps context even after the "Topic: …" marker scrolls out of the
+ * (now 40-message) history window.
+ */
+export function buildSystemPrompt(rules: KbRule[], options?: { topic?: string | null }): string {
   const byCategory = new Map<string, KbRule[]>();
   for (const rule of rules) {
     const list = byCategory.get(rule.category) ?? [];
@@ -58,13 +64,28 @@ export function buildSystemPrompt(rules: KbRule[]): string {
   }
 
   const rulesText = blocks.length > 0 ? blocks.join('\n\n') : '(no rules available)';
-  return `${INSTRUCTIONS}\n\nRules:\n${rulesText}`;
+  const topicLine = options?.topic
+    ? `\n\nThe customer chose this help topic: "${options.topic}". Keep your help focused on it unless they clearly change subject.`
+    : '';
+  return `${INSTRUCTIONS}${topicLine}\n\nRules:\n${rulesText}`;
 }
+
+/**
+ * Char budget for conversation history in the prompt (★v1.6). ~48k chars ≈ 12k
+ * tokens — a belt-and-suspenders cap over the route's 40-message limit so an
+ * unusually long thread can never blow the context window. Never fewer than
+ * MIN_KEEP_MESSAGES recent turns are kept, and this never throws (spec §5.4:
+ * no silent failure path).
+ */
+const MAX_HISTORY_CHARS = 48_000;
+const MIN_KEEP_MESSAGES = 8;
 
 /**
  * Map conversation history to LLM messages. Customer text is PII-masked before
  * it leaves for the model (§2). 'system' UI markers are dropped. Staff and AI
- * replies are the assistant ('model') side.
+ * replies are the assistant ('model') side. Oldest turns beyond the char budget
+ * are trimmed (most-recent kept), so the reply path degrades gracefully instead
+ * of erroring on an over-long history.
  */
 export function buildLlmMessages(history: HistoryMessage[]): LlmMessage[] {
   const messages: LlmMessage[] = [];
@@ -76,5 +97,13 @@ export function buildLlmMessages(history: HistoryMessage[]): LlmMessage[] {
       messages.push({ role: 'model', text: msg.body });
     }
   }
-  return messages;
+
+  if (messages.length <= MIN_KEEP_MESSAGES) return messages;
+  let total = messages.reduce((n, m) => n + m.text.length, 0);
+  let start = 0;
+  while (start < messages.length - MIN_KEEP_MESSAGES && total > MAX_HISTORY_CHARS) {
+    total -= messages[start]!.text.length;
+    start += 1;
+  }
+  return start === 0 ? messages : messages.slice(start);
 }

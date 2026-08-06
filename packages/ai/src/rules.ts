@@ -8,8 +8,10 @@ const PAGE_SIZE = 1000;
  * Fetch the rules eligible for the AI prompt (build_spec_v1_5.md §4.1).
  *
  * HARD INVARIANT (CLAUDE.md Hard rule 3): only status='active' AND
- * audience='customer' rows are ever returned — pending_review and internal
- * rules must never reach the prompt. Callers cannot opt out of this filter.
+ * audience='customer' AND ai_can_answer=true rows are ever returned —
+ * pending_review, internal, and answer-disabled rules (e.g. an unfilled
+ * placeholder left active, ★v1.6) must never reach the prompt. Callers cannot
+ * opt out of this filter.
  *
  * Pages through the result in stable id order: the 'others' scope now spans two
  * manuals (>2000 active/customer rules), which exceeds PostgREST's per-request
@@ -30,6 +32,7 @@ export async function fetchScopedRules(
       .select('*')
       .eq('status', 'active')
       .eq('audience', 'customer')
+      .eq('ai_can_answer', true)
       .order('id', { ascending: true });
 
     if (categories !== null) {

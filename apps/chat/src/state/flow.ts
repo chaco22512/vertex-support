@@ -194,7 +194,17 @@ export function reducer(state: State, action: Action): State {
       return { ...state, awaitingAi: false, error: 'error', showComposer: true };
 
     case 'OPEN_COMPOSER':
-      return { ...state, chips: [], showComposer: true };
+      // "Something else": free-text becomes the active affordance. Clear the
+      // chips and any escalation/feedback UI so the composer opens unambiguously
+      // and never resolves to an escalation card (criterion 29).
+      return {
+        ...state,
+        chips: [],
+        showComposer: true,
+        showEscalation: false,
+        showFeedback: false,
+        contactError: false,
+      };
 
     case 'CHANGE_TOPIC':
       // Allowed only before the first message is sent (§ spec addendum). Abandon

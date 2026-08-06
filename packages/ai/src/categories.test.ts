@@ -69,11 +69,12 @@ function mockClient() {
 }
 
 describe('fetchScopedRules', () => {
-  it('always filters status=active and audience=customer (Hard rule 3)', async () => {
+  it('always filters status=active, audience=customer, ai_can_answer=true (Hard rule 3)', async () => {
     const { calls, client } = mockClient();
     await fetchScopedRules(client, ['APN SETTINGS']);
     expect(calls['eq:status']).toBe('active');
     expect(calls['eq:audience']).toBe('customer');
+    expect(calls['eq:ai_can_answer']).toBe(true);
     expect(calls['in:category']).toEqual(['APN SETTINGS']);
   });
 
@@ -82,6 +83,7 @@ describe('fetchScopedRules', () => {
     await fetchScopedRules(client, null);
     expect(calls['eq:status']).toBe('active');
     expect(calls['eq:audience']).toBe('customer');
+    expect(calls['eq:ai_can_answer']).toBe(true);
     expect(calls['in:category']).toBeUndefined();
   });
 });

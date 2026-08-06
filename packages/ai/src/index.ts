@@ -2,6 +2,7 @@ export type { LlmClient, LlmMessage, LlmGenerateRequest } from './llm';
 export { maskPii, type MaskResult } from './pii';
 export {
   resolveKbCategories,
+  resolveTopicLabel,
   GENERAL_CATEGORY,
   type MenuCategory,
   type MenuCategories,

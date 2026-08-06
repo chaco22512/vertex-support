@@ -40,6 +40,7 @@ function deps(llm: Deps['llm'], db = new FakeSupabase()): Deps {
     fee_amounts_jpy: [],
     links: [],
     audience: 'customer',
+    ai_can_answer: true,
     status: 'active',
   });
   return {

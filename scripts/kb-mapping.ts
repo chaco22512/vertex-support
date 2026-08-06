@@ -59,13 +59,37 @@ export function normalizeDate(raw: string): string | null {
 }
 
 /**
- * Map an import record to a kb_rules row (build_spec_v1_4.md §3 "初期データ投入").
- * - needs_review === true  → status 'pending_review' (the 42 excluded from the AI prompt)
- * - otherwise              → status 'active'
+ * Unfilled-placeholder detector (build_spec_v1_6.md §3, ★v1.6). A rule whose
+ * text still contains an authoring placeholder (`[insert …]`, `[TBD]`, `[TODO]`,
+ * or a run of `xxx`) must never go live: it is a public-facing blocker. Matches
+ * are case-insensitive; `xxx` requires a word boundary so it doesn't fire inside
+ * ordinary words.
+ */
+const PLACEHOLDER_RE = /\[\s*insert|\[\s*tbd|\[\s*todo|\bx{3,}\b/i;
+
+export function hasUnfilledPlaceholder(text: string): boolean {
+  return PLACEHOLDER_RE.test(text);
+}
+
+const PLACEHOLDER_REASON = 'contains an unfilled placeholder — fill in before approving';
+
+/**
+ * Map an import record to a kb_rules row (build_spec_v1_6.md §3 "初期データ投入").
+ * - needs_review === true, OR an unfilled placeholder in rule_text → status
+ *   'pending_review' (excluded from the AI prompt until a human clears it)
+ * - otherwise → status 'active'
  * - date_updated normalized via normalizeDate (empty/invalid → null)
  * The `needs_review` field is not a column and is dropped.
  */
 export function toKbRuleRow(raw: RawKbRule): KbRuleInsert {
+  const placeholder = hasUnfilledPlaceholder(raw.rule_text);
+  const baseReason = raw.review_reason ?? '';
+  const review_reason =
+    placeholder && !baseReason.includes(PLACEHOLDER_REASON)
+      ? baseReason
+        ? `${baseReason}; ${PLACEHOLDER_REASON}`
+        : PLACEHOLDER_REASON
+      : baseReason;
   return {
     id: raw.id,
     category: raw.category,
@@ -77,7 +101,7 @@ export function toKbRuleRow(raw: RawKbRule): KbRuleInsert {
     audience: raw.audience,
     ai_can_answer: raw.ai_can_answer,
     requires_fee_disclaimer: raw.requires_fee_disclaimer,
-    status: raw.needs_review ? 'pending_review' : 'active',
-    review_reason: raw.review_reason ?? '',
+    status: raw.needs_review || placeholder ? 'pending_review' : 'active',
+    review_reason,
   };
 }

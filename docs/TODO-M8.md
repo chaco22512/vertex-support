@@ -25,6 +25,21 @@ must be appended here so nothing is silently dropped.
       everything. Add pagination/virtualized list or server-side search-only. (Review
       queue is unaffected: it filters `status='pending_review'` = 267 rows.)
 
+## AI dialogue (v1.6 Phase 1 decisions / follow-ups)
+- **History compression = deterministic, not LLM.** `messages.ts` history cap raised
+  20→40 and `buildLlmMessages` trims oldest turns beyond a ~48k-char budget (keeps
+  ≥8 recent). LLM-summary compression was **rejected**: gemini-2.5-flash has a 1M-token
+  window and Others-scope worst case is only ~98k tokens, so an extra summarization
+  call would add cost/latency for no benefit at ~10 convos/day. Revisit only if a single
+  conversation ever approaches the window.
+- **"Something else" root-cause note.** The initial "Something else" chip reliably opens
+  the composer in the current build; `OPEN_COMPOSER` was hardened to also clear any
+  escalation/feedback card (criterion 29). The CS-observed "escalation text" after
+  typing is the answer|escalate-only limitation → fixed in **Phase 2** (add `ask`).
+- **ai_can_answer filter is defense-in-depth.** No existing active/customer rule has
+  `ai_can_answer=false` today (Others prompt count unchanged at 2,276). The filter guards
+  future placeholder/disabled rules (e.g. the F-series Plans FAQ, Phase 4).
+
 ## Future optional (rebrand follow-up — intentionally out of scope)
 - Internal package names `@vertex/*` (api, shared, ai, chat, admin, scripts) and the
   git repo/folder name still say "vertex". These are not user-visible. Renaming them

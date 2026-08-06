@@ -23,6 +23,7 @@ function setup(llm: LlmClient = mockLlm([goodResponse()])) {
     fee_amounts_jpy: [],
     links: [],
     audience: 'customer',
+    ai_can_answer: true,
     status: 'active',
   });
   const kv = fakeKv();

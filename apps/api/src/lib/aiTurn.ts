@@ -2,6 +2,7 @@ import {
   fallbackEscalationMessage,
   fetchScopedRules,
   resolveKbCategories,
+  resolveTopicLabel,
   runAiReply,
   type AiReplyResult,
   type HistoryMessage,
@@ -24,6 +25,7 @@ export async function generateAiReply(
   history: HistoryMessage[],
 ): Promise<AiReplyResult> {
   const categories = resolveKbCategories(conversation.topic_category, menu);
+  const topic = resolveTopicLabel(conversation.topic_category, menu);
   const rules = await fetchScopedRules(deps.db, categories);
 
   const controller = new AbortController();
@@ -33,6 +35,7 @@ export async function generateAiReply(
       rules,
       history,
       language: conversation.language,
+      topic,
       llm: deps.llm,
       signal: controller.signal,
     });

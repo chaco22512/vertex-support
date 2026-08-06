@@ -6,6 +6,7 @@
 
 export interface MenuCategory {
   id: string;
+  label_en?: string;
   kb_categories?: string[];
   behavior?: string;
 }
@@ -16,6 +17,15 @@ export interface MenuCategories {
 
 /** Always included as shared context (menu_categories.json note). */
 export const GENERAL_CATEGORY = 'GENERAL RULES';
+
+/**
+ * The customer-facing English label for a topic id, used to inject topic
+ * context into the prompt (★v1.6). Returns null for unknown / unset topics.
+ */
+export function resolveTopicLabel(topicCategory: string, menu: MenuCategories): string | null {
+  if (!topicCategory) return null;
+  return menu.categories.find((c) => c.id === topicCategory)?.label_en ?? null;
+}
 
 /**
  * @returns the list of kb_rules.category values to scope to, or null for "all

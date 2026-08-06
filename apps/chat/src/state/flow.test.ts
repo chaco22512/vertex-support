@@ -78,6 +78,16 @@ describe('reducer', () => {
     expect(s.chips).toEqual([]);
   });
 
+  it('OPEN_COMPOSER always opens free input, never an escalation card (criterion 29)', () => {
+    // Even if an escalation/feedback card was showing, "Something else" opens input.
+    let s = reducer(withCategory(undefined, ['q']), { type: 'SHOW_ESCALATION' });
+    expect(s.showEscalation).toBe(true);
+    s = reducer(s, { type: 'OPEN_COMPOSER' });
+    expect(s.showComposer).toBe(true);
+    expect(s.showEscalation).toBe(false);
+    expect(s.showFeedback).toBe(false);
+  });
+
   it('tracks firstMessageSent only after a send', () => {
     const before = withCategory(undefined, ['q']);
     expect(before.firstMessageSent).toBe(false);
