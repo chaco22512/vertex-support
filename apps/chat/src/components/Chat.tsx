@@ -4,11 +4,14 @@ import type { Messages } from '../i18n';
 import { Bubble, TypingIndicator } from './pieces';
 import { Composer } from './Composer';
 import { EscalationCard } from './EscalationCard';
+import { IntakeCard } from './IntakeCard';
 import { SuccessCard } from './SuccessCard';
+import type { IntakeInfo } from '@vertex/shared';
 import { clock, withSeparators } from '../lib/format';
 
 export interface ChatHandlers {
   send: (body: string) => void;
+  intakeDone: (intake: IntakeInfo) => void;
   submitContact: (contact: { name?: string; email?: string; whatsapp?: string }) => void;
   feedbackSolved: () => void;
   stillNeedHelp: () => void;
@@ -74,6 +77,15 @@ export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers 
               {t.ui.stillNeedHelp}
             </button>
           </div>
+        )}
+
+        {state.showIntake && (
+          <IntakeCard
+            ui={t.ui}
+            topicCategory={state.topicCategory}
+            lang={lang}
+            onDone={handlers.intakeDone}
+          />
         )}
 
         {state.showEscalation && (

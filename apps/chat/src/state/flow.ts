@@ -1,4 +1,4 @@
-import type { AiAction, LanguageCode } from '@vertex/shared';
+import type { AiAction, IntakeInfo, LanguageCode } from '@vertex/shared';
 import type { CategoryBehavior } from '../data/menuLocalized';
 
 export type View = 'language' | 'category' | 'chat';
@@ -29,6 +29,10 @@ export interface State {
   showComposer: boolean;
   awaitingAi: boolean;
   showFeedback: boolean;
+  /** Pre-escalation situation card, shown before the contact card (§6.2 v1.6). */
+  showIntake: boolean;
+  /** Situation details collected on the intake card (or null if not yet done). */
+  intake: IntakeInfo | null;
   showEscalation: boolean;
   /** Set once the escalation contact is accepted → show the success card (§6.2). */
   contactSent: boolean;
@@ -62,6 +66,7 @@ export type Action =
   | { type: 'OPEN_COMPOSER' }
   | { type: 'CHANGE_TOPIC' }
   | { type: 'SHOW_ESCALATION' }
+  | { type: 'INTAKE_DONE'; intake: IntakeInfo }
   | { type: 'CONTACT_SENT'; contact: SubmittedContact }
   | { type: 'CONTACT_ERROR' }
   | { type: 'FEEDBACK_SOLVED' }
@@ -82,6 +87,8 @@ export function initialState(language: LanguageCode | null, token: string | null
     showComposer: false,
     awaitingAi: false,
     showFeedback: false,
+    showIntake: false,
+    intake: null,
     showEscalation: false,
     contactSent: false,
     contact: null,
@@ -113,7 +120,7 @@ export function reducer(state: State, action: Action): State {
         body: action.topicLabel,
       };
       if (action.behavior === 'always_escalate') {
-        // Plans & prices: no AI. Fixed message + escalation card immediately (§6.1).
+        // Plans & prices: no AI. Fixed message + intake card → contact (§6.1/§6.2).
         return {
           ...state,
           view: 'chat',
@@ -125,7 +132,8 @@ export function reducer(state: State, action: Action): State {
             { key: 'plans-msg', sender: 'ai', body: action.plansMessage },
           ],
           showComposer: false,
-          showEscalation: true,
+          showIntake: true,
+          showEscalation: false,
           showFeedback: false,
         };
       }
@@ -191,7 +199,9 @@ export function reducer(state: State, action: Action): State {
         awaitingAi: false,
         chips: asking ? action.options : [],
         showFeedback: action.action === 'answer',
-        showEscalation: escalated,
+        // Escalation now routes through the intake card first (§6.2 v1.6).
+        showIntake: escalated,
+        showEscalation: false,
         showComposer: true,
         escalated: state.escalated || escalated,
         lastMessageId: Math.max(state.lastMessageId, action.messageId),
@@ -209,6 +219,7 @@ export function reducer(state: State, action: Action): State {
         ...state,
         chips: [],
         showComposer: true,
+        showIntake: false,
         showEscalation: false,
         showFeedback: false,
         contactError: false,
@@ -220,7 +231,11 @@ export function reducer(state: State, action: Action): State {
       return { ...initialState(state.language, null), view: 'category' };
 
     case 'SHOW_ESCALATION':
-      return { ...state, showEscalation: true, showFeedback: false, contactError: false };
+      // "Still need help" → collect situation details first, then contact (§6.2 v1.6).
+      return { ...state, showIntake: true, showEscalation: false, showFeedback: false, contactError: false };
+
+    case 'INTAKE_DONE':
+      return { ...state, showIntake: false, showEscalation: true, intake: action.intake, contactError: false };
 
     case 'CONTACT_SENT':
       return {

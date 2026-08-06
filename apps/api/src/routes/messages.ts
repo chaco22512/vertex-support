@@ -4,7 +4,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppEnv } from '../types';
 import { postMessageSchema } from '../dto';
 import { generateAiReply } from '../lib/aiTurn';
-import { escalateConversation } from '../lib/escalation';
 
 const HISTORY_LIMIT = 40; // §4.1 (★v1.6: raised 20→40 so troubleshooting threads keep context)
 
@@ -41,10 +40,10 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
   const history = await fetchHistory(db, conversation.id);
   const ai = await generateAiReply(deps, conversation, history);
 
-  if (ai.aiMeta.action === 'escalate') {
-    const reason = ai.aiMeta.reason === 'none' ? 'other' : ai.aiMeta.reason;
-    await escalateConversation(deps, conversation, reason);
-  }
+  // ★v1.6 Phase 3: do NOT escalate/notify here. When the AI decides to escalate,
+  // the client collects intake + contact first, and POST /contact performs the
+  // single escalation + Slack notification (carrying the intake). We only signal
+  // the client via `escalated` so it can show the intake → contact cards.
 
   const { data: aiMsg, error: e2 } = await db
     .from('messages')
@@ -66,8 +65,10 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
   return c.json({
     customer_message: customerMsg,
     reply: aiMsg,
-    escalated: ai.aiMeta.escalate,
-    status: ai.aiMeta.escalate ? 'escalated' : conversation.status,
+    // `escalated` tells the client to collect intake + contact; the actual DB
+    // escalation happens on POST /contact (§6.2 v1.6), so status is unchanged here.
+    escalated: ai.aiMeta.action === 'escalate',
+    status: conversation.status,
   });
 }
 

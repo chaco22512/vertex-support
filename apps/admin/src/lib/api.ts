@@ -2,6 +2,7 @@ import type {
   AiMeta,
   Channel,
   ConvStatus,
+  IntakeInfo,
   KbChangeLog,
   KbRule,
   LanguageCode,
@@ -77,6 +78,7 @@ export interface ConversationDetail {
     customer_name: string;
     contact_email: string;
     contact_whatsapp: string;
+    intake_info: IntakeInfo;
     assigned_staff: string | null;
     reply_due_at: string | null;
     created_at: string;

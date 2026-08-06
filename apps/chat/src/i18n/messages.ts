@@ -19,6 +19,17 @@ export interface UiStrings {
   whatsappPlaceholder: string;
   contactSend: string;
   contactValidation: string;
+  /** Pre-escalation intake card (§6.2 v1.6). */
+  intakeTitle: string;
+  intakeSkip: string;
+  intakeContinue: string;
+  fieldCustomerNumber: string;
+  fieldSmartpit: string;
+  fieldRegisteredPhone: string;
+  fieldSimIccid: string;
+  fieldDeviceModel: string;
+  fieldTriedAlready: string;
+  fieldGmo: string;
   sentTitle: string;
   sentTitleNamed: string;
   sentWithin24: string;

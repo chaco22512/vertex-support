@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { buildEscalationMessage, buildReminderMessage, type SlackNoticeFields } from './slackMessage';
+import {
+  buildEscalationMessage,
+  buildReminderMessage,
+  intakeLine,
+  type SlackNoticeFields,
+} from './slackMessage';
 
 const base: SlackNoticeFields = {
   channel: 'webchat',
@@ -28,6 +33,30 @@ describe('buildEscalationMessage (§8)', () => {
     expect(msg).toContain('Assigned: @channel');
     expect(msg).toContain('Channel: webchat | Lang: VI');
     expect(msg).not.toContain('(src:');
+  });
+
+  it('includes an Info line from intake when provided, omits it when empty (§6.2 v1.6)', () => {
+    const withIntake = buildEscalationMessage(
+      { ...base, intake: { customer_number: 'C-100', device_model: 'iPhone 12' } },
+      '24h',
+    );
+    expect(withIntake).toContain('Info: Customer #=C-100 | Device=iPhone 12');
+    // No intake → no Info line.
+    expect(buildEscalationMessage(base, '24h')).not.toContain('Info:');
+  });
+});
+
+describe('intakeLine', () => {
+  it('orders and labels filled fields, skips blanks', () => {
+    expect(
+      intakeLine({ smartpit: 'SP1', customer_number: 'C1', device_model: '  ', gmo: 'G9' }),
+    ).toBe('Info: Customer #=C1 | SmartPit=SP1 | GMO=G9');
+  });
+
+  it('returns empty string for no/empty intake', () => {
+    expect(intakeLine(undefined)).toBe('');
+    expect(intakeLine({})).toBe('');
+    expect(intakeLine({ customer_number: '   ' })).toBe('');
   });
 });
 

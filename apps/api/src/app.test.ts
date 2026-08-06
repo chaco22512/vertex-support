@@ -95,7 +95,7 @@ describe('message flow', () => {
     expect(db.tables.messages.filter((m) => m.sender === 'ai')).toHaveLength(1);
   });
 
-  it('escalates when the model asks + Slack-notifies with the reason (criteria 2/8)', async () => {
+  it('AI escalate signals the client but defers the DB escalation to /contact (§6.2 v1.6)', async () => {
     const escalated = escalateResponse('price_question');
     const { app, db, env, slack } = setup(mockLlm([escalated]));
     const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
@@ -106,14 +106,41 @@ describe('message flow', () => {
       env,
     );
     const body = (await res.json()) as { escalated: boolean; status: string };
+    // Client is told to collect intake + contact, but nothing is escalated/notified yet.
     expect(body.escalated).toBe(true);
-    expect(body.status).toBe('escalated');
+    expect(body.status).not.toBe('escalated');
+    expect(db.tables.conversations[0]!.status).toBe('ai_handling');
+    expect(slack.calls).toHaveLength(0);
+  });
+
+  it('escalates + Slack-notifies with the reason and intake on /contact (criteria 2/8/35)', async () => {
+    const { app, db, env, slack } = setup();
+    const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
+
+    const res = await app.request(
+      `/api/conversations/${token}/contact`,
+      {
+        method: 'POST',
+        headers: jsonHeaders,
+        body: JSON.stringify({
+          email: 'a@b.com',
+          reason: 'price_question',
+          intake: { customer_number: 'C-100', device_model: 'iPhone 12', junk: 'x' },
+        }),
+      },
+      env,
+    );
+    expect(res.status).toBe(200);
     const conv = db.tables.conversations[0]!;
     expect(conv.status).toBe('escalated');
     expect(conv.reply_due_at).not.toBeNull();
-    // §8: Slack notified with the AI reason (criterion 2).
+    // Intake persisted (unknown keys stripped by the schema).
+    expect(conv.intake_info).toEqual({ customer_number: 'C-100', device_model: 'iPhone 12' });
+    // §8: one Slack notice, with the AI reason and the intake Info line.
     expect(slack.calls).toHaveLength(1);
     expect(slack.calls[0]!).toContain('AI reason: price_question');
+    expect(slack.calls[0]!).toContain('Info: Customer #=C-100');
+    expect(slack.calls[0]!).toContain('Device=iPhone 12');
   });
 
   it('rejects an empty message body', async () => {

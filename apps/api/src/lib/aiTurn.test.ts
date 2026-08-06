@@ -23,6 +23,7 @@ function conversation(overrides: Partial<Conversation> = {}): Conversation {
     topic_category: '',
     contact_email: '',
     contact_whatsapp: '',
+    intake_info: {},
     assigned_staff: null,
     escalated_at: null,
     reply_due_at: null,

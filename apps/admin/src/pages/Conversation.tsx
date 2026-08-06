@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { ConvStatus, KbRule, Staff } from '@vertex/shared';
+import type { ConvStatus, IntakeInfo, KbRule, Staff } from '@vertex/shared';
 import { api, type ConversationDetail, type DetailMessage } from '../lib/api';
 import { languageName, topicLabel } from '../lib/categories';
 import { contactLine, customerLabel } from '../lib/customer';
@@ -199,6 +199,8 @@ export function Conversation() {
         )}
       </div>
 
+      <IntakeSummary intake={conversation.intake_info} />
+
       <div className="detail-grid">
         <section className="thread" aria-label="Messages">
           {(() => {
@@ -297,6 +299,42 @@ export function Conversation() {
         />
       ) : null}
     </>
+  );
+}
+
+/** Situation details the customer left before escalating (§6.2 v1.6). */
+const INTAKE_LABELS: [keyof IntakeInfo, string][] = [
+  ['customer_number', 'Customer #'],
+  ['smartpit', 'SmartPit'],
+  ['gmo', 'GMO'],
+  ['registered_phone', 'Phone'],
+  ['sim_iccid', 'ICCID'],
+  ['device_model', 'Device'],
+  ['tried_already', 'Already tried'],
+];
+
+function IntakeSummary({ intake }: { intake: IntakeInfo | undefined }) {
+  const rows = INTAKE_LABELS.flatMap(([key, label]) => {
+    const v = intake?.[key]?.trim();
+    return v ? [[label, v] as const] : [];
+  });
+  if (rows.length === 0) return null;
+  return (
+    <div className="intake-summary" style={{ marginBottom: 'var(--sp-4)' }}>
+      <div className="muted" style={{ fontSize: 12, marginBottom: 4 }}>
+        Customer-provided details
+      </div>
+      <dl className="intake-grid">
+        {rows.map(([label, value]) => (
+          <div className="row" key={label} style={{ gap: 6 }}>
+            <dt className="muted" style={{ minWidth: 96 }}>
+              {label}
+            </dt>
+            <dd style={{ margin: 0 }}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }
 

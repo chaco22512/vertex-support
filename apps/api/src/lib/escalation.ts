@@ -1,4 +1,4 @@
-import type { Conversation, EscalationReason } from '@vertex/shared';
+import type { Conversation, EscalationReason, IntakeInfo } from '@vertex/shared';
 import type { Deps } from '../types';
 import { notifyEscalation } from './notify';
 import { pickAssignee } from './assign';
@@ -24,6 +24,7 @@ export async function escalateConversation(
   deps: Deps,
   conversation: EscalatableConversation,
   reason: EscalationReason,
+  intake?: IntakeInfo,
 ): Promise<EscalationResult> {
   const { db } = deps;
   const now = new Date();
@@ -63,6 +64,7 @@ export async function escalateConversation(
     channel: conversation.channel,
     sourceTag: conversation.source_tag,
     assigneeSlackId: assignee?.slackMemberId || null,
+    intake,
   });
   return { escalated_at: nowIso, reply_due_at: dueIso, reason };
 }

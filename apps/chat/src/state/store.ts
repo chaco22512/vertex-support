@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef } from 'preact/hooks';
-import type { LanguageCode } from '@vertex/shared';
+import type { IntakeInfo, LanguageCode } from '@vertex/shared';
 import * as api from '../api/client';
 import { getMessages } from '../i18n';
 import { localizedCategories, type LocalizedCategory } from '../data/menuLocalized';
@@ -217,19 +217,24 @@ export function useChat() {
     [state.token, state.topicCategory, ensureConversation, t],
   );
 
+  const intakeDone = useCallback(
+    (intake: IntakeInfo) => dispatch({ type: 'INTAKE_DONE', intake }),
+    [],
+  );
+
   const submitContact = useCallback(
     async (contact: { name?: string; email?: string; whatsapp?: string }) => {
       if (!state.token) return;
       const reason = state.behavior === 'always_escalate' ? 'price_question' : 'not_in_manual';
       try {
-        await api.postContact(state.token, { ...contact, reason });
+        await api.postContact(state.token, { ...contact, reason, intake: state.intake ?? undefined });
         dispatch({ type: 'CONTACT_SENT', contact });
       } catch {
         // Surface an error on the escalation card so the customer can retry (§5.4).
         dispatch({ type: 'CONTACT_ERROR' });
       }
     },
-    [state.token, state.behavior],
+    [state.token, state.behavior, state.intake],
   );
 
   const feedbackSolved = useCallback(async () => {
@@ -273,6 +278,7 @@ export function useChat() {
     selectLanguage,
     selectCategory,
     send,
+    intakeDone,
     submitContact,
     feedbackSolved,
     stillNeedHelp,

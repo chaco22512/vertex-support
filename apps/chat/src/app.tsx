@@ -56,6 +56,7 @@ export function App(): JSX.Element {
           t={t}
           handlers={{
             send: chat.send,
+            intakeDone: chat.intakeDone,
             submitContact: chat.submitContact,
             feedbackSolved: chat.feedbackSolved,
             stillNeedHelp: chat.stillNeedHelp,

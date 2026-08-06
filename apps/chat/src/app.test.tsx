@@ -52,10 +52,14 @@ describe('App guided flow', () => {
     expect(await screen.findByText('Here is the lost-SIM procedure.')).toBeTruthy();
   });
 
-  it('Plans & prices goes straight to the escalation card without AI', async () => {
+  it('Plans & prices goes to the intake card (then contact) without AI', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'English' }));
     fireEvent.click(screen.getByRole('button', { name: en.categories.plans }));
+    // §6.2 v1.6: the situation (intake) card shows first, before the contact card.
+    expect(await screen.findByText(en.ui.intakeTitle)).toBeTruthy();
+    // Skipping the intake advances to the contact card.
+    fireEvent.click(screen.getByRole('button', { name: en.ui.intakeSkip }));
     expect(await screen.findByText(en.ui.escalationTitle)).toBeTruthy();
   });
 });

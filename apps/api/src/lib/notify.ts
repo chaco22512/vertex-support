@@ -1,4 +1,4 @@
-import type { EscalationReason } from '@vertex/shared';
+import type { EscalationReason, IntakeInfo } from '@vertex/shared';
 import type { Deps } from '../types';
 import { buildEscalationMessage } from './slackMessage';
 import { buildStaffReplyEmail } from './emailTemplates';
@@ -18,6 +18,8 @@ export interface EscalationNotice {
   sourceTag: string;
   /** Slack member id of the assignee, or null when unassigned. */
   assigneeSlackId: string | null;
+  /** Pre-escalation intake details, if any (§6.2, v1.6). */
+  intake?: IntakeInfo;
 }
 
 /** Slack notification on escalation (§8). Never throws (sendSlack swallows). */
@@ -41,6 +43,7 @@ export async function notifyEscalation(deps: Deps, notice: EscalationNotice): Pr
       assigneeSlackId: notice.assigneeSlackId,
       conversationId: notice.conversationId,
       adminUrl: deps.adminOrigin,
+      intake: notice.intake,
     },
     hoursLabel(notice.replyDueAt),
   );

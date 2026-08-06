@@ -1,4 +1,4 @@
-import type { EscalationReason } from '@vertex/shared';
+import type { EscalationReason, IntakeInfo } from '@vertex/shared';
 
 // Default to the IPv4 loopback: `wrangler dev` binds 127.0.0.1 only, while
 // browsers resolve "localhost" to IPv6 (::1) first and would fail to connect.
@@ -73,7 +73,7 @@ export function getMessages(token: string, since?: number): Promise<MessagesResu
 
 export function postContact(
   token: string,
-  input: { name?: string; email?: string; whatsapp?: string; reason?: EscalationReason },
+  input: { name?: string; email?: string; whatsapp?: string; reason?: EscalationReason; intake?: IntakeInfo },
 ): Promise<{ status: string; reply_due_at: string | null }> {
   return request(`/api/conversations/${token}/contact`, {
     method: 'POST',

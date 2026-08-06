@@ -13,12 +13,24 @@ export const postMessageSchema = z.object({
 
 const reasonSchema = z.enum(ESCALATION_REASONS);
 
+/** Pre-escalation intake (§6.2, v1.6). All optional; unknown keys are stripped. */
+export const intakeSchema = z.object({
+  customer_number: z.string().trim().max(64).optional(),
+  smartpit: z.string().trim().max(64).optional(),
+  registered_phone: z.string().trim().max(32).optional(),
+  sim_iccid: z.string().trim().max(40).optional(),
+  device_model: z.string().trim().max(120).optional(),
+  tried_already: z.string().trim().max(1000).optional(),
+  gmo: z.string().trim().max(64).optional(),
+});
+
 export const contactSchema = z
   .object({
     name: z.string().trim().max(120).optional(),
     email: z.string().email().max(320).optional(),
     whatsapp: z.string().min(3).max(32).optional(),
     reason: reasonSchema.optional(),
+    intake: intakeSchema.optional(),
   })
   .refine((v) => Boolean(v.email) || Boolean(v.whatsapp), {
     message: 'email or whatsapp is required',

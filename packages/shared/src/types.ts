@@ -33,6 +33,21 @@ export interface FollowUp {
   options: string[];
 }
 
+/**
+ * Optional situation details collected on the pre-escalation "intake" card
+ * (spec §6.2, ★v1.6 Phase 3). Every field is optional/skippable; only filled
+ * fields are stored. Surfaced in the Slack notice and the admin detail header.
+ */
+export interface IntakeInfo {
+  customer_number?: string;
+  smartpit?: string;
+  registered_phone?: string;
+  sim_iccid?: string;
+  device_model?: string;
+  tried_already?: string;
+  gmo?: string;
+}
+
 // --- table rows (§3) ---
 export interface KbRule {
   id: string; // 'R001' form
@@ -81,6 +96,8 @@ export interface Conversation {
   topic_category: string;
   contact_email: string;
   contact_whatsapp: string;
+  /** Pre-escalation intake details (★v1.6 Phase 3); '{}' when none collected. */
+  intake_info: IntakeInfo;
   assigned_staff: string | null;
   escalated_at: string | null;
   reply_due_at: string | null;
