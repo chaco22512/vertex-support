@@ -60,6 +60,12 @@ export interface KbRule {
   audience: Audience;
   ai_can_answer: boolean;
   requires_fee_disclaimer: boolean;
+  /**
+   * True when the rule's fees are statutory/booklet-fixed amounts (late fee,
+   * re-issue, cancellation) that do NOT need the "final amount confirmed by
+   * staff" disclaimer (spec §4.2, ★v1.6 Phase 5). Variable amounts stay false.
+   */
+  fee_is_fixed: boolean;
   status: RuleStatus;
   review_reason: string;
   updated_by: string | null;

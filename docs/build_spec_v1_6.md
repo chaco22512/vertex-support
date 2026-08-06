@@ -75,6 +75,7 @@ create table kb_rules (
   audience      audience_t not null,
   ai_can_answer boolean not null,
   requires_fee_disclaimer boolean not null default false,
+  fee_is_fixed boolean not null default false, -- ★v1.6 Phase 5: 規約固定額は付記不要（§4.2）
   status        rule_status_t not null default 'active',
   review_reason text default '',
   updated_by    uuid references auth.users(id),
@@ -165,8 +166,9 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 - You are a customer support agent for a SIM card company serving foreign residents in Japan
 - Answer ONLY based on the rules provided below. Never invent rules, fees, or procedures
 - Reply in the customer's language (the language of their latest message)
-- NEVER state monthly plan prices, COD prices, or discount amounts. If asked, escalate
-- Fixed fees listed in the rules MAY be quoted, but ALWAYS append: "Final amount will be confirmed by our staff."（顧客の言語で）
+- NEVER state monthly plan prices, unlimited-plan prices, COD prices, or discount amounts. If asked, escalate（price_question）
+- **価格の段階解禁（★v1.6 Phase 5）**: 通話/SMSの単価、対応ネットワーク(Rakuten/Docomo)、5G/eSIM対応、SIMロック要件、プラン仕様（データ量・通話可否）は、ルールがあれば回答してよい（上記の禁止価格には当たらない）
+- **手数料付記の条件分岐（★v1.6 Phase 5）**: `(fees: … — fixed)` と示された規約/冊子固定額（延滞金・再発行・解約金 等）は付記**不要**。未マークまたは顧客ごとに変動する額（未払い残高・最終請求額・割引後額）を述べる時のみ "Final amount will be confirmed by our staff."（顧客の言語で）を付す
 - NEVER mention internal systems, staff names, Slack, Kintone, AR, or internal links
 - When a rule has a tutorial link, include the link in your answer
 - If about: billing disputes, refunds in progress, account-specific status, complaints, cancellation execution, or anything not covered by rules → escalate
@@ -276,10 +278,9 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 
 ### 6.1 フロー定義
 1. **言語選択**（初回のみ全画面。5言語をネイティブ表記の大ボタンで。ブラウザ言語から推定した言語を先頭に）
-2. **カテゴリ選択**: "What is your question about?" を表示し、`menu_categories.json` の11カテゴリ（★v1.5: Nenkin/Gensen 追加）をアイコン付きタイル（2列グリッド）で表示。選択値を conversations.topic_category に保存。**Others は常に末尾**
+2. **カテゴリ選択**: "What is your question about?" を表示し、`menu_categories.json` の10カテゴリをアイコン付きタイル（2列グリッド）で表示。選択値を conversations.topic_category に保存。**Others は常に末尾**（★v1.6 Phase 5: Nenkin/Gensen タイルはCS判断で削除。関連ルールはDBに残り Others 経由でのみ参照可）
 3. **カテゴリ別分岐**:
-   - 通常カテゴリ（9種）→ そのカテゴリの sub_questions をチップ表示 + "Something else" チップ。sub_question タップで定型質問として送信し、AIがカテゴリスコープのルールで回答。"Something else" タップで入力欄を表示
-     - **Nenkin/Gensen（年金・源泉還付）**（★v1.5追加）: kb_categories は `PLAN FILE: Nenkin and Gensen Rules and FAQ` + GENERAL RULES。sub_questions は「年金還付とは」「必要書類」「手数料」の3つ
+   - 通常カテゴリ（8種）→ そのカテゴリの sub_questions をチップ表示 + "Something else" チップ。sub_question タップで定型質問として送信し、AIがカテゴリスコープのルールで回答。"Something else" タップで入力欄を表示
    - **Plans & prices** → AIを呼ばず、固定メッセージ「料金プランはスタッフがご案内します」（顧客言語）+ エスカレーションカードを即表示（reason: price_question）
    - **Others** → "Please tell us your question." を表示して入力欄を開く。AIは全カテゴリのルールで回答
 4. **AI回答後**: "Solved 👍 / Still need help" ボタン + 入力欄を常時表示に切替（フォローアップの自由入力を許可。以降はスコープ維持のままAI回答）
@@ -340,7 +341,7 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 
 ### 7.4 ナレッジ管理
 - カテゴリツリー + インクリメンタル全文検索（入力ごとに絞り込み）
-- 編集ダイアログ: rule_text、fee_amounts_jpy（数値入力・複数可）、links、audience、ai_can_answer トグル、status。保存ボタン名は "Save rule"
+- 編集ダイアログ: rule_text、fee_amounts_jpy（数値入力・複数可）、links、audience、ai_can_answer トグル、**fee_is_fixed トグル（★v1.6: 固定額＝付記なし）**、status。保存ボタン名は "Save rule"
 - 保存時 kb_change_log に before/after 記録。ダイアログ内に注記 "Changes apply to AI instantly."
 - 新規追加（id 'M001'〜）。破壊的操作は物理削除でなく status='disabled'（Undo可能に）
 
@@ -443,8 +444,8 @@ UX（v1.1追加）:
 25. エスカレ（名前・連絡先）送信後に、確認（成功）カードが顧客言語で表示される（メール/電話で文面が出し分けられ、名前があれば宛名が入る）。送信失敗時はエラー＋再試行が表示される
 26. 各メッセージに送信時刻(HH:MM)が表示され、日付が変わる位置に区切り（Today / Yesterday / 日付）が表示される（顧客チャット・admin会話詳細の両方）
 
-第2マニュアル・11トピック（★v1.5追補）:
-27. カテゴリタイルが11個表示され、Others が末尾にある。**Nenkin/Gensen** タイルから定型質問を送ると、Nenkin カテゴリ + GENERAL RULES にスコープしたAI回答が返る
+第2マニュアル・トピック（★v1.5追補 / ★v1.6 Phase 5改訂）:
+27. カテゴリタイルが**10個**表示され、Others が末尾にある（Nenkin/Gensen タイルは Phase 5 で削除）
 28. Pシリーズ取込後、`kb_rules` 総件数がRシリーズと合算で一致し、pending_review が想定件数（R42 + P225）になる。pending_review のCOD/割引・"dont use yet" ルールがAIプロンプトに出ない（仕様Hardルール3）
 29. Review queue が4タブ（A/B/C/D）で、各 review_reason が正しいタブに入る
 
@@ -459,7 +460,11 @@ CSフィードバック対応（★v1.6。括弧内は指示書 `claude_code_ins
 
 エスカレ前情報収集（★v1.6 Phase 3）:
 35. (指示#30) エスカレ前に状況確認カードが顧客言語で表示され（トピック別項目・任意/スキップ可）、送信した内容が **Slack通知の "Info:" 行** と **admin会話詳細の上部** に反映される。エスカレ（status変更＋Slack）は連絡先送信時に1回だけ発火する
-<!-- 後続Phaseで追加予定: 36=指示#32(固定手数料は付記なし・変動額は付記あり) -->
+
+ポリシー調整（★v1.6 Phase 5）:
+36. (指示#32) `fee_is_fixed=true` の規約固定額（再発行¥4,000 等）は付記なしで回答され、変動額（未払い残高・最終請求額・割引後額）や未マークの額には「Final amount will be confirmed by our staff.」が付く
+37. 通話/SMS単価・ネットワーク・5G/eSIM・SIMロック・プラン仕様は回答可、月額/Unlimited/COD/割引はエスカレ（price_question）。Plans FAQ 21件は Review queue で人手承認（自動承認しない）
+38. カテゴリタイルは10個（Nenkin 削除）で Others が末尾
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

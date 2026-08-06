@@ -22,8 +22,8 @@ Source of truth: `docs/cs-staff-rulebook.md` (referenced as "Rulebook Ch.N"). Sc
 - **Key points (Rulebook Ch.1):** Language → Topic → Common question → AI answer → Solved / Still need help → (if needed) handed to staff.
 - **Visual:** Left-to-right flow diagram of the 5 steps; below it, 📷 topic grid + 📷 an AI answer with Solved / Still need help.
 
-### Slide 5 — The 11 topics
-- **Key points (Rulebook Ch.1):** Show the 11 tiles (incl. **Pension & tax refund (Nenkin)**); note that **Plans & prices** always goes to staff and **Others** is always last.
+### Slide 5 — The 10 topics
+- **Key points (Rulebook Ch.1):** Show the 10 tiles; note that **Plans & prices** always goes to staff and **Others** is always last.
 - **Visual:** 📷 Customer chat topic grid; highlight the "Plans & prices" tile.
 
 ### Slide 6 — What the AI ANSWERS

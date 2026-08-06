@@ -1,6 +1,6 @@
 {
- "version": "1.2",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog); added Nenkin/Gensen. v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic.",
+ "version": "1.3",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*').",
  "categories": [
   {
    "id": "internet",
@@ -141,20 +141,6 @@
    "sub_questions": [
     "When will I get my cashback?",
     "How do I get my deposit back?"
-   ]
-  },
-  {
-   "id": "nenkin",
-   "icon": "ti-coin-yen",
-   "label_en": "Pension & tax refund (Nenkin)",
-   "kb_categories": [
-    "PLAN FILE: Nenkin and Gensen Rules and FAQ",
-    "GENERAL RULES"
-   ],
-   "sub_questions": [
-    "What is the Nenkin (pension) refund?",
-    "What documents do I need?",
-    "How much is the service fee?"
    ]
   },
   {

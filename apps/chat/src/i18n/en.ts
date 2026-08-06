@@ -54,7 +54,6 @@ export const en: Messages = {
     replace: 'Replacement / change plan',
     reissue: 'Signal stopped / re-issue',
     refund: 'Refund / deposit / cashback',
-    nenkin: 'Pension & tax refund (Nenkin)',
     plans: 'Plans & prices',
     others: 'Others',
   },
@@ -87,10 +86,5 @@ export const en: Messages = {
       'What is the re-issue (termination) fee?',
     ],
     refund: ['When will I get my cashback?', 'How do I get my deposit back?'],
-    nenkin: [
-      'What is the Nenkin (pension) refund?',
-      'What documents do I need?',
-      'How much is the service fee?',
-    ],
   },
 };

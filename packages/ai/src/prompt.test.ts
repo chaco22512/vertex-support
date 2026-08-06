@@ -11,6 +11,7 @@ function rule(partial: Partial<KbRule> & Pick<KbRule, 'id' | 'category' | 'rule_
     audience: 'customer',
     ai_can_answer: true,
     requires_fee_disclaimer: false,
+    fee_is_fixed: false,
     status: 'active',
     review_reason: '',
     updated_by: null,
@@ -35,6 +36,14 @@ describe('formatRule', () => {
     const r = rule({ id: 'R003', category: 'X', rule_text: 'APN.', links: ['https://x/apn'] });
     expect(formatRule(r)).toBe('[R003] APN. (link: https://x/apn)');
   });
+
+  it('marks a fixed fee with "— fixed" (§4.2 v1.6)', () => {
+    const r = rule({ id: 'R004', category: 'X', rule_text: 'Re-issue.', fee_amounts_jpy: [4000], fee_is_fixed: true });
+    expect(formatRule(r)).toBe('[R004] Re-issue. (fees: ¥4,000 — fixed)');
+    // Default (variable) keeps the plain fee form.
+    const v = rule({ id: 'R005', category: 'X', rule_text: 'Balance.', fee_amounts_jpy: [4000] });
+    expect(formatRule(v)).toBe('[R005] Balance. (fees: ¥4,000)');
+  });
 });
 
 describe('buildSystemPrompt', () => {
@@ -56,6 +65,13 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('follow_up');
     expect(prompt).toContain('3-5 concrete tappable choices');
     expect(prompt).toContain('in their 40s or older');
+  });
+
+  it('states the price allow/forbid boundary and the fixed-fee disclaimer rule (§4.2 v1.6 Phase 5)', () => {
+    expect(prompt).toContain('per-call and SMS unit rates');
+    expect(prompt).toContain('unlimited-plan prices');
+    expect(prompt).toContain('"— fixed"');
+    expect(prompt).toContain('Final amount will be confirmed by our staff.');
   });
 
   it('groups rules by category and lists ids', () => {

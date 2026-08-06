@@ -60,6 +60,7 @@ export async function createRule(c: Context<AppEnv>): Promise<Response> {
     audience: parsed.data.audience,
     ai_can_answer: parsed.data.ai_can_answer,
     requires_fee_disclaimer: parsed.data.requires_fee_disclaimer ?? false,
+    fee_is_fixed: parsed.data.fee_is_fixed ?? false,
     status: parsed.data.status ?? 'active',
     updated_by: staff.userId,
   };

@@ -9,6 +9,7 @@ type Draft = {
   links: string[];
   audience: 'customer' | 'internal';
   ai_can_answer: boolean;
+  fee_is_fixed: boolean;
   status: 'active' | 'pending_review' | 'disabled';
 };
 
@@ -19,6 +20,7 @@ function toDraft(rule: KbRule): Draft {
     links: rule.links ?? [],
     audience: rule.audience,
     ai_can_answer: rule.ai_can_answer,
+    fee_is_fixed: rule.fee_is_fixed ?? false,
     status: rule.status,
   };
 }
@@ -61,6 +63,7 @@ export function RuleDialog({
         links,
         audience: draft.audience,
         ai_can_answer: draft.ai_can_answer,
+        fee_is_fixed: draft.fee_is_fixed,
         status: draft.status,
       });
       onSaved(updated);
@@ -131,6 +134,14 @@ export function RuleDialog({
             onChange={(e) => setDraft({ ...draft, ai_can_answer: e.target.checked })}
           />
           AI can answer
+        </label>
+        <label className="row" style={{ alignSelf: 'flex-end' }} title="Statutory/booklet fixed fee — quoted without the 'final amount confirmed by staff' disclaimer.">
+          <input
+            type="checkbox"
+            checked={draft.fee_is_fixed}
+            onChange={(e) => setDraft({ ...draft, fee_is_fixed: e.target.checked })}
+          />
+          Fixed fee (no disclaimer)
         </label>
       </div>
 

@@ -55,7 +55,6 @@ export const tl: Messages = {
     replace: 'Palit / baguhin ang plan',
     reissue: 'Huminto ang signal / re-issue',
     refund: 'Refund / deposito / cashback',
-    nenkin: 'Refund ng pension at buwis (Nenkin)',
     plans: 'Mga plan & presyo',
     others: 'Iba pa',
   },
@@ -88,10 +87,5 @@ export const tl: Messages = {
       'Magkano ang bayad sa re-issue (pagtatapos)?',
     ],
     refund: ['Kailan ko makukuha ang aking cashback?', 'Paano ko makukuha ang aking deposito?'],
-    nenkin: [
-      'Ano ang Nenkin (pension) refund?',
-      'Anong mga dokumento ang kailangan ko?',
-      'Magkano ang service fee?',
-    ],
   },
 };

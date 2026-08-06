@@ -40,6 +40,7 @@ async function main(): Promise<void> {
         audience: 'customer',
         ai_can_answer: true,
         requires_fee_disclaimer: false,
+        fee_is_fixed: false,
         status: 'active',
         review_reason: '',
         updated_by: null,

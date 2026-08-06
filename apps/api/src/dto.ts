@@ -65,6 +65,7 @@ export const createRuleSchema = z.object({
   audience: z.enum(['customer', 'internal']),
   ai_can_answer: z.boolean(),
   requires_fee_disclaimer: z.boolean().optional(),
+  fee_is_fixed: z.boolean().optional(),
   status: z.enum(['active', 'pending_review', 'disabled']).optional(),
 });
 export const updateRuleSchema = z.object({
@@ -76,6 +77,7 @@ export const updateRuleSchema = z.object({
   audience: z.enum(['customer', 'internal']).optional(),
   ai_can_answer: z.boolean().optional(),
   requires_fee_disclaimer: z.boolean().optional(),
+  fee_is_fixed: z.boolean().optional(),
   status: z.enum(['active', 'pending_review', 'disabled']).optional(),
   review_reason: z.string().max(400).optional(),
 });

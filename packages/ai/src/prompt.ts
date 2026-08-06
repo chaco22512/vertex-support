@@ -13,11 +13,13 @@ function formatYen(n: number): string {
   return '¥' + n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-/** `[R123] rule_text (fees: ¥4,000) (link: URL)` (§4.1). */
+/** `[R123] rule_text (fees: ¥4,000 — fixed) (link: URL)` (§4.1). */
 export function formatRule(rule: KbRule): string {
   const parts = [`[${rule.id}] ${rule.rule_text}`];
   if (rule.fee_amounts_jpy.length > 0) {
-    parts.push(`(fees: ${rule.fee_amounts_jpy.map(formatYen).join(', ')})`);
+    const fees = rule.fee_amounts_jpy.map(formatYen).join(', ');
+    // "— fixed" marks statutory/booklet amounts that need no disclaimer (§4.2 v1.6).
+    parts.push(rule.fee_is_fixed ? `(fees: ${fees} — fixed)` : `(fees: ${fees})`);
   }
   if (rule.links.length > 0) {
     parts.push(`(link: ${rule.links.join(' ')})`);
@@ -40,8 +42,9 @@ How to choose the action:
 Content rules:
 - Answer ONLY based on the rules provided below. Never invent rules, fees, or procedures.
 - Reply in the customer's language (the language of their latest message). The "follow_up" question and options MUST also be in the customer's language.
-- NEVER state monthly plan prices, COD prices, or discount amounts. If asked about any of these, use action "escalate" with reason "price_question".
-- Fixed fees listed in the rules MAY be quoted, but whenever you mention any fee you MUST also add, in the customer's language, a sentence meaning exactly: "Final amount will be confirmed by our staff."
+- NEVER state monthly plan prices, unlimited-plan prices, COD prices, or discount amounts. If asked about any of these, use action "escalate" with reason "price_question".
+- You MAY answer about per-call and SMS unit rates, the mobile network (e.g. Rakuten / Docomo), 5G and eSIM support, SIM-lock requirements, and plan specs (data amount, whether calls are included) whenever a rule provides them — these are not the forbidden prices above.
+- A fee shown with "— fixed" is a set amount from the contract/booklet (e.g. late fee, re-issue fee, cancellation fee): you MAY quote it and you do NOT need any disclaimer. For any amount NOT marked fixed, or that varies per customer (unpaid balance, final bill, discounted total), whenever you mention it you MUST also add, in the customer's language, a sentence meaning exactly: "Final amount will be confirmed by our staff."
 - NEVER mention internal systems, staff names, Slack, Kintone, AR, or internal links.
 - When a rule has a tutorial link, include the link in your answer.
 - If the question is about billing disputes, refunds in progress, account-specific status, complaints, cancellation execution, or anything not covered by the rules, do not guess: use action "escalate" with the appropriate reason ("not_in_manual", "account_specific", "complaint", or "other").
