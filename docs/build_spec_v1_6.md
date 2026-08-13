@@ -49,7 +49,7 @@ v1.2→v1.3 の変更: 顧客チャットを「カテゴリ選択ファースト
 ### セキュリティ原則
 - APIキー（Gemini/Resend/Slack）は Workers 環境変数のみ。クライアントに一切出さない
 - 顧客入力はLLM送信前にPIIマスキング（電話番号・メール・ICCID等10桁以上の数字列をプレースホルダー化。マスク前原文のDB保存は可）
-- チャットAPIはセッショントークン必須 + レート制限（同一セッション 10req/分）
+- チャットAPIはセッショントークン必須 + レート制限（同一セッション 10req/分）。★v1.6: レート制限は**書き込み系(POST /messages,/contact,/feedback)のみ**に適用（GET /messages の5秒ポーリングはKV put を伴わない読み取りのため対象外）。KVエラー時は**fail-open**（許可＋ログ）で、KV障害/quotaでチャットを停止させない
 - admin APIは Supabase Auth JWT 必須。RLSで staff ロールは kb_rules 書き込み不可
 
 ---

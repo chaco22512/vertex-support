@@ -195,13 +195,29 @@ describe('session auth & rate limiting', () => {
     expect(res.status).toBe(404);
   });
 
-  it('rate-limits after 10 requests per session (§2, criterion 8)', async () => {
+  it('does NOT rate-limit GET polling (read-only; no KV writes)', async () => {
+    const { app, env } = setup();
+    const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
+    const path = `/api/conversations/${token}/messages`;
+    let last = 200;
+    for (let i = 0; i < 15; i++) {
+      const res = await app.request(path, { headers: { Origin: CHAT_ORIGIN } }, env);
+      last = res.status;
+    }
+    expect(last).toBe(200); // GET is never 429 (the 5s poll must not hit the KV limiter)
+  });
+
+  it('rate-limits mutating POSTs after 10 per session (§2, criterion 8)', async () => {
     const { app, env } = setup();
     const token = ((await (await createConversation(app, env)).json()) as { token: string }).token;
     const path = `/api/conversations/${token}/messages`;
     let last = 200;
     for (let i = 0; i < 11; i++) {
-      const res = await app.request(path, { headers: { Origin: CHAT_ORIGIN } }, env);
+      const res = await app.request(
+        path,
+        { method: 'POST', headers: jsonHeaders, body: JSON.stringify({ body: 'hi' }) },
+        env,
+      );
       last = res.status;
     }
     expect(last).toBe(429);

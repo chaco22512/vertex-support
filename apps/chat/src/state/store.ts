@@ -7,7 +7,10 @@ import { initialState, reducer, type ChatMessage } from './flow';
 
 const STORAGE_KEY = 'vertex_chat_session';
 const AI_TIMEOUT_MS = 15_000; // §6.3, criterion 10 (client-side safety net)
-const POLL_MS = 5_000; // §6.3
+// §6.3 staff-reply poll. 15s (was 5s) and paused while the tab is hidden — a
+// 24h reply SLA doesn't need 5s freshness, and the tighter interval + no pause
+// was hammering the API (and, previously, the KV rate-limit counter).
+const POLL_MS = 15_000;
 
 interface Persisted {
   token: string;
@@ -118,6 +121,9 @@ export function useChat() {
     if (!state.token || state.resolved || !state.escalated) return;
     const id = setInterval(() => {
       if (!state.token) return;
+      // Pause polling while the tab is hidden (backgrounded / phone screen off):
+      // no point fetching, and it avoids needless load. Resumes when visible.
+      if (typeof document !== 'undefined' && document.hidden) return;
       api
         .getMessages(state.token, state.lastMessageId)
         .then((res) => {

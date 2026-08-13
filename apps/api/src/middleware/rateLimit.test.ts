@@ -31,4 +31,18 @@ describe('checkRateLimit', () => {
     expect((await checkRateLimit(kv, 'a', now)).allowed).toBe(false);
     expect((await checkRateLimit(kv, 'b', now)).allowed).toBe(true);
   });
+
+  it('fails OPEN when KV errors (e.g. daily put limit) — never blocks the chat', async () => {
+    const throwingKv = {
+      get: async () => {
+        throw new Error('KV get failed');
+      },
+      put: async () => {
+        throw new Error('KV daily put limit exceeded');
+      },
+      delete: async () => undefined,
+    } as unknown as KVNamespace;
+    const r = await checkRateLimit(throwingKv, 'tok', 1_000_000_000_000);
+    expect(r.allowed).toBe(true);
+  });
 });

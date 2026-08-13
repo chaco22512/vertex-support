@@ -45,15 +45,18 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   app.get('/health', (c) => c.json({ status: 'ok', service: 'vertex-support-api' }));
   app.post('/api/conversations', createConversation);
 
-  // Session-scoped routes: rate limit first (cheap abuse rejection), then resolve
-  // the conversation from the token.
+  // Session-scoped routes: resolve the conversation from the token, then apply the
+  // KV-backed rate limit ONLY to mutating (POST) routes. GET /messages is the 5s
+  // chat poll — a read-only DB fetch — and must NOT hit the KV counter, which
+  // wrote to KV on every request and blew the 1000/day put limit (fixed-window
+  // counter puts once per allowed request). Reads carry no LLM/cost, so a KV
+  // write-limit on them is both wasteful and the cause of the incident.
   const session = new Hono<AppEnv>();
-  session.use('*', rateLimitMiddleware);
   session.use('*', sessionMiddleware);
   session.get('/messages', getMessages);
-  session.post('/messages', postMessage);
-  session.post('/contact', postContact);
-  session.post('/feedback', postFeedback);
+  session.post('/messages', rateLimitMiddleware, postMessage);
+  session.post('/contact', rateLimitMiddleware, postContact);
+  session.post('/feedback', rateLimitMiddleware, postFeedback);
   app.route('/api/conversations/:token', session);
 
   // Admin API (§7/§9): JWT-authenticated. Knowledge & staff are admin-only.

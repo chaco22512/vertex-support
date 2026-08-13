@@ -15,6 +15,10 @@ export interface RateLimitResult {
  * Fixed-window counter in KV, keyed by session token + window. Not strictly
  * atomic (KV is eventually consistent) but sufficient at this scale; swap for a
  * Durable Object if exact limiting is ever required.
+ *
+ * FAIL-OPEN (★): any KV error — most importantly the daily put-limit being
+ * exceeded — must NEVER take down the customer chat. On error we log and allow
+ * the request through rather than surfacing a 500.
  */
 export async function checkRateLimit(
   kv: KVNamespace,
@@ -26,12 +30,21 @@ export async function checkRateLimit(
   const key = `rl:${token}:${windowIndex}`;
   const resetSec = RATE_LIMIT_WINDOW_SEC - Math.floor((now % windowMs) / 1000);
 
-  const current = Number((await kv.get(key)) ?? '0');
-  if (current >= RATE_LIMIT_MAX) {
-    return { allowed: false, remaining: 0, resetSec };
+  try {
+    const current = Number((await kv.get(key)) ?? '0');
+    if (current >= RATE_LIMIT_MAX) {
+      return { allowed: false, remaining: 0, resetSec };
+    }
+    await kv.put(key, String(current + 1), { expirationTtl: RATE_LIMIT_WINDOW_SEC });
+    return { allowed: true, remaining: RATE_LIMIT_MAX - (current + 1), resetSec };
+  } catch (err) {
+    // KV unavailable / quota exceeded → fail open (allow) and log for monitoring.
+    console.warn(
+      'rate-limit KV error, failing open:',
+      err instanceof Error ? err.message : String(err),
+    );
+    return { allowed: true, remaining: RATE_LIMIT_MAX, resetSec };
   }
-  await kv.put(key, String(current + 1), { expirationTtl: RATE_LIMIT_WINDOW_SEC });
-  return { allowed: true, remaining: RATE_LIMIT_MAX - (current + 1), resetSec };
 }
 
 export const rateLimitMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {

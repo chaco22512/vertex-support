@@ -3,6 +3,36 @@
 Running list of items intentionally postponed. Anything deferred in later milestones
 must be appended here so nothing is silently dropped.
 
+## Rate limiting — KV put-limit incident (resolved) + root-fix option
+- **Incident:** Cloudflare "KV daily put limit (1000) exceeded". Cause: the KV
+  fixed-window rate limiter ran on **every** session route incl. `GET /messages`,
+  and wrote to KV on every allowed request. The chat polls `GET /messages` every
+  5s while escalated → one open tab ≈ 720 puts/hour → blew 1000/day.
+- **Fixed (this change):** (a) `checkRateLimit` now **fails open** on any KV error
+  (logs, allows) — a KV outage/quota can never 500 the chat. (b) `GET /messages`
+  is no longer KV-rate-limited (read-only, no LLM/cost); the limiter applies only
+  to POST `/messages`, `/contact`, `/feedback`. (c) chat poll 5s→15s and pauses
+  while the tab is hidden.
+- **Post-fix KV put estimate:** puts now come only from mutating POSTs (one put per
+  allowed request). ~5–10 puts per conversation (a few messages + contact + feedback).
+  At ~10 conversations/day ⇒ **~50–100 puts/day**; even 3× volume ⇒ ~300/day. Well
+  under the 1000/day free limit (≤10–30%). 429'd requests and all GET polls add 0 puts.
+- **Root-fix option (recommended, not yet applied):** switch POST limiting to the
+  **Cloudflare Workers native Rate Limiting binding**, which consumes **no KV**:
+  ```toml
+  # apps/api/wrangler.toml
+  [[unsafe.bindings]]
+  name = "RATE_LIMITER"
+  type = "ratelimit"
+  namespace_id = "1001"
+  simple = { limit = 10, period = 60 }   # period must be 10 or 60
+  ```
+  Usage: `const { success } = await env.RATE_LIMITER.limit({ key: token });` →
+  reject with 429 when `!success`. Removes KV from the limiting path entirely
+  (the KV namespace could then be dropped). It's still a gated/"unsafe" binding, so
+  it needs a deploy-time check and a fake in tests — deferred since the changes above
+  already bring puts far under the limit.
+
 ## Knowledge — per-plan manual (P-series, spec v1.5 §3/§4.1)
 - [ ] **Plan-selection step (improvement backlog).** The per-plan manual adds 30+
       plan-specific sheets (`PLAN FILE: VOICE SIM`, `… POCKET WIFI`, `… eSIM Data Plan`,
