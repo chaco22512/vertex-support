@@ -33,6 +33,22 @@ must be appended here so nothing is silently dropped.
   it needs a deploy-time check and a fake in tests — deferred since the changes above
   already bring puts far under the limit.
 
+### Polling / usage — future scale-hardening (record only, not implemented)
+Further reductions in request/KV consumption for when volume grows. None are needed
+today (post-fix puts are ≤10–30% of the free limit), so these are backlog only.
+- [ ] **Auto-stop polling after quiet period.** Even while escalated, if no new
+      message arrives for e.g. 30 min, stop the `GET /messages` poll and show a
+      **"Check for new replies"** button to resume manually. Drives request usage from
+      an abandoned/open tab to **zero**. (Today the tab-hidden pause already stops
+      polling when backgrounded; this covers a tab left open and visible.)
+- [ ] **Stepped backoff on the poll interval.** Lengthen the interval the longer
+      there's been no new message: 15s → 30s → 60s; reset to 15s as soon as a new
+      message arrives. Keeps replies feeling fresh while cutting idle polling.
+- [ ] **Usage monitoring in the run-book.** Add a step to `docs/deploy-runbook.md`
+      ops checklist: watch the Cloudflare **Workers Usage** dashboard and act when
+      daily requests exceed **50% of the free tier (100k/day ⇒ 50k)** — early warning
+      before any limit is hit. (Pairs with the KV put estimate above.)
+
 ## Knowledge — per-plan manual (P-series, spec v1.5 §3/§4.1)
 - [ ] **Plan-selection step (improvement backlog).** The per-plan manual adds 30+
       plan-specific sheets (`PLAN FILE: VOICE SIM`, `… POCKET WIFI`, `… eSIM Data Plan`,
