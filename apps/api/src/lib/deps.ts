@@ -29,5 +29,6 @@ export function defaultDeps(env: ApiBindings): Deps {
     },
     sendSlack: (text: string) => postSlack(env.SLACK_WEBHOOK_URL, text),
     sendEmail: (msg) => sendResend(env.RESEND_API_KEY, env.EMAIL_FROM || DEFAULT_EMAIL_FROM, msg),
+    emailFrom: env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
   };
 }

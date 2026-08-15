@@ -50,6 +50,7 @@ function setup(llm: LlmClient = mockLlm([goodResponse()])) {
     verifyStaff: fakeVerifyStaff(),
     sendSlack: slack,
     sendEmail: email,
+    emailFrom: 'test@resend.dev',
   }));
   return { app, db, env, slack, email };
 }

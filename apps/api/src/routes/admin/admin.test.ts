@@ -37,6 +37,7 @@ function setup(role: Role = 'admin', llm: LlmClient = mockLlm([goodResponse()]))
     verifyStaff: fakeVerifyStaff(role),
     sendSlack: slack,
     sendEmail: email,
+    emailFrom: 'test@resend.dev',
   }));
   return { app, db, env, slack, email };
 }

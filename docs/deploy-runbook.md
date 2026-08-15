@@ -93,6 +93,27 @@ The invite API also pins `redirectTo` to `<ADMIN_URL>/set-password`
 (`apps/api/src/routes/admin/staff.ts`), so links are correct even if this setting
 drifts — but keep Site URL current for password-reset and other Auth emails.
 
+## 6c. Branded staff-invite email (SIM Point, via Resend) — optional but recommended
+By default, staff invitations are the **Supabase** built-in email (works for any
+address, but looks generic). To send a **SIM Point-branded invite with how-to
+steps** instead, verify a domain in Resend and set `EMAIL_FROM`:
+1. Resend dashboard → **Domains** → add e.g. `sim-point.jp` (or a subdomain like
+   `mail.sim-point.jp`) and add the shown **SPF/DKIM DNS records** at the domain
+   registrar; wait for "Verified".
+2. Set the Worker var/secret **`EMAIL_FROM`** to a sender on that domain with a
+   friendly name, e.g. `SIM Point chatbot support <noreply@sim-point.jp>`
+   (`wrangler secret put EMAIL_FROM` or a `[vars]` entry), then redeploy the Worker.
+3. From then on, **`createStaff` automatically switches to a Resend-sent, branded
+   invite** (subject "SIM Point chatbot support — set up your admin account" + usage
+   steps, `apps/api/src/lib/emailTemplates.ts` `buildStaffInviteEmail`). Until
+   `EMAIL_FROM` is a verified (non-`resend.dev`) sender it stays on the Supabase
+   invite, so nothing breaks before the domain is ready.
+   - The same `EMAIL_FROM` also brands the customer staff-reply emails.
+4. **Interim (no domain yet):** you can still brand the *content* today by editing
+   Supabase → **Authentication → Email Templates → "Invite user"** (add SIM Point
+   wording + steps around the `{{ .ConfirmationURL }}` link). The sender address
+   stays Supabase's, but the email reads as SIM Point.
+
 ## 7. Verify
 - `curl <API_URL>/health` → `{"status":"ok",...}`.
 - Open **CHAT_URL** — language selection appears; run one lost-SIM question end to end.

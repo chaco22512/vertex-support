@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import type { AppEnv } from '../../types';
 import { createStaffSchema, updateStaffSchema } from '../../dto';
+import { buildStaffInviteEmail } from '../../lib/emailTemplates';
 
 /** GET /api/admin/staff — list (§7.6). */
 export async function listStaff(c: Context<AppEnv>): Promise<Response> {
@@ -17,20 +18,39 @@ export async function createStaff(c: Context<AppEnv>): Promise<Response> {
   const parsed = createStaffSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
 
-  // Send a Supabase Auth invitation email; the returned user id links the staff row.
-  // Pin redirectTo to the admin set-password page so the link never depends solely
-  // on Supabase's Site URL config (which caused invites to point at localhost).
-  const invite = await db.auth.admin.inviteUserByEmail(parsed.data.email, {
-    redirectTo: `${deps.adminOrigin.replace(/\/$/, '')}/set-password`,
-  });
-  if (invite.error || !invite.data.user) {
-    return c.json({ error: 'invite_failed', detail: invite.error?.message }, 502);
+  // Create the auth user + invite. redirectTo is pinned to the admin set-password
+  // page so the link never depends solely on Supabase's Site URL config.
+  // When a verified branded sender is configured (EMAIL_FROM ≠ resend.dev), send our
+  // own SIM Point-branded invite via Resend (with how-to steps); otherwise fall back
+  // to Supabase's built-in invitation email so delivery is never regressed (§7.6 v1.7).
+  const redirectTo = `${deps.adminOrigin.replace(/\/$/, '')}/set-password`;
+  const branded = !deps.emailFrom.includes('resend.dev');
+
+  let userId: string;
+  if (branded) {
+    const { data: link, error: linkErr } = await db.auth.admin.generateLink({
+      type: 'invite',
+      email: parsed.data.email,
+      options: { redirectTo },
+    });
+    if (linkErr || !link?.user) {
+      return c.json({ error: 'invite_failed', detail: linkErr?.message }, 502);
+    }
+    userId = link.user.id;
+    const { subject, html } = buildStaffInviteEmail(link.properties.action_link, parsed.data.name);
+    await deps.sendEmail({ to: parsed.data.email, subject, html });
+  } else {
+    const invite = await db.auth.admin.inviteUserByEmail(parsed.data.email, { redirectTo });
+    if (invite.error || !invite.data.user) {
+      return c.json({ error: 'invite_failed', detail: invite.error?.message }, 502);
+    }
+    userId = invite.data.user.id;
   }
 
   const { data, error } = await db
     .from('staff')
     .insert({
-      id: invite.data.user.id,
+      id: userId,
       name: parsed.data.name,
       email: parsed.data.email,
       role: parsed.data.role ?? 'staff',

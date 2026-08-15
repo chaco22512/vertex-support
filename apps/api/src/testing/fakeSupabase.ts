@@ -29,6 +29,24 @@ export class FakeSupabase {
   };
   private seq: Record<string, number> = {};
 
+  /** Minimal Supabase Auth admin stub for the staff-invite flow (§7.6). */
+  authCalls: { invite: number; generateLink: number } = { invite: 0, generateLink: 0 };
+  auth = {
+    admin: {
+      inviteUserByEmail: async (email: string) => {
+        this.authCalls.invite += 1;
+        return { data: { user: { id: `user-${email}` } }, error: null };
+      },
+      generateLink: async ({ email }: { email: string }) => {
+        this.authCalls.generateLink += 1;
+        return {
+          data: { user: { id: `user-${email}` }, properties: { action_link: `https://admin.test/set-password#tok` } },
+          error: null,
+        };
+      },
+    },
+  };
+
   from(name: string): FakeQuery {
     this.tables[name] ??= [];
     return new FakeQuery(this, name);

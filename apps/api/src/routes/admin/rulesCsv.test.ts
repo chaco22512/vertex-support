@@ -50,6 +50,7 @@ function setup(role: Role = 'admin') {
     verifyStaff: fakeVerifyStaff(role),
     sendSlack: fakeSendSlack(),
     sendEmail: fakeSendEmail(),
+    emailFrom: 'test@resend.dev',
   }));
   return { app, db, env };
 }

@@ -29,6 +29,8 @@ export interface Deps {
   sendSlack: (text: string) => Promise<void>;
   /** Send a customer email via Resend (§8). No-op if unconfigured; never throws. */
   sendEmail: (msg: EmailMessage) => Promise<void>;
+  /** Resolved Resend "from" (§7.6). A non-resend.dev value = a verified branded sender. */
+  emailFrom: string;
 }
 
 export interface Variables {

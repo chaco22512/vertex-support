@@ -53,6 +53,7 @@ function deps(llm: Deps['llm'], db = new FakeSupabase()): Deps {
     verifyStaff: fakeVerifyStaff(),
     sendSlack: fakeSendSlack(),
     sendEmail: fakeSendEmail(),
+    emailFrom: 'test@resend.dev',
   };
 }
 

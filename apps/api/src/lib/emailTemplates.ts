@@ -64,3 +64,28 @@ export function buildStaffReplyEmail(
   ].join('');
   return { subject: c.subject, html };
 }
+
+/**
+ * Branded staff-invite email (§7.6, ★v1.7). Sent via Resend when a verified
+ * sender is configured, so the invite reads as SIM Point (not Supabase) and
+ * includes how-to steps. `actionLink` is the Supabase invite/set-password link.
+ */
+export function buildStaffInviteEmail(actionLink: string, name: string): { subject: string; html: string } {
+  const subject = 'SIM Point chatbot support — set up your admin account';
+  const html = [
+    `<div style="font-family:'Noto Sans',system-ui,sans-serif;color:#1e262c;max-width:520px;margin:0 auto">`,
+    `<h2 style="color:#c2410c">Welcome to SIM Point chatbot support${name ? `, ${name}` : ''}</h2>`,
+    `<p>You've been invited to the admin console — the tool our team uses to answer customer questions and manage the chatbot's knowledge.</p>`,
+    `<p><a href="${actionLink}" style="display:inline-block;background:#c2410c;color:#fff;text-decoration:none;padding:12px 20px;border-radius:10px">Set your password</a></p>`,
+    `<h3 style="margin-bottom:6px">How to use it</h3>`,
+    `<ol style="padding-left:18px;line-height:1.6">`,
+    `<li>Click the button above and choose a password.</li>`,
+    `<li>Sign in at the admin site with your email and that password.</li>`,
+    `<li><b>Inbox</b> = customer questions waiting for a reply. <b>Knowledge</b> = the rules the bot answers from.</li>`,
+    `<li>When a Slack notification links you here, you can reply within a few clicks.</li>`,
+    `</ol>`,
+    `<p style="color:#6b7680;font-size:13px">If you didn't expect this invitation, you can ignore this email.<br/>SIM Point chatbot support</p>`,
+    `</div>`,
+  ].join('');
+  return { subject, html };
+}

@@ -14,6 +14,7 @@ function makeDeps(db: FakeSupabase, slack = fakeSendSlack()): Deps {
     verifyStaff: fakeVerifyStaff(),
     sendSlack: slack,
     sendEmail: fakeSendEmail(),
+    emailFrom: 'test@resend.dev',
   };
 }
 
