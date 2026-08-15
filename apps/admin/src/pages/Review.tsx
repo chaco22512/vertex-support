@@ -79,11 +79,23 @@ export function Review() {
     <>
       <div className="page-head">
         <h1>Review queue</h1>
-        {selected.size > 0 ? (
-          <button className="btn btn-sm btn-primary" onClick={() => void approve([...selected])}>
-            Approve selected ({selected.size})
+        <div className="row wrap" style={{ gap: 8 }}>
+          <button
+            className="btn btn-sm"
+            onClick={() =>
+              void api
+                .downloadRulesCsv('filtered', { status: 'pending_review' })
+                .catch(() => toast.show({ message: 'Could not download the CSV.' }))
+            }
+          >
+            Download CSV
           </button>
-        ) : null}
+          {selected.size > 0 ? (
+            <button className="btn btn-sm btn-primary" onClick={() => void approve([...selected])}>
+              Approve selected ({selected.size})
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <div className="tabs">

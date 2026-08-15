@@ -1,21 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KbRule } from '@vertex/shared';
-import { api } from '../lib/api';
+import { api, type ImportApplyResult } from '../lib/api';
 import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
+import { ImportPreviewDialog } from '../components/ImportPreviewDialog';
 import { Dialog } from '../components/Dialog';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../lib/auth';
 
 type Load = 'loading' | 'ready' | 'error';
 
 export function Knowledge() {
   const toast = useToast();
+  const { staff } = useAuth();
+  const isAdmin = staff?.role === 'admin';
+  const fileRef = useRef<HTMLInputElement | null>(null);
   const [rules, setRules] = useState<KbRule[]>([]);
   const [load, setLoad] = useState<Load>('loading');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [editing, setEditing] = useState<KbRule | null>(null);
   const [creating, setCreating] = useState(false);
+  const [importCsv, setImportCsv] = useState<{ text: string; name: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const fetchRules = useCallback(async () => {
     setLoad('loading');
@@ -57,13 +64,74 @@ export function Knowledge() {
     toast.show({ message: `Rule ${updated.id} saved.` });
   }
 
+  async function download(scope: 'filtered' | 'all') {
+    setBusy(true);
+    try {
+      await api.downloadRulesCsv(scope, { q: search.trim() || undefined, category: activeCategory ?? undefined });
+    } catch {
+      toast.show({ message: 'Could not download the CSV.' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file
+    if (!file) return;
+    setImportCsv({ text: await file.text(), name: file.name });
+  }
+
+  function onApplied(result: ImportApplyResult) {
+    setImportCsv(null);
+    void fetchRules();
+    toast.show(
+      {
+        message: `Imported ${result.applied} change(s)${result.skipped ? `, ${result.skipped} skipped` : ''}.`,
+        actionLabel: 'Undo import',
+        onAction: async () => {
+          try {
+            const u = await api.importUndo();
+            toast.show({ message: `Reverted ${u.restored} rule(s).` });
+            void fetchRules();
+          } catch {
+            toast.show({ message: 'Undo failed.' });
+          }
+        },
+      },
+      30_000,
+    );
+  }
+
   return (
     <>
       <div className="page-head">
         <h1>Knowledge</h1>
-        <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>
-          New rule
-        </button>
+        <div className="row wrap" style={{ gap: 8 }}>
+          <button className="btn btn-sm" onClick={() => void download('filtered')} disabled={busy}>
+            Download CSV
+          </button>
+          <button className="btn btn-sm" onClick={() => void download('all')} disabled={busy}>
+            Download all
+          </button>
+          {isAdmin ? (
+            <>
+              <button className="btn btn-sm" onClick={() => fileRef.current?.click()}>
+                Upload reviewed CSV
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: 'none' }}
+                onChange={(e) => void onFile(e)}
+              />
+            </>
+          ) : null}
+          <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>
+            New rule
+          </button>
+        </div>
       </div>
 
       <div className="filters">
@@ -151,6 +219,14 @@ export function Knowledge() {
 
       {editing ? (
         <RuleDialog rule={editing} onClose={() => setEditing(null)} onSaved={applySaved} />
+      ) : null}
+      {importCsv ? (
+        <ImportPreviewDialog
+          csv={importCsv.text}
+          fileName={importCsv.name}
+          onClose={() => setImportCsv(null)}
+          onApplied={onApplied}
+        />
       ) : null}
       {creating ? (
         <NewRuleDialog

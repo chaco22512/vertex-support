@@ -160,6 +160,12 @@ class FakeQuery implements PromiseLike<Result> {
         ...row,
       };
     }
+    if (this.name === 'kb_import_snapshots') {
+      return { id: crypto.randomUUID(), created_at: now, undone: false, applied_count: 0, ...row };
+    }
+    if (this.name === 'kb_change_log') {
+      return { id: this.db.nextId('kb_change_log'), changed_at: now, source: 'admin_edit', ...row };
+    }
     return { ...row };
   }
 

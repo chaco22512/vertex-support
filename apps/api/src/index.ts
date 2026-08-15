@@ -26,6 +26,7 @@ import {
   splitRule,
   updateRule,
 } from './routes/admin/rules';
+import { applyImport, exportRules, previewImport, undoImport } from './routes/admin/rulesCsv';
 import { createStaff, listStaff, updateStaff } from './routes/admin/staff';
 import { listChangelog } from './routes/admin/changelog';
 
@@ -73,8 +74,12 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.post('/conversations/:id/ai-draft', aiDraft);
   admin.put('/conversations/:id/draft', putDraft);
   admin.get('/rules', adminOnly, listRules);
+  admin.get('/rules/export', adminOnly, exportRules);
   admin.post('/rules', adminOnly, createRule);
   admin.post('/rules/approve', adminOnly, approveRules);
+  admin.post('/rules/import/preview', adminOnly, previewImport);
+  admin.post('/rules/import/apply', adminOnly, applyImport);
+  admin.post('/rules/import/undo', adminOnly, undoImport);
   admin.post('/rules/:id/split', adminOnly, splitRule);
   admin.patch('/rules/:id', adminOnly, updateRule);
   admin.get('/staff', adminOnly, listStaff);

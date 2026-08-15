@@ -107,6 +107,53 @@ export interface MeResult {
   staff: { userId: string; name: string; role: Role; isActive: boolean };
 }
 
+// --- CSV import (§7.4 v1.7) ---
+export interface ImportChange {
+  id: string;
+  category: string;
+  decision: string;
+  changes: { field: string; from: string; to: string }[];
+}
+export interface ImportError {
+  line: number;
+  id: string;
+  reason: string;
+}
+export interface ImportPreview {
+  summary: { changed: number; unchanged: number; ignored: number; errors: number };
+  changes: ImportChange[];
+  errors: ImportError[];
+}
+export interface ImportApplyResult {
+  applied: number;
+  skipped: number;
+  snapshot_id: string | null;
+  errors: ImportError[];
+}
+
+export type ExportFilters = { q?: string; category?: string; status?: string };
+
+/** Download the knowledge CSV. Uses blob() (not text()) to preserve the UTF-8 BOM. */
+async function downloadRulesCsv(scope: 'all' | 'filtered', filters: ExportFilters = {}): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const p = new URLSearchParams({ scope });
+  if (scope === 'filtered') for (const [k, v] of Object.entries(filters)) if (v) p.set(k, v);
+  const res = await fetch(`${API_BASE}/api/admin/rules/export?${p.toString()}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) throw new ApiError(res.status, `export_failed_${res.status}`);
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `knowledge-${scope}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   me: () => request<MeResult>(`/api/admin/me`),
   listConversations: (f: InboxFilters = {}) =>
@@ -155,6 +202,16 @@ export const api = {
     request<{ customer_rule: KbRule; internal_rule: KbRule }>(`/api/admin/rules/${id}/split`, {
       method: 'POST',
       body: JSON.stringify({ customer_text, internal_text }),
+    }),
+  downloadRulesCsv,
+  importPreview: (csv: string) =>
+    request<ImportPreview>(`/api/admin/rules/import/preview`, { method: 'POST', body: JSON.stringify({ csv }) }),
+  importApply: (csv: string) =>
+    request<ImportApplyResult>(`/api/admin/rules/import/apply`, { method: 'POST', body: JSON.stringify({ csv }) }),
+  importUndo: () =>
+    request<{ restored: number; snapshot_id: string }>(`/api/admin/rules/import/undo`, {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
   listChangelog: () => request<{ entries: KbChangeLog[] }>(`/api/admin/changelog`),
 

@@ -1,4 +1,13 @@
-import type { Audience, RuleStatus } from '@vertex/shared';
+import {
+  type Audience,
+  type RuleStatus,
+  hasUnfilledPlaceholder,
+  hasSpreadsheetFormula,
+  PLACEHOLDER_REASON,
+  FORMULA_REASON,
+} from '@vertex/shared';
+
+export { hasUnfilledPlaceholder, hasSpreadsheetFormula };
 
 /** Shape of each object in data/kb_rules_import.json. */
 export interface RawKbRule {
@@ -57,34 +66,6 @@ export function normalizeDate(raw: string): string | null {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${y}-${pad(mo)}-${pad(da)}`;
 }
-
-/**
- * Unfilled-placeholder detector (build_spec_v1_6.md §3, ★v1.6). A rule whose
- * text still contains an authoring placeholder (`[insert …]`, `[TBD]`, `[TODO]`,
- * or a run of `xxx`) must never go live: it is a public-facing blocker. Matches
- * are case-insensitive; `xxx` requires a word boundary so it doesn't fire inside
- * ordinary words.
- */
-const PLACEHOLDER_RE = /\[\s*insert|\[\s*tbd|\[\s*todo|\bx{3,}\b/i;
-
-export function hasUnfilledPlaceholder(text: string): boolean {
-  return PLACEHOLDER_RE.test(text);
-}
-
-/**
- * Unprocessed Google-Sheets formula detector (build_spec_v1_6.md §3, ★v1.6). A
- * rule whose text is still a raw formula (starts with `=`, or contains the
- * `DUMMYFUNCTION` export marker) is noise, not an answer, and must never reach
- * the AI prompt — quarantine it to pending_review on import.
- */
-const FORMULA_RE = /^\s*=|DUMMYFUNCTION/;
-
-export function hasSpreadsheetFormula(text: string): boolean {
-  return FORMULA_RE.test(text);
-}
-
-const PLACEHOLDER_REASON = 'contains an unfilled placeholder — fill in before approving';
-const FORMULA_REASON = 'contains an unprocessed spreadsheet formula — clean before approving';
 
 /** Append a quarantine reason to an existing review_reason without duplicating. */
 function withReason(base: string, reason: string): string {

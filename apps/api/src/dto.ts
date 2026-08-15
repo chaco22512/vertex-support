@@ -82,6 +82,10 @@ export const updateRuleSchema = z.object({
   review_reason: z.string().max(400).optional(),
 });
 export const approveRulesSchema = z.object({ ids: z.array(z.string()).min(1).max(100) });
+
+// --- CSV import (§7.4 v1.7) ---
+export const importCsvSchema = z.object({ csv: z.string().min(1).max(8_000_000) });
+export const undoImportSchema = z.object({ snapshot_id: z.string().uuid().optional() });
 export const splitRuleSchema = z.object({
   customer_text: z.string().min(1).max(4000),
   internal_text: z.string().min(1).max(4000),
