@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { Channel, LanguageCode, Role, Staff } from '@vertex/shared';
-import { api } from '../lib/api';
+import { api, ApiError } from '../lib/api';
 import { languageName } from '../lib/categories';
 import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { Dialog } from '../components/Dialog';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../lib/auth';
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -13,6 +14,7 @@ const CHANNELS: Channel[] = ['webchat', 'whatsapp', 'line', 'messenger'];
 
 export function StaffPage() {
   const toast = useToast();
+  const { staff: currentUser } = useAuth();
   const [staff, setStaff] = useState<Staff[]>([]);
   const [load, setLoad] = useState<Load>('loading');
   const [editing, setEditing] = useState<Staff | null>(null);
@@ -88,11 +90,17 @@ export function StaffPage() {
       {editing ? (
         <EditStaffDialog
           staff={editing}
+          isSelf={editing.id === currentUser?.userId}
           onClose={() => setEditing(null)}
           onSaved={(s) => {
             setStaff((list) => list.map((x) => (x.id === s.id ? s : x)));
             setEditing(null);
             toast.show({ message: `${s.name} updated.` });
+          }}
+          onDeleted={(id, name) => {
+            setStaff((list) => list.filter((x) => x.id !== id));
+            setEditing(null);
+            toast.show({ message: `${name} deleted.` });
           }}
         />
       ) : null}
@@ -214,12 +222,16 @@ function AddStaffDialog({ onClose, onAdded }: { onClose: () => void; onAdded: (s
 
 function EditStaffDialog({
   staff,
+  isSelf,
   onClose,
   onSaved,
+  onDeleted,
 }: {
   staff: Staff;
+  isSelf: boolean;
   onClose: () => void;
   onSaved: (s: Staff) => void;
+  onDeleted: (id: string, name: string) => void;
 }) {
   const [name, setName] = useState(staff.name);
   const [role, setRole] = useState<Role>(staff.role);
@@ -228,7 +240,28 @@ function EditStaffDialog({
   const [slack, setSlack] = useState(staff.slack_member_id ?? '');
   const [isActive, setIsActive] = useState(staff.is_active);
   const [busy, setBusy] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function remove() {
+    setBusy(true);
+    setError(null);
+    try {
+      await api.deleteStaff(staff.id);
+      onDeleted(staff.id, staff.name);
+    } catch (e) {
+      const code = e instanceof ApiError ? e.code : '';
+      setError(
+        code === 'last_active_admin'
+          ? 'Cannot delete the last active admin — activate another admin first.'
+          : code === 'cannot_delete_self'
+            ? 'You cannot delete your own account.'
+            : 'Could not delete this staff member. Please try again.',
+      );
+      setBusy(false);
+      setConfirmingDelete(false);
+    }
+  }
 
   async function submit() {
     setBusy(true);
@@ -281,13 +314,36 @@ function EditStaffDialog({
           {error}
         </div>
       ) : null}
-      <div className="dialog-actions">
-        <button className="btn" onClick={onClose} disabled={busy}>
-          Cancel
-        </button>
-        <button className="btn btn-primary" onClick={() => void submit()} disabled={busy}>
-          {busy ? 'Saving…' : 'Save'}
-        </button>
+      <div className="dialog-actions" style={{ justifyContent: 'space-between' }}>
+        {isSelf ? (
+          <span />
+        ) : confirmingDelete ? (
+          <span className="row" style={{ gap: 8 }}>
+            <button className="btn btn-danger" onClick={() => void remove()} disabled={busy}>
+              {busy ? 'Deleting…' : 'Confirm delete'}
+            </button>
+            <button className="btn" onClick={() => setConfirmingDelete(false)} disabled={busy}>
+              Keep
+            </button>
+          </span>
+        ) : (
+          <button
+            className="btn btn-danger"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={busy}
+            title="Permanently remove this staff member"
+          >
+            Delete
+          </button>
+        )}
+        <span className="row" style={{ gap: 8 }}>
+          <button className="btn" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button className="btn btn-primary" onClick={() => void submit()} disabled={busy}>
+            {busy ? 'Saving…' : 'Save'}
+          </button>
+        </span>
       </div>
     </Dialog>
   );

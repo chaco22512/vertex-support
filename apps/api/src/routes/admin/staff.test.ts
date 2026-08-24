@@ -64,3 +64,47 @@ describe('createStaff invite (§7.6 v1.7)', () => {
     expect(db.tables.staff).toHaveLength(1);
   });
 });
+
+describe('deleteStaff (§7.6 v1.7)', () => {
+  const del = (app: ReturnType<typeof setup>['app'], env: ApiBindings, id: string) =>
+    app.request(`/api/admin/staff/${id}`, { method: 'DELETE', headers: admin }, env);
+
+  it('deletes a staff member, clears their FKs, and removes the auth user', async () => {
+    const { app, db, env } = setup('x@resend.dev');
+    // requester is 'staff-1' (fakeVerifyStaff). Seed another admin + the target.
+    db.tables.staff.push(
+      { id: 'staff-1', name: 'Me', email: 'me@x', role: 'admin', is_active: true },
+      { id: 'victim', name: 'Rin', email: 'rin@x', role: 'staff', is_active: true },
+    );
+    db.tables.conversations.push({ id: 'c1', assigned_staff: 'victim', session_token: 't', status: 'escalated' });
+
+    const res = await del(app, env, 'victim');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { deleted: boolean; auth_user_removed: boolean };
+    expect(body.deleted).toBe(true);
+    expect(body.auth_user_removed).toBe(true);
+    expect(db.tables.staff.find((s) => s.id === 'victim')).toBeUndefined();
+    expect(db.tables.conversations[0]!.assigned_staff).toBeNull(); // unassigned
+    expect(db.authCalls.deleteUser).toBe(1);
+  });
+
+  it('refuses to delete your own account', async () => {
+    const { app, env, db } = setup('x@resend.dev');
+    db.tables.staff.push({ id: 'staff-1', name: 'Me', email: 'me@x', role: 'admin', is_active: true });
+    const res = await del(app, env, 'staff-1');
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe('cannot_delete_self');
+  });
+
+  it('refuses to delete the last active admin', async () => {
+    const { app, env, db } = setup('x@resend.dev');
+    db.tables.staff.push(
+      { id: 'staff-1', name: 'Me', email: 'me@x', role: 'staff', is_active: true }, // requester is not admin
+      { id: 'onlyadmin', name: 'Boss', email: 'boss@x', role: 'admin', is_active: true },
+    );
+    const res = await del(app, env, 'onlyadmin');
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toBe('last_active_admin');
+    expect(db.tables.staff.find((s) => s.id === 'onlyadmin')).toBeDefined(); // untouched
+  });
+});

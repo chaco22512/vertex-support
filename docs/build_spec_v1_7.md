@@ -375,6 +375,7 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 - 一覧+追加/編集: name, email, role, languages（複数選択）, channels, slack_member_id, is_active
 - 追加時に招待メール送信。**検証済み送信元（`EMAIL_FROM` が非 resend.dev）が設定されていれば、Resend 経由で SIM Point ブランドの招待メール（件名・本文・使い方手順つき、`buildStaffInviteEmail`）を送る。未設定時は Supabase 標準の招待メールにフォールバック**（配信を落とさない）。手順は deploy-runbook §6c。
 - 認証は「Supabaseパスワード ＋ staff.is_active」。**`is_active=false` のアカウントはパスワードが正しくても 401**（最後のアクティブ管理者を無効化しない運用注意）
+- **スタッフの削除（★v1.7）**: 編集ダイアログに「Delete」（確認2段階）。`DELETE /api/admin/staff/:id`（adminのみ）。ガード: **自分自身は削除不可 / 最後のアクティブ管理者は削除不可**（ロックアウト防止）。削除時は staff の被参照（conversations.assigned_staff・messages.staff_id を null 化、reply_drafts 削除）をクリアしてから staff 行を削除（＝即アクセス失効）、続けて Supabase auth ユーザーもベストエフォートで削除（kb_change_log 等に履歴がある場合は監査保持のため auth ユーザーは残るが、アクセスは失効済み）
 
 ### 7.7 変更履歴
 - kb_change_log 一覧（誰が・いつ・どのルールを）。金額変更は before→after を差分ハイライト（旧値打ち消し線+新値強調）

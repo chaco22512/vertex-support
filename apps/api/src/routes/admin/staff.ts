@@ -76,3 +76,50 @@ export async function updateStaff(c: Context<AppEnv>): Promise<Response> {
   if (error || !data) return c.json({ error: 'server_error' }, 500);
   return c.json({ staff: data });
 }
+
+/**
+ * DELETE /api/admin/staff/:id — permanently remove a staff member (§7.6 v1.7).
+ * Guards against locking everyone out: you cannot delete your own account or the
+ * last active admin. Clears the staff foreign keys (unassigns conversations /
+ * messages, drops drafts), deletes the staff row (which immediately blocks their
+ * admin access), then best-effort removes the Supabase auth user — this can fail
+ * if they authored knowledge changes (kb_change_log preserves that history), in
+ * which case the login record is kept but access is already revoked.
+ */
+export async function deleteStaff(c: Context<AppEnv>): Promise<Response> {
+  const deps = c.get('deps');
+  const { db } = deps;
+  const requester = c.get('staff');
+  const id = c.req.param('id') ?? '';
+
+  if (id === requester.userId) return c.json({ error: 'cannot_delete_self' }, 400);
+
+  const { data: target } = await db.from('staff').select('id,role,is_active').eq('id', id).maybeSingle();
+  if (!target) return c.json({ error: 'not_found' }, 404);
+  const t = target as { id: string; role: string; is_active: boolean };
+
+  if (t.role === 'admin' && t.is_active) {
+    const { data: admins } = await db.from('staff').select('id').eq('role', 'admin').eq('is_active', true);
+    if (((admins ?? []) as unknown[]).length <= 1) return c.json({ error: 'last_active_admin' }, 400);
+  }
+
+  // Clear staff foreign keys so the staff row can be deleted.
+  await db.from('conversations').update({ assigned_staff: null }).eq('assigned_staff', id);
+  await db.from('messages').update({ staff_id: null }).eq('staff_id', id);
+  await db.from('reply_drafts').delete().eq('staff_id', id);
+
+  const { error } = await db.from('staff').delete().eq('id', id);
+  if (error) return c.json({ error: 'server_error' }, 500);
+
+  // Best-effort auth-user removal (audit log may reference them → keep it).
+  await db.from('kb_rules').update({ updated_by: null }).eq('updated_by', id);
+  let authUserRemoved = false;
+  try {
+    const res = await db.auth.admin.deleteUser(id);
+    authUserRemoved = !res.error;
+  } catch {
+    authUserRemoved = false;
+  }
+
+  return c.json({ deleted: true, auth_user_removed: authUserRemoved });
+}

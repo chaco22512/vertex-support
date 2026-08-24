@@ -70,6 +70,15 @@ button {
 .btn-primary:hover {
   background: #b30d0d;
 }
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+  font-weight: 600;
+}
+.btn-danger:hover {
+  background: #a71f1f;
+}
 .btn-sm {
   min-height: 32px;
   padding: 0 var(--sp-3);

@@ -29,8 +29,12 @@ export class FakeSupabase {
   };
   private seq: Record<string, number> = {};
 
-  /** Minimal Supabase Auth admin stub for the staff-invite flow (§7.6). */
-  authCalls: { invite: number; generateLink: number } = { invite: 0, generateLink: 0 };
+  /** Minimal Supabase Auth admin stub for the staff-invite/delete flows (§7.6). */
+  authCalls: { invite: number; generateLink: number; deleteUser: number } = {
+    invite: 0,
+    generateLink: 0,
+    deleteUser: 0,
+  };
   auth = {
     admin: {
       inviteUserByEmail: async (email: string) => {
@@ -43,6 +47,10 @@ export class FakeSupabase {
           data: { user: { id: `user-${email}` }, properties: { action_link: `https://admin.test/set-password#tok` } },
           error: null,
         };
+      },
+      deleteUser: async (_id: string) => {
+        this.authCalls.deleteUser += 1;
+        return { data: {}, error: null };
       },
     },
   };
@@ -63,7 +71,7 @@ export class FakeSupabase {
 }
 
 class FakeQuery implements PromiseLike<Result> {
-  private op: 'select' | 'insert' | 'update' = 'select';
+  private op: 'select' | 'insert' | 'update' | 'delete' = 'select';
   private payload: Row[] = [];
   private eqs: [string, unknown][] = [];
   private ins: [string, unknown[]][] = [];
@@ -92,6 +100,10 @@ class FakeQuery implements PromiseLike<Result> {
   update(payload: Row): this {
     this.op = 'update';
     this.payload = [payload];
+    return this;
+  }
+  delete(): this {
+    this.op = 'delete';
     return this;
   }
   eq(col: string, val: unknown): this {
@@ -198,6 +210,12 @@ class FakeQuery implements PromiseLike<Result> {
       const inserted = this.payload.map((r) => this.applyInsertDefaults(r));
       this.table().push(...inserted);
       const copies = this.out(inserted);
+      return { data: this.singleMode !== 'none' ? (copies[0] ?? null) : copies, error: null };
+    }
+    if (this.op === 'delete') {
+      const removed = this.table().filter((r) => this.matches(r));
+      this.db.tables[this.name] = this.table().filter((r) => !this.matches(r));
+      const copies = this.out(removed);
       return { data: this.singleMode !== 'none' ? (copies[0] ?? null) : copies, error: null };
     }
     if (this.op === 'update') {

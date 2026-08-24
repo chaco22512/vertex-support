@@ -27,7 +27,7 @@ import {
   updateRule,
 } from './routes/admin/rules';
 import { applyImport, exportRules, previewImport, undoImport } from './routes/admin/rulesCsv';
-import { createStaff, listStaff, updateStaff } from './routes/admin/staff';
+import { createStaff, deleteStaff, listStaff, updateStaff } from './routes/admin/staff';
 import { listChangelog } from './routes/admin/changelog';
 
 /**
@@ -85,6 +85,7 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.get('/staff', adminOnly, listStaff);
   admin.post('/staff', adminOnly, createStaff);
   admin.patch('/staff/:id', adminOnly, updateStaff);
+  admin.delete('/staff/:id', adminOnly, deleteStaff);
   admin.get('/changelog', adminOnly, listChangelog);
   app.route('/api/admin', admin);
 

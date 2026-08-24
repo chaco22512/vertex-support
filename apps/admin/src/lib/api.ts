@@ -18,6 +18,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public code = '',
   ) {
     super(message);
   }
@@ -34,7 +35,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
-  if (!res.ok) throw new ApiError(res.status, `request_failed_${res.status}`);
+  if (!res.ok) {
+    // Surface the server's error code (e.g. 'last_active_admin') when present.
+    let code = '';
+    try {
+      const body = (await res.clone().json()) as { error?: string; message?: string };
+      code = body.error ?? '';
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new ApiError(res.status, `request_failed_${res.status}`, code);
+  }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
 }
@@ -225,6 +236,8 @@ export const api = {
     channels?: Channel[];
     slack_member_id?: string;
   }) => request<{ staff: Staff }>(`/api/admin/staff`, { method: 'POST', body: JSON.stringify(body) }),
+  deleteStaff: (id: string) =>
+    request<{ deleted: boolean; auth_user_removed: boolean }>(`/api/admin/staff/${id}`, { method: 'DELETE' }),
   updateStaff: (id: string, body: Partial<Staff>) =>
     request<{ staff: Staff }>(`/api/admin/staff/${id}`, {
       method: 'PATCH',
