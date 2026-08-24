@@ -26,7 +26,7 @@ export function corsMiddleware(): MiddlewareHandler<AppEnv> {
     ]);
     return cors({
       origin: (origin) => (allowed.includes(origin) ? origin : null),
-      allowMethods: ['GET', 'POST', 'PATCH', 'PUT', 'OPTIONS'],
+      allowMethods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
       maxAge: 86400,
     })(c, next);

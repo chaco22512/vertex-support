@@ -237,4 +237,14 @@ describe('CORS (§2)', () => {
     const res = await app.request('/health', { headers: { Origin: 'https://evil.example' } }, env);
     expect(res.headers.get('access-control-allow-origin')).not.toBe('https://evil.example');
   });
+
+  it('allows DELETE in the preflight (staff delete is cross-origin)', async () => {
+    const { app, env } = setup();
+    const res = await app.request(
+      '/api/admin/staff/x',
+      { method: 'OPTIONS', headers: { Origin: 'http://localhost:5174', 'Access-Control-Request-Method': 'DELETE' } },
+      env,
+    );
+    expect(res.headers.get('access-control-allow-methods')).toContain('DELETE');
+  });
 });
