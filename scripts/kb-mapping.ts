@@ -21,6 +21,8 @@ export interface RawKbRule {
   audience: Audience;
   ai_can_answer: boolean;
   requires_fee_disclaimer: boolean;
+  /** Optional (only the CS-AI-docs manual sets it); defaults to false. */
+  fee_is_fixed?: boolean;
   needs_review: boolean;
   review_reason: string;
 }
@@ -37,6 +39,7 @@ export interface KbRuleInsert {
   audience: Audience;
   ai_can_answer: boolean;
   requires_fee_disclaimer: boolean;
+  fee_is_fixed: boolean;
   status: RuleStatus;
   review_reason: string;
 }
@@ -99,6 +102,7 @@ export function toKbRuleRow(raw: RawKbRule): KbRuleInsert {
     audience: raw.audience,
     ai_can_answer: raw.ai_can_answer,
     requires_fee_disclaimer: raw.requires_fee_disclaimer,
+    fee_is_fixed: raw.fee_is_fixed ?? false,
     status: raw.needs_review || placeholder || formula ? 'pending_review' : 'active',
     review_reason,
   };

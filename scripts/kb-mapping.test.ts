@@ -87,6 +87,11 @@ describe('toKbRuleRow', () => {
     expect(row.review_reason).toBe('');
   });
 
+  it('defaults fee_is_fixed to false, and carries it through when the source sets it (CS AI docs)', () => {
+    expect(toKbRuleRow(base).fee_is_fixed).toBe(false);
+    expect(toKbRuleRow({ ...base, fee_is_fixed: true }).fee_is_fixed).toBe(true);
+  });
+
   it('quarantines an unprocessed spreadsheet formula to pending_review (§3 v1.6)', () => {
     const row = toKbRuleRow({
       ...base,

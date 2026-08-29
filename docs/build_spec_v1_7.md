@@ -153,6 +153,10 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
   - カテゴリは `CS FEEDBACK: …`（9種）で、`menu_categories.json` の対応トピック（internet/payment/reissue/lost/return/replace/refund/cancel/plans）の `kb_categories` に追加。`needs_review=true` の27件は `pending_review`（Plans FAQ の未記入プレースホルダ F070 含む）
   - **古い記述の無効化（Phase 4-2）**: CSが誤答を実機確認した既存ルール7件を `status='disabled'` に（可逆・監査用マイグレーション `..._disable_superseded_rules.sql`）。銀行振込を月額手段と読める **R034/R035**（→F013/F014 が置換）、"OLD PLAN must be returned … within 7 days" の誤文言 **R082/R525/P013/P190/P986**（→F038 が置換）。旧返却先住所は顧客向けルールに存在せず、F033 が現行住所を追加するのみ
   - 取込後 total 2,781 / disabled 7
+- 第4マニュアル `kb_cs_ai_docs_import.json`（同梱、Cシリーズ 105件・CS更新シートの AI_ ドキュメント）をインポート（★v1.7 CS更新 Phase 1）
+  - **section 粒度（1セクション=1ルール、平均約490字）**で章立ての文脈を保持。カテゴリは `CS AI DOC: …`（5種）、`topic_hint`（cancel/return/refund/replace/internet）で `menu_categories.json` の対応トピックに追加。`needs_review=true` 2件は `pending_review`。**`fee_is_fixed` をソースから尊重**（26件が固定額）＝取込マッピングに `fee_is_fixed` を追加
+  - **矛盾する既存ルールの無効化（Cシリーズを正）**: 承認のうえ4件を `status='disabled'`（`..._disable_conflicting_with_cs_docs.sql`）。SIMデポジット額(¥800)を無条件に断定する **R276/P615**（契約グループでPREVIOUSには金額を言わない）、解約時のSIM返却を一般化する Brastel固有 **R067/P125**（C: 返却は1ヶ月未満CURRENTのみ）。※pocket wifi ¥3000(R277/P616)・長期¥2000(P1656/P1694/P1910)は別体系のため保持。**契約グループの本実装は Phase 2**
+  - 取込後 total 2,886 / disabled 48
 
 ---
 

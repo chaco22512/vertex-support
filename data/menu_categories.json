@@ -1,6 +1,6 @@
 {
- "version": "1.3",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*').",
+ "version": "1.4",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet.",
  "categories": [
   {
    "id": "internet",
@@ -9,7 +9,8 @@
    "kb_categories": [
     "APN SETTINGS",
     "GENERAL RULES",
-    "CS FEEDBACK: Internet / APN"
+    "CS FEEDBACK: Internet / APN",
+    "CS AI DOC: AI_Signal Issue"
    ],
    "sub_questions": [
     "How do I set up APN on my phone?",
@@ -62,7 +63,8 @@
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
     "PLAN FILE: General Rules (eSIM)",
-    "CS FEEDBACK: Cancellation"
+    "CS FEEDBACK: Cancellation",
+    "CS AI DOC: AI_Cancellation"
    ],
    "sub_questions": [
     "How do I cancel my plan?",
@@ -79,7 +81,8 @@
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
     "PLAN FILE: General Rules (eSIM)",
-    "CS FEEDBACK: Returning SIM / device"
+    "CS FEEDBACK: Returning SIM / device",
+    "CS AI DOC: AI_ Returning of SIMDevice"
    ],
    "sub_questions": [
     "How do I return by post?",
@@ -100,7 +103,8 @@
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
     "PLAN FILE: General Rules (eSIM)",
-    "CS FEEDBACK: Replacement / change plan"
+    "CS FEEDBACK: Replacement / change plan",
+    "CS AI DOC: AI_ReplacementChange Plan"
    ],
    "sub_questions": [
     "My SIM/device is broken",
@@ -136,7 +140,8 @@
     "PLAN FILE: General Rules (Physical SIMWi-F",
     "PLAN FILE: General Rules (eKYC)",
     "PLAN FILE: General Rules (eSIM)",
-    "CS FEEDBACK: Refund / deposit / cashback"
+    "CS FEEDBACK: Refund / deposit / cashback",
+    "CS AI DOC: AI_Deposit Refund"
    ],
    "sub_questions": [
     "When will I get my cashback?",
