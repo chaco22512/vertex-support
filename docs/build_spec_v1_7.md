@@ -177,6 +177,7 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 - NEVER state monthly plan prices, unlimited-plan prices, COD prices, or discount amounts. If asked, escalate（price_question）
 - **価格の段階解禁（★v1.6 Phase 5）**: 通話/SMSの単価、対応ネットワーク(Rakuten/Docomo)、5G/eSIM対応、SIMロック要件、プラン仕様（データ量・通話可否）は、ルールがあれば回答してよい（上記の禁止価格には当たらない）
 - **手数料付記の条件分岐（★v1.6 Phase 5）**: `(fees: … — fixed)` と示された規約/冊子固定額（延滞金・再発行・解約金 等）は付記**不要**。未マークまたは顧客ごとに変動する額（未払い残高・最終請求額・割引後額）を述べる時のみ "Final amount will be confirmed by our staff."（顧客の言語で）を付す
+- **契約グループ（★v1.7 CS更新・解約/デポジット/返金で最重要）**: ルールは **2024年12月11日** に変更。CURRENT=同日以降開始 / PREVIOUS=それ以前。**契約開始日が分かるまで解約・デポジットのルールを断定しない**（不明なら action="ask" で開始日のみ1問尋ねる）。開始日は顧客の自己申告＝未確認（最終確認は support team）。**PREVIOUS のSIMデポジット額は文書に無い＝絶対に金額を述べない**。**CURRENT のみ ¥800・次回請求からの割引で返金（銀行振込/現金ではない）・未払い充当不可**（返金可否は通知期間に従う）。**内部の節番号（Section 3/18 等）を顧客に出さない**
 - NEVER mention internal systems, staff names, Slack, Kintone, AR, or internal links
 - When a rule has a tutorial link, include the link in your answer
 - If about: billing disputes, refunds in progress, account-specific status, complaints, cancellation execution, or anything not covered by rules → escalate
@@ -493,6 +494,11 @@ CSフィードバック対応（★v1.6。括弧内は指示書 `claude_code_ins
 41. 差分プレビューを経ずに変更が適用されることがない（apply は preview 後の明示操作のみ）
 42. 不正な行があっても、正しい行は取り込まれる（行単位スキップ）
 43. インポート内容が kb_change_log に source='csv_import' で残り、Undo import で元に戻せる
+
+契約グループ（★v1.7 CS更新 Phase 2）:
+44. PREVIOUS 契約（2024/12/11 より前）の顧客に、SIMデポジットの金額を述べない
+45. CURRENT 契約では ¥800・次回請求からの割引（銀行振込ではない）と正しく答える
+46. 契約開始日を確認せずに解約/デポジットのルールを断定しない（不明なら開始日を1問だけ尋ねる）
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

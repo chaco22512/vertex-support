@@ -74,6 +74,16 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('Final amount will be confirmed by our staff.');
   });
 
+  it('enforces the contract-group rules for cancellation / deposit (§4.2 v1.7 CS docs)', () => {
+    expect(prompt).toContain('11 December 2024');
+    expect(prompt).toContain('contract start date');
+    expect(prompt).toContain('NEVER state a deposit amount for a PREVIOUS contract');
+    expect(prompt).toContain('the SIM deposit is ¥800');
+    expect(prompt).toContain('discount on the customer'); // next-bill discount, not bank transfer
+    expect(prompt).toContain('cannot be applied to an unpaid balance');
+    expect(prompt).toContain('internal section numbers');
+  });
+
   it('groups rules by category and lists ids', () => {
     expect(prompt).toContain('## APN SETTINGS');
     expect(prompt).toContain('[R010] Set APN.');
