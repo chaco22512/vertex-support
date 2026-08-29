@@ -26,11 +26,15 @@ export async function generateAiReply(
 ): Promise<AiReplyResult> {
   const categories = resolveKbCategories(conversation.topic_category, menu);
   const topic = resolveTopicLabel(conversation.topic_category, menu);
-  const rules = await fetchScopedRules(deps.db, categories);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), AI_TIMEOUT_MS);
   try {
+    // The rule fetch is inside the try so a transient DB error degrades to the
+    // same graceful escalation as a timeout / LLM error — never a 500 after the
+    // customer message has already been persisted (which would strand the turn
+    // and make retries pile up duplicate customer bubbles).
+    const rules = await fetchScopedRules(deps.db, categories);
     return await runAiReply({
       rules,
       history,
@@ -40,7 +44,8 @@ export async function generateAiReply(
       signal: controller.signal,
     });
   } catch {
-    // Timeout (abort) or LLM error → escalate rather than fail the request.
+    // Rule-fetch failure, timeout (abort), or LLM error → escalate rather than
+    // fail the request.
     return {
       answer: fallbackEscalationMessage(conversation.language),
       detected_language: conversation.language,

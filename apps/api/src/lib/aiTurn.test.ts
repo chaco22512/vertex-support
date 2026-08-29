@@ -80,4 +80,23 @@ describe('generateAiReply', () => {
     expect(res.fellBack).toBe(true);
     expect(res.aiMeta.escalate).toBe(true);
   });
+
+  it('falls back to escalation (never throws) when the rule fetch errors', async () => {
+    // Regression: a transient DB error during fetchScopedRules used to throw
+    // before the try/catch → the request 500'd AFTER the customer message was
+    // saved, stranding the turn. It must degrade to a graceful escalation.
+    const erroringDb = {
+      from: () => {
+        const q: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'in', 'order']) q[m] = () => q;
+        q.range = () => Promise.resolve({ data: null, error: { message: 'db down' } });
+        return q;
+      },
+    } as unknown as Deps['db'];
+    const d = { ...deps(mockLlm([goodResponse()])), db: erroringDb };
+
+    const res = await generateAiReply(d, conversation(), [{ sender: 'customer', body: 'hi' }]);
+    expect(res.fellBack).toBe(true);
+    expect(res.aiMeta.escalate).toBe(true);
+  });
 });
