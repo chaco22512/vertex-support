@@ -55,6 +55,7 @@ export const vi: Messages = {
     replace: 'Thay thế / đổi gói',
     reissue: 'Mất tín hiệu / cấp lại',
     refund: 'Hoàn tiền / tiền cọc / hoàn tiền mặt',
+    deposit: 'Hoàn tiền cọc',
     plans: 'Gói cước & giá',
     others: 'Khác',
   },
@@ -87,5 +88,10 @@ export const vi: Messages = {
       'Phí cấp lại (chấm dứt) là bao nhiêu?',
     ],
     refund: ['Khi nào tôi nhận được tiền hoàn lại?', 'Làm thế nào để lấy lại tiền cọc?'],
+    deposit: [
+      'Làm thế nào để lấy lại tiền cọc SIM của tôi?',
+      'Khi nào tiền cọc của tôi được hoàn lại?',
+      'Tiền cọc có được hoàn vào tài khoản ngân hàng của tôi không?',
+    ],
   },
 };

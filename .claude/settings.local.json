@@ -4,7 +4,22 @@
       "Bash(node -e \"const d=require\\('./data/kb_rules_import.json'\\); const a=Array.isArray\\(d\\)?d:d.rules||Object.values\\(d\\)[0]; console.log\\('count:',a.length\\); console.log\\(JSON.stringify\\(a[0],null,2\\)\\); console.log\\('needs_review count:', a.filter\\(r=>r.needs_review\\).length\\)\")",
       "Bash(npm -v)",
       "Bash(mkdir -p scripts)",
-      "Bash(pnpm install *)"
+      "Bash(pnpm install *)",
+      "Bash(npx wrangler *)",
+      "Bash(curl -s https://9f5c6584.simpoint-support-chat.pages.dev/)",
+      "Bash(curl -s https://simpoint-support-chat.pages.dev/?cachebust=__TRACKED_VAR__)",
+      "Bash(git restore *)",
+      "Bash(git commit *)",
+      "Bash(pnpm --filter @vertex/scripts exec tsx apply_migration.ts supabase/migrations/20260711120005_add_intake_info.sql)",
+      "Bash(pnpm --filter @vertex/scripts exec tsx apply_migration.ts \"c:/Users/SURFACE PRO 7/Desktop/vertex-support-bot/supabase/migrations/20260711120005_add_intake_info.sql\")",
+      "Bash(ADMIN_API_BASE_URL=\"https://simpoint-support-api.chaco22512.workers.dev\" pnpm --filter @vertex/admin build)",
+      "Bash(node -e ' *)",
+      "Bash(pnpm --filter @vertex/scripts exec tsx apply_migration.ts \"c:/Users/SURFACE PRO 7/Desktop/vertex-support-bot/supabase/migrations/20260711120006_disable_superseded_rules.sql\")",
+      "Bash(pnpm --filter @vertex/scripts exec tsx \"C:/Users/SURFAC~1/AppData/Local/Temp/claude/c--Users-SURFACE-PRO-7-Desktop-vertex-support-bot/abdac0c3-f460-4c74-96d2-c516d604ddbd/scratchpad/verify_phase4.ts\")",
+      "Read(//c/Users/SURFACE PRO 7/Desktop/**)",
+      "Bash(rm -f scripts/_verify_phase4.ts)",
+      "Bash(curl -s -o /dev/null -w '%{http_code}' https://simpoint-support-api.chaco22512.workers.dev/health)",
+      "Bash(echo \"health: $\\(curl -s -o /dev/null -w '%{http_code}' https://simpoint-support-api.chaco22512.workers.dev/health\\)\")"
     ]
   }
 }

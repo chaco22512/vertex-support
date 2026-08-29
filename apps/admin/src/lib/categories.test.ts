@@ -9,6 +9,10 @@ describe('categories', () => {
     expect(topicLabel('lost')).toBe('Lost SIM or device');
   });
 
+  it('has the dedicated Deposit refund tile (v1.7 CS docs Phase 4)', () => {
+    expect(topicLabel('deposit')).toBe('Deposit refund');
+  });
+
   it('falls back to the raw id for unknown topics', () => {
     expect(topicLabel('does-not-exist')).toBe('does-not-exist');
   });

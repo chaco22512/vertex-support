@@ -55,6 +55,7 @@ export const tl: Messages = {
     replace: 'Palit / baguhin ang plan',
     reissue: 'Huminto ang signal / re-issue',
     refund: 'Refund / deposito / cashback',
+    deposit: 'Refund ng deposito',
     plans: 'Mga plan & presyo',
     others: 'Iba pa',
   },
@@ -87,5 +88,10 @@ export const tl: Messages = {
       'Magkano ang bayad sa re-issue (pagtatapos)?',
     ],
     refund: ['Kailan ko makukuha ang aking cashback?', 'Paano ko makukuha ang aking deposito?'],
+    deposit: [
+      'Paano ko makukuha ang aking SIM deposito?',
+      'Kailan isinasauli ang aking deposito?',
+      'Isinasauli ba ang deposito sa aking bank account?',
+    ],
   },
 };

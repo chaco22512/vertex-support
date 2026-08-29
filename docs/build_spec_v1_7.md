@@ -288,9 +288,9 @@ create table reply_drafts (   -- adminの返信下書き自動保存用
 
 ### 6.1 フロー定義
 1. **言語選択**（初回のみ全画面。5言語をネイティブ表記の大ボタンで。ブラウザ言語から推定した言語を先頭に）
-2. **カテゴリ選択**: "What is your question about?" を表示し、`menu_categories.json` の10カテゴリをアイコン付きタイル（2列グリッド）で表示。選択値を conversations.topic_category に保存。**Others は常に末尾**（★v1.6 Phase 5: Nenkin/Gensen タイルはCS判断で削除。関連ルールはDBに残り Others 経由でのみ参照可）
+2. **カテゴリ選択**: "What is your question about?" を表示し、`menu_categories.json` の11カテゴリをアイコン付きタイル（2列グリッド）で表示。選択値を conversations.topic_category に保存。**Others は常に末尾**（★v1.6 Phase 5: Nenkin/Gensen タイルはCS判断で削除。関連ルールはDBに残り Others 経由でのみ参照可。★v1.7 CS docs Phase 4: **Deposit refund** タイルを refund から独立追加＝11タイル。デポジットは契約グループ〔2024/12/11 境界〕判定が必要な特殊トピックのため専用タイル化。CS提案の Signal/APN/Internet の3分割・料金の細分化は不採用〔1タイル維持＋診断ask / always_escalate〕、Lost と Replacement も別タイルのまま）
 3. **カテゴリ別分岐**:
-   - 通常カテゴリ（8種）→ そのカテゴリの sub_questions をチップ表示 + "Something else" チップ。sub_question タップで定型質問として送信し、AIがカテゴリスコープのルールで回答。"Something else" タップで入力欄を表示
+   - 通常カテゴリ（9種）→ そのカテゴリの sub_questions をチップ表示 + "Something else" チップ。sub_question タップで定型質問として送信し、AIがカテゴリスコープのルールで回答。"Something else" タップで入力欄を表示。**Deposit refund** は AI_Deposit Refund + AI_Cancellation（通知期間依存）+ REFUNDDEPOSIT CASHBACK + GENERAL をスコープとし、契約グループのプロンプトガードレール（§4.2）で回答
    - **Plans & prices** → AIを呼ばず、固定メッセージ「料金プランはスタッフがご案内します」（顧客言語）+ エスカレーションカードを即表示（reason: price_question）
    - **Others** → "Please tell us your question." を表示して入力欄を開く。AIは全カテゴリのルールで回答
 4. **AI回答後**: "Solved 👍 / Still need help" ボタン + 入力欄を常時表示に切替（フォローアップの自由入力を許可。以降はスコープ維持のままAI回答）
@@ -468,7 +468,7 @@ UX（v1.1追加）:
 26. 各メッセージに送信時刻(HH:MM)が表示され、日付が変わる位置に区切り（Today / Yesterday / 日付）が表示される（顧客チャット・admin会話詳細の両方）
 
 第2マニュアル・トピック（★v1.5追補 / ★v1.6 Phase 5改訂）:
-27. カテゴリタイルが**10個**表示され、Others が末尾にある（Nenkin/Gensen タイルは Phase 5 で削除）
+27. カテゴリタイルが**11個**表示され、Others が末尾にある（Nenkin/Gensen タイルは Phase 5 で削除、Deposit refund タイルは v1.7 CS docs Phase 4 で追加）
 28. Pシリーズ取込後、`kb_rules` 総件数がRシリーズと合算で一致し、pending_review が想定件数（R42 + P225）になる。pending_review のCOD/割引・"dont use yet" ルールがAIプロンプトに出ない（仕様Hardルール3）
 29. Review queue が4タブ（A/B/C/D）で、各 review_reason が正しいタブに入る
 
@@ -487,7 +487,7 @@ CSフィードバック対応（★v1.6。括弧内は指示書 `claude_code_ins
 ポリシー調整（★v1.6 Phase 5）:
 36. (指示#32) `fee_is_fixed=true` の規約固定額（再発行¥4,000 等）は付記なしで回答され、変動額（未払い残高・最終請求額・割引後額）や未マークの額には「Final amount will be confirmed by our staff.」が付く
 37. 通話/SMS単価・ネットワーク・5G/eSIM・SIMロック・プラン仕様は回答可、月額/Unlimited/COD/割引はエスカレ（price_question）。Plans FAQ 21件は Review queue で人手承認（自動承認しない）
-38. カテゴリタイルは10個（Nenkin 削除）で Others が末尾
+38. カテゴリタイルは11個（Nenkin 削除、Deposit refund 追加）で Others が末尾
 
 ナレッジCSV（★v1.7）:
 39. CSVをダウンロードしてExcelで開いたとき、日本語・ベトナム語・ネパール語が文字化けしない（UTF-8 BOM）
@@ -504,6 +504,11 @@ CSフィードバック対応（★v1.6。括弧内は指示書 `claude_code_ins
 CSプロンプトのマージ（★v1.7 CS更新 Phase 3）:
 47. 追い質問で複数質問を並べず「一度に1問だけ」尋ねる
 48. 日付計算（通知期間が足りるか等）は自分で計算して答える（不必要にエスカレしない）。アカウント依存の事実は断定しない
+
+トピックメニュー見直し（★v1.7 CS更新 Phase 4）:
+49. カテゴリタイルが11個で、**Deposit refund** が独立タイルとして表示され、Others が末尾（Signal/APN/Internet は1タイル維持、Plans も1タイル維持、Lost と Replacement は別タイルのまま）
+50. Deposit refund タイルを選ぶと、契約グループ判定（開始日不明なら1問だけ確認）を経て、CURRENT なら ¥800・次回請求割引（銀行振込ではない）と答え、PREVIOUS では金額を述べない
+51. 5言語すべてで Deposit refund タイルのラベルと sub_questions が翻訳されている
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 
@@ -535,7 +540,7 @@ CSプロンプトのマージ（★v1.7 CS更新 Phase 3）:
 - kb_rules_import.json / kb_rules_import.csv — 初期ナレッジ695件（42件は pending_review 指定）
 - needs_review.md — 承認待ち42件（Review queue の初期内容と一致すること）
 - assets/logo-mark.svg / assets/logo-horizontal.webp — ブランドアセット（第5.1章）
-- menu_categories.json — カテゴリメニュー定義（第6章。10カテゴリ、各カテゴリとkb_rules.categoryの対応、定型質問）
+- menu_categories.json — カテゴリメニュー定義（第6章。11カテゴリ、各カテゴリとkb_rules.categoryの対応、定型質問）
 
 納品時に実装側が追加すべきもの（第11章）:
 - docs/cs-staff-rulebook.md / .pdf

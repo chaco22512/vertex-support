@@ -1,6 +1,6 @@
 {
- "version": "1.4",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet.",
+ "version": "1.5",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet. v1.5 (spec v1.7 CS docs Phase 4): added a dedicated 'deposit' tile (Deposit refund) split out of refund — deposit needs contract-group (2024/12/11) judgment; scope = AI_Deposit Refund + AI_Cancellation (notice-period dependency) + REFUNDDEPOSIT CASHBACK + GENERAL. Now 11 tiles (Others still last). CS proposals to split Signal/APN/Internet and Plans were NOT adopted (kept 1 tile each + diagnostic ask / always_escalate); Lost and Replacement kept separate.",
  "categories": [
   {
    "id": "internet",
@@ -146,6 +146,22 @@
    "sub_questions": [
     "When will I get my cashback?",
     "How do I get my deposit back?"
+   ]
+  },
+  {
+   "id": "deposit",
+   "icon": "ti-coin",
+   "label_en": "Deposit refund",
+   "kb_categories": [
+    "CS AI DOC: AI_Deposit Refund",
+    "CS AI DOC: AI_Cancellation",
+    "REFUNDDEPOSIT CASHBACK",
+    "GENERAL RULES"
+   ],
+   "sub_questions": [
+    "How do I get my SIM deposit back?",
+    "When is my deposit refunded?",
+    "Is the deposit paid back to my bank account?"
    ]
   },
   {

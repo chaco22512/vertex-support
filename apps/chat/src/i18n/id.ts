@@ -55,6 +55,7 @@ export const id: Messages = {
     replace: 'Penggantian / ganti paket',
     reissue: 'Sinyal terhenti / penerbitan ulang',
     refund: 'Pengembalian dana / deposit / cashback',
+    deposit: 'Pengembalian deposit',
     plans: 'Paket & harga',
     others: 'Lainnya',
   },
@@ -87,5 +88,10 @@ export const id: Messages = {
       'Berapa biaya penerbitan ulang (penghentian)?',
     ],
     refund: ['Kapan saya menerima cashback saya?', 'Bagaimana cara mendapatkan deposit saya kembali?'],
+    deposit: [
+      'Bagaimana cara mendapatkan deposit SIM saya kembali?',
+      'Kapan deposit saya dikembalikan?',
+      'Apakah deposit dikembalikan ke rekening bank saya?',
+    ],
   },
 };

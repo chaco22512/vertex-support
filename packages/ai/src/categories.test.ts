@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { resolveKbCategories, type MenuCategories } from './categories';
 import { fetchScopedRules } from './rules';
+import realMenu from '../../../data/menu_categories.json';
 
 const menu: MenuCategories = {
   categories: [
@@ -32,6 +33,15 @@ describe('resolveKbCategories', () => {
     // 'lost' has no GENERAL RULES listed — it must be added
     expect(resolveKbCategories('lost', menu)).toContain('GENERAL RULES');
     expect(resolveKbCategories('lost', menu)).toContain('LOST ITEM RULES');
+  });
+
+  it('scopes the real Deposit refund tile to deposit + cancellation context (v1.7 CS docs Phase 4)', () => {
+    const scope = resolveKbCategories('deposit', realMenu as unknown as MenuCategories);
+    expect(scope).toContain('CS AI DOC: AI_Deposit Refund');
+    // Deposit refund depends on the cancellation notice period → include AI_Cancellation.
+    expect(scope).toContain('CS AI DOC: AI_Cancellation');
+    expect(scope).toContain('REFUNDDEPOSIT CASHBACK');
+    expect(scope).toContain('GENERAL RULES');
   });
 });
 
