@@ -84,6 +84,14 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('internal section numbers');
   });
 
+  it('merges the CS conversation-style guidance (§4.2 v1.7 CS docs Phase 3)', () => {
+    expect(prompt).toContain('Ask ONE question at a time');
+    expect(prompt).toContain('information the customer has already given');
+    expect(prompt).toContain('MAY do pure date and number calculations');
+    expect(prompt).toContain('based only on what the customer says');
+    expect(prompt).toContain('briefly recap');
+  });
+
   it('groups rules by category and lists ids', () => {
     expect(prompt).toContain('## APN SETTINGS');
     expect(prompt).toContain('[R010] Set APN.');
