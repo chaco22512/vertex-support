@@ -70,6 +70,9 @@ export class FakeSupabase {
   }
 }
 
+/** Mirrors the Supabase project's PostgREST max-rows setting. */
+export const MAX_ROWS = 1000;
+
 class FakeQuery implements PromiseLike<Result> {
   private op: 'select' | 'insert' | 'update' | 'delete' = 'select';
   private payload: Row[] = [];
@@ -240,6 +243,9 @@ class FakeQuery implements PromiseLike<Result> {
     if (this.limitN !== null) rows = rows.slice(0, this.limitN);
     // .range(from, to) is inclusive on both ends (PostgREST semantics).
     if (this.rangeFrom !== null) rows = rows.slice(this.rangeFrom, (this.rangeTo ?? rows.length) + 1);
+    // PostgREST server max-rows: a single request never returns more than this,
+    // so unpaged selects truncate exactly like production (v1.8 Phase 0).
+    rows = rows.slice(0, MAX_ROWS);
     const copies = this.out(rows);
     if (this.singleMode !== 'none') return { data: copies[0] ?? null, error: null };
     return { data: copies, error: null };

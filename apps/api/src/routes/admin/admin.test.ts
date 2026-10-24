@@ -91,6 +91,25 @@ describe('admin rules', () => {
     expect((log.after as { fee_amounts_jpy: number[] }).fee_amounts_jpy).toEqual([4500]);
   });
 
+  it('lists every rule past the 1000-row PostgREST cap (v1.8 Phase 0)', async () => {
+    const { app, db, env } = setup('admin');
+    for (let i = 0; i < 2500; i++) {
+      db.tables.kb_rules.push({
+        id: `R${String(i).padStart(4, '0')}`,
+        category: i % 2 ? 'A' : 'B',
+        rule_text: 'x',
+        status: i < 300 ? 'pending_review' : 'active',
+        audience: 'customer',
+      });
+    }
+    const all = await app.request('/api/admin/rules', { headers: admin }, env);
+    expect(all.status).toBe(200);
+    expect(((await all.json()) as { rules: unknown[] }).rules).toHaveLength(2500);
+
+    const active = await app.request('/api/admin/rules?status=active', { headers: admin }, env);
+    expect(((await active.json()) as { rules: unknown[] }).rules).toHaveLength(2200);
+  });
+
   it('bulk-approves pending_review rules (§7.5)', async () => {
     const { app, db, env } = setup('admin');
     db.tables.kb_rules.push(

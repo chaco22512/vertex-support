@@ -99,4 +99,29 @@ describe('generateAiReply', () => {
     expect(res.fellBack).toBe(true);
     expect(res.aiMeta.escalate).toBe(true);
   });
+
+  it('logs the per-topic count of rules handed to the AI — beyond the 1000-row page (v1.8 §4.1.0)', async () => {
+    const db = new FakeSupabase();
+    for (let i = 0; i < 2400; i++) {
+      db.tables.kb_rules.push({
+        id: `P${String(i).padStart(4, '0')}`,
+        category: 'PLAN FILE: X',
+        rule_text: 'r',
+        audience: 'customer',
+        ai_can_answer: true,
+        status: 'active',
+      });
+    }
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      await generateAiReply(
+        deps(mockLlm([goodResponse()]), db),
+        conversation({ topic_category: 'others' }),
+        [{ sender: 'customer', body: 'hi' }],
+      );
+      expect(info).toHaveBeenCalledWith(expect.stringMatching(/topic=others scope=all count=2401$/));
+    } finally {
+      info.mockRestore();
+    }
+  });
 });

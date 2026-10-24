@@ -35,6 +35,11 @@ export async function generateAiReply(
     // customer message has already been persisted (which would strand the turn
     // and make retries pile up duplicate customer bubbles).
     const rules = await fetchScopedRules(deps.db, categories);
+    // v1.8 §4.1.0: per-topic count of rules actually handed to the AI (no PII).
+    console.info(
+      `[ai] rules conversation=${conversation.id} topic=${conversation.topic_category || 'none'} ` +
+        `scope=${categories === null ? 'all' : `${categories.length} categories`} count=${rules.length}`,
+    );
     return await runAiReply({
       rules,
       history,

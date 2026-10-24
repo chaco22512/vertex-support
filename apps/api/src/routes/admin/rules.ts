@@ -1,6 +1,7 @@
 import type { Context } from 'hono';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppEnv } from '../../types';
+import { fetchAllRules } from '../../lib/kbRules';
 import { approveRulesSchema, createRuleSchema, splitRuleSchema, updateRuleSchema } from '../../dto';
 
 async function nextRuleId(db: SupabaseClient): Promise<string> {
@@ -32,14 +33,13 @@ export async function listRules(c: Context<AppEnv>): Promise<Response> {
   const category = c.req.query('category');
   const status = c.req.query('status');
 
-  let query = db.from('kb_rules').select('*').order('id', { ascending: true }).limit(1000);
-  if (category) query = query.eq('category', category);
-  if (status) query = query.eq('status', status);
-  if (q) query = query.ilike('rule_text', `%${q}%`);
-
-  const { data, error } = await query;
-  if (error) return c.json({ error: 'server_error' }, 500);
-  return c.json({ rules: data ?? [] });
+  // Paged — a single select is capped at 1000 rows by PostgREST (v1.8 §4.1.0).
+  try {
+    const rules = await fetchAllRules(db, { q, category, status });
+    return c.json({ rules });
+  } catch {
+    return c.json({ error: 'server_error' }, 500);
+  }
 }
 
 /** POST /api/admin/rules — create a new rule (id M001…) (§7.4). */

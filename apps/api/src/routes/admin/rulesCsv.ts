@@ -11,29 +11,10 @@ import {
 } from '@vertex/shared';
 import type { AppEnv } from '../../types';
 import { importCsvSchema, undoImportSchema } from '../../dto';
+import { fetchAllRules } from '../../lib/kbRules';
 
 const PAGE = 1000;
 const APPLY_CHUNK = 50;
-
-/** Page through kb_rules (id order) applying optional filters — no 1000 cap. */
-async function fetchAllRules(
-  db: SupabaseClient,
-  filters: { q?: string; category?: string; status?: string },
-): Promise<KbRule[]> {
-  const all: KbRule[] = [];
-  for (let from = 0; ; from += PAGE) {
-    let query = db.from('kb_rules').select('*').order('id', { ascending: true }).range(from, from + PAGE - 1);
-    if (filters.category) query = query.eq('category', filters.category);
-    if (filters.status) query = query.eq('status', filters.status);
-    if (filters.q) query = query.ilike('rule_text', `%${filters.q}%`);
-    const { data, error } = await query;
-    if (error) throw new Error(error.message);
-    const page = (data ?? []) as KbRule[];
-    all.push(...page);
-    if (page.length < PAGE) break;
-  }
-  return all;
-}
 
 async function staffNameMap(db: SupabaseClient): Promise<Map<string, string>> {
   const { data } = await db.from('staff').select('id,name');
