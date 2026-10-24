@@ -6,6 +6,8 @@ import { rateLimitMiddleware } from './middleware/rateLimit';
 import { sessionMiddleware } from './middleware/session';
 import { defaultDeps } from './lib/deps';
 import { createConversation } from './routes/conversations';
+import { postTopic } from './routes/topic';
+import { listAiDiagnostics } from './routes/admin/aiDiagnostics';
 import { getMessages, postMessage } from './routes/messages';
 import { postContact } from './routes/contact';
 import { postFeedback } from './routes/feedback';
@@ -58,6 +60,7 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   session.post('/messages', rateLimitMiddleware, postMessage);
   session.post('/contact', rateLimitMiddleware, postContact);
   session.post('/feedback', rateLimitMiddleware, postFeedback);
+  session.post('/topic', rateLimitMiddleware, postTopic);
   app.route('/api/conversations/:token', session);
 
   // Admin API (§7/§9): JWT-authenticated. Knowledge & staff are admin-only.
@@ -87,6 +90,7 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.patch('/staff/:id', adminOnly, updateStaff);
   admin.delete('/staff/:id', adminOnly, deleteStaff);
   admin.get('/changelog', adminOnly, listChangelog);
+  admin.get('/ai-diagnostics', adminOnly, listAiDiagnostics);
   app.route('/api/admin', admin);
 
   return app;

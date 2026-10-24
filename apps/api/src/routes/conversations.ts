@@ -3,14 +3,7 @@ import type { Conversation } from '@vertex/shared';
 import type { AppEnv } from '../types';
 import { createConversationSchema } from '../dto';
 import { generateSessionToken } from '../lib/token';
-import { menu } from '../lib/menu';
-
-/** English label for a topic id, for the staff-visible "Topic:" marker (§6.2). */
-function topicLabel(topicCategory: string): string | null {
-  const cat = menu.categories.find((c) => c.id === topicCategory);
-  const label = (cat as { label_en?: string } | undefined)?.label_en;
-  return label ?? null;
-}
+import { topicLabel } from '../lib/menu';
 
 /** POST /api/conversations — create an anonymous session (§9). */
 export async function createConversation(c: Context<AppEnv>): Promise<Response> {

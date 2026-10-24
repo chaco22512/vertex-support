@@ -5,6 +5,12 @@ export interface UiStrings {
   categoryPrompt: string;
   somethingElse: string;
   changeTopic: string;
+  /** ★v1.8: always-visible switch to another topic, same conversation. */
+  askAnother: string;
+  /** ★v1.8: AI handed a follow-up to staff in an open case (no contact cards). */
+  addedToOpenRequest: string;
+  /** ★v1.8: leave the topic picker and return to the conversation. */
+  backToChat: string;
   othersPrompt: string;
   plansMessage: string;
   inputPlaceholder: string;

@@ -7,6 +7,11 @@ export const createConversationSchema = z.object({
   topic_category: z.string().max(64).optional(),
 });
 
+/** POST /api/conversations/:token/topic (★v1.8 "Ask another question"). */
+export const changeTopicSchema = z.object({
+  topic_category: z.string().min(1).max(64),
+});
+
 export const postMessageSchema = z.object({
   body: z.string().trim().min(1).max(4000),
 });

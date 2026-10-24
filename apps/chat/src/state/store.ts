@@ -172,6 +172,7 @@ export function useChat() {
 
   const selectCategory = useCallback(
     async (category: LocalizedCategory) => {
+      const existing = state.token;
       dispatch({
         type: 'SELECT_CATEGORY',
         topicCategory: category.id,
@@ -180,9 +181,19 @@ export function useChat() {
         topicLabel: `Topic: ${category.label}`,
         plansMessage: t.ui.plansMessage,
       });
-      await ensureConversation(category.id);
+      if (!existing) {
+        await ensureConversation(category.id);
+        return;
+      }
+      // ★v1.8: same conversation, new topic (re-scopes the AI server-side).
+      try {
+        const res = await api.changeTopic(existing, category.id);
+        if (res.followup_escalated) dispatch({ type: 'FOLLOWUP_NOTE', note: t.ui.addedToOpenRequest });
+      } catch {
+        dispatch({ type: 'AI_ERROR' });
+      }
     },
-    [ensureConversation, t],
+    [state.token, ensureConversation, t],
   );
 
   const send = useCallback(
@@ -201,6 +212,9 @@ export function useChat() {
         lastFailedBody.current = null;
         const meta = res.reply.ai_meta;
         const action = meta?.action ?? (res.escalated ? 'escalate' : 'answer');
+        const topic = res.topic_category
+          ? localizedCategories(t).find((c) => c.id === res.topic_category)
+          : undefined;
         dispatch({
           type: 'AI_REPLY',
           body: res.reply.body,
@@ -208,6 +222,8 @@ export function useChat() {
           options: meta?.follow_up?.options ?? [],
           messageId: res.reply.id,
           at: res.reply.created_at || new Date().toISOString(),
+          followUpNote: res.followup_escalated ? t.ui.addedToOpenRequest : undefined,
+          topic: topic ? { id: topic.id, behavior: topic.behavior, label: `Topic: ${topic.label}` } : undefined,
         });
       } catch {
         clearTimeout(timer);
@@ -253,16 +269,32 @@ export function useChat() {
     dispatch({ type: 'FEEDBACK_SOLVED' });
   }, [state.token]);
 
-  const stillNeedHelp = useCallback(() => dispatch({ type: 'SHOW_ESCALATION' }), []);
+  const stillNeedHelp = useCallback(async () => {
+    // ★v1.8: contact already on file → hand straight to staff, no cards again.
+    if (state.contactSent && state.token) {
+      try {
+        await api.postFeedback(state.token, 'still_need_help');
+        dispatch({ type: 'FOLLOWUP_NOTE', note: t.ui.addedToOpenRequest });
+      } catch {
+        dispatch({ type: 'AI_ERROR' });
+      }
+      return;
+    }
+    dispatch({ type: 'SHOW_ESCALATION' });
+  }, [state.contactSent, state.token, t]);
   const openComposer = useCallback(() => dispatch({ type: 'OPEN_COMPOSER' }), []);
   const changeTopic = useCallback(() => {
-    try {
-      localStorage.removeItem(STORAGE_KEY); // abandon the empty conversation
-    } catch {
-      /* ignore */
+    // Only an empty conversation is abandoned; a live one keeps going (★v1.8).
+    if (!state.firstMessageSent && !state.contactSent) {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch {
+        /* ignore */
+      }
     }
     dispatch({ type: 'CHANGE_TOPIC' });
-  }, []);
+  }, [state.firstMessageSent, state.contactSent]);
+  const backToChat = useCallback(() => dispatch({ type: 'BACK_TO_CHAT' }), []);
   const changeLanguage = useCallback(() => dispatch({ type: 'CHANGE_LANGUAGE' }), []);
   const newQuestion = useCallback(() => {
     try {
@@ -290,6 +322,7 @@ export function useChat() {
     stillNeedHelp,
     openComposer,
     changeTopic,
+    backToChat,
     changeLanguage,
     newQuestion,
     retry,

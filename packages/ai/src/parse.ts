@@ -8,6 +8,7 @@ export const ESCALATION_REASONS = [
   'account_specific',
   'complaint',
   'other',
+  'pending_case',
 ] as const satisfies readonly EscalationReason[];
 
 export const AI_ACTIONS = ['answer', 'ask', 'escalate'] as const satisfies readonly AiAction[];
@@ -35,7 +36,13 @@ export const aiResponseSchema = z.object({
   reason: z.enum(ESCALATION_REASONS),
   rule_ids: z.array(z.string()),
   detected_language: z.string(),
+  // ★v1.8 (optional — older/terse outputs still parse):
+  topic: z.string().nullish(),
+  search_keywords: z.array(z.string()).nullish(),
 });
+
+/** Cap on retrieval keywords kept from the model (★v1.8). */
+const MAX_KEYWORDS = 8;
 
 /** Normalized response: `action` and `follow_up` are always resolved. */
 export interface AiResponse {
@@ -45,6 +52,10 @@ export interface AiResponse {
   reason: EscalationReason;
   rule_ids: string[];
   detected_language: string;
+  /** ★v1.8: menu topic id of the latest question (validated by the caller). */
+  topic: string | null;
+  /** ★v1.8: English retrieval keywords, trimmed, lower-cased, ≤ MAX_KEYWORDS. */
+  search_keywords: string[];
 }
 
 /**
@@ -74,6 +85,11 @@ function normalizeResponse(raw: z.infer<typeof aiResponseSchema>): AiResponse {
     reason: raw.reason,
     rule_ids: raw.rule_ids,
     detected_language: raw.detected_language,
+    topic: raw.topic?.trim() || null,
+    search_keywords: (raw.search_keywords ?? [])
+      .map((k) => k.trim().toLowerCase())
+      .filter((k) => k.length > 0)
+      .slice(0, MAX_KEYWORDS),
   };
 }
 

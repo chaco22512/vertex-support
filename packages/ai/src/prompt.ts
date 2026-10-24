@@ -70,21 +70,34 @@ Conversation style and judgment:
 Write for a non-technical customer in their 40s or older: use plain, everyday words. One step per sentence. Put steps in a numbered list. Add a short plain-words explanation for any technical term. Do not use exclamation marks or emoji.
 
 Your output MUST be a single JSON object and nothing else, in exactly this shape:
-{"action":"answer","answer":"<reply in the customer's language>","follow_up":null,"reason":"none","rule_ids":["R045"],"detected_language":"en"}
+{"action":"answer","answer":"<reply in the customer's language>","follow_up":null,"reason":"none","rule_ids":["R045"],"detected_language":"en","topic":"internet","search_keywords":["apn","iphone","setup"]}
 - "action" must be one of: answer, ask, escalate.
 - "follow_up" is required ONLY when action is "ask": {"question":"<one question>","options":["<3 to 5 options>"]}. Otherwise set it to null.
-- "reason" must be one of: none, price_question, not_in_manual, account_specific, complaint, other. Use "none" for "answer" and "ask".
+- "reason" must be one of: none, price_question, not_in_manual, account_specific, complaint, other, pending_case. Use "none" for "answer" and "ask".
 - "rule_ids" lists the ids of the rules you used (may be empty).
-- "detected_language" is the ISO code of the customer's language (e.g. en, id, tl, ne, vi).`;
+- "detected_language" is the ISO code of the customer's language (e.g. en, id, tl, ne, vi).
+- "topic" is the help-topic id that the customer's LATEST question is about (one of the ids listed under "Help topics"). If the latest message just continues the current question (e.g. it answers your question), keep the current topic.
+- "search_keywords" are 3-8 short ENGLISH keywords describing the customer's latest question, ALWAYS in English whatever language the customer writes in (e.g. ["lost","sim","reissue","fee"]). They are used to search the full manual.`;
 
 /**
  * Build the English system prompt with rules grouped by category (§4.1/§4.2).
  *
  * `options.topic` (★v1.6) injects the customer's selected topic label so the
  * model keeps context even after the "Topic: …" marker scrolls out of the
- * (now 40-message) history window.
+ * (now 40-message) history window. ★v1.8: the topic is context, not a fence —
+ * `topics` lets the model label the latest question's topic, and `pendingCase`
+ * routes chasers about a case already with staff to `pending_case`.
  */
-export function buildSystemPrompt(rules: KbRule[], options?: { topic?: string | null }): string {
+export interface SystemPromptOptions {
+  /** Label of the conversation's current topic (★v1.6). */
+  topic?: string | null;
+  /** Menu topics the model may assign the latest question to (★v1.8). */
+  topics?: { id: string; label: string }[];
+  /** An earlier question in this conversation is waiting for staff (★v1.8). */
+  pendingCase?: boolean;
+}
+
+export function buildSystemPrompt(rules: KbRule[], options?: SystemPromptOptions): string {
   const byCategory = new Map<string, KbRule[]>();
   for (const rule of rules) {
     const list = byCategory.get(rule.category) ?? [];
@@ -98,10 +111,19 @@ export function buildSystemPrompt(rules: KbRule[], options?: { topic?: string | 
   }
 
   const rulesText = blocks.length > 0 ? blocks.join('\n\n') : '(no rules available)';
+  // ★v1.8: a new question on another subject must be answered, or reported as
+  // not_in_manual so the system can search the full manual — never refused
+  // because of the starting topic (the v1.6 "keep focused" line caused that).
   const topicLine = options?.topic
-    ? `\n\nThe customer chose this help topic: "${options.topic}". Keep your help focused on it unless they clearly change subject.`
+    ? `\n\nThis conversation started on the help topic "${options.topic}". The customer may move on to a different question at any time: always help with their LATEST question. If the rules below do not cover it, use action "escalate" with reason "not_in_manual" — the system will then search the full manual before involving staff.`
     : '';
-  return `${INSTRUCTIONS}${topicLine}\n\nRules:\n${rulesText}`;
+  const topicsLine = options?.topics?.length
+    ? `\n\nHelp topics (ids for the "topic" field):\n${options.topics.map((t) => `- ${t.id}: ${t.label}`).join('\n')}`
+    : '';
+  const pendingLine = options?.pendingCase
+    ? '\n\nAn earlier question in this conversation has already been passed to our staff, who will reply. If the latest message chases that earlier case or adds information to it (e.g. "any update?", or sends a detail the staff need), use action "escalate" with reason "pending_case" and tell the customer their message has been added for our staff. If it is a NEW question, answer it normally from the rules.'
+    : '';
+  return `${INSTRUCTIONS}${topicLine}${topicsLine}${pendingLine}\n\nRules:\n${rulesText}`;
 }
 
 /**

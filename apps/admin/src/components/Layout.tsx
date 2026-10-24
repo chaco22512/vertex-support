@@ -5,6 +5,7 @@ import {
   IconDashboard,
   IconHistory,
   IconInbox,
+  IconPulse,
   IconReview,
   IconStaff,
 } from './icons';
@@ -16,6 +17,7 @@ const NAV = [
   { to: '/review', label: 'Review queue', icon: IconReview, end: false, adminOnly: true },
   { to: '/staff', label: 'Staff', icon: IconStaff, end: false, adminOnly: true },
   { to: '/history', label: 'Change history', icon: IconHistory, end: false, adminOnly: true },
+  { to: '/ai-diagnostics', label: 'AI diagnostics', icon: IconPulse, end: false, adminOnly: true },
 ];
 
 export function Layout() {

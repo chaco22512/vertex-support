@@ -4,6 +4,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { AppEnv } from '../types';
 import { postMessageSchema } from '../dto';
 import { generateAiReply } from '../lib/aiTurn';
+import { escalateFollowUp } from '../lib/escalation';
+import { topicLabel } from '../lib/menu';
 
 const HISTORY_LIMIT = 40; // §4.1 (★v1.6: raised 20→40 so troubleshooting threads keep context)
 
@@ -40,10 +42,37 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
   const history = await fetchHistory(db, conversation.id);
   const ai = await generateAiReply(deps, conversation, history);
 
-  // ★v1.6 Phase 3: do NOT escalate/notify here. When the AI decides to escalate,
-  // the client collects intake + contact first, and POST /contact performs the
-  // single escalation + Slack notification (carrying the intake). We only signal
-  // the client via `escalated` so it can show the intake → contact cards.
+  // ★v1.8 §4.1.1: the latest question moved to another topic → re-scope the
+  // conversation and leave a staff-visible "Topic:" marker before the reply.
+  let topicCategory = conversation.topic_category;
+  if (ai.topicSwitch) {
+    topicCategory = ai.topicSwitch;
+    await db.from('conversations').update({ topic_category: topicCategory }).eq('id', conversation.id);
+    const label = topicLabel(topicCategory);
+    if (label) {
+      await db
+        .from('messages')
+        .insert({ conversation_id: conversation.id, sender: 'system', body: `Topic: ${label}` });
+    }
+  }
+
+  // ★v1.6 Phase 3: a FIRST escalation is not applied here — the client collects
+  // intake + contact, and POST /contact performs the single escalation + Slack
+  // notification. ★v1.8: once contact is on file (the conversation was escalated
+  // before), the cards are not shown again; we hand the message to staff here.
+  const escalating = ai.aiMeta.action === 'escalate';
+  const hasContact = Boolean(conversation.contact_email || conversation.contact_whatsapp);
+  let status = conversation.status;
+  let followUp = false;
+  if (escalating && hasContact) {
+    try {
+      await escalateFollowUp(deps, conversation, ai.aiMeta.reason, parsed.data.body);
+      status = 'escalated';
+      followUp = true;
+    } catch {
+      // Fall back to the normal intake → contact flow (POST /contact escalates).
+    }
+  }
 
   const { data: aiMsg, error: e2 } = await db
     .from('messages')
@@ -66,9 +95,12 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
     customer_message: customerMsg,
     reply: aiMsg,
     // `escalated` tells the client to collect intake + contact; the actual DB
-    // escalation happens on POST /contact (§6.2 v1.6), so status is unchanged here.
-    escalated: ai.aiMeta.action === 'escalate',
-    status: conversation.status,
+    // escalation happens on POST /contact (§6.2 v1.6). `followup_escalated`
+    // (★v1.8) means staff were already notified here — show no cards.
+    escalated: escalating && !followUp,
+    followup_escalated: followUp,
+    status,
+    topic_category: topicCategory,
   });
 }
 

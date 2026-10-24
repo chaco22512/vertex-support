@@ -213,12 +213,13 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 - AIターンごとに「トピック・スコープ内ルール件数」をログ出力する（Workers ログ）。
 - **アクティブな顧客向けルールが0件の場合、AIはLLMを呼ばず全ての質問をエスカレーションする**（知識なしで推測回答しない。★v1.8 Phase 3）。
 
-#### 4.1.1 トピック切替とエスカレーション判定（★v1.8 Phase 1）
-1. **メッセージごとのトピック再判定**: 新しい顧客メッセージが現在の topic_category のスコープに合致しない場合、メッセージ内容からトピックを判定し直してスコープを切り替える。切替時は `conversations.topic_category` を更新し、会話に "Topic: …" システムメッセージを残す（admin で追跡可能）。判定方式の詳細は Phase 1 計画で確定。
-2. **not_in_manual の前に全件フォールバック（必須）**: スコープ内で `action="escalate"` かつ `reason="not_in_manual"` になった場合、エスカレする前に **全アクティブ顧客向けルール（'others' と同じスコープ）で1回だけ再試行**する。再試行で回答できればエスカレしない。再試行でも not_in_manual の場合のみエスカレ。price_question / account_specific / complaint は再試行しない（ポリシー上のエスカレであり知識不足ではない）。
-   - 全件プロンプトは約107Kトークン（§13）。無料枠のTPMを圧迫するため、15秒予算内の残り時間・レート制限（429）時の扱いを Phase 1 計画で明記する。
-3. **エスカレ中もAIが応答を続ける**: 会話が escalated / staff_replied でも、顧客の新しい質問にはAIが通常どおりルールに基づいて回答する。元の案件のスタッフ返信待ち（status / reply_due_at / 担当）は維持する。元の案件に関する催促・追加情報は従来どおりスタッフに回す（エスカレ通知の重複は作らない）。
-4. **診断ログ**: AIが escalate を返すたびに ai_meta に `diag` を記録: `{ reason, topic, scoped_rule_count, fallback_tried, fallback_rule_count, fallback_result }`。admin 会話詳細で確認できる（§7.3）。
+#### 4.1.1 トピック切替とエスカレーション判定（★v1.8 Phase 1、実装確定）
+0. **原因（調査結果）**: (a) スコープが会話作成時の topic_category に固定され、別トピックの質問に根拠ルールが渡らない。プロンプトの "Keep your help focused on it" もこれを助長。(b) チャットUIで、連絡先送信後もAIがエスカレするたびに状況確認→連絡先カードが再表示された。(c) LLM の 429 / タイムアウトが理由を記録しないまま定型文エスカレ（reason=other）になっていた。1,000件上限は無関係（§13）。
+1. **トピック再判定（追加LLM呼び出しなし）**: AI出力JSONに `topic`（最新の質問のメニューid。続きの返答なら現在トピック）と `search_keywords`（英語3〜8語、顧客言語に関係なく英語）を追加。`topic` が有効なメニューid（plans/others 以外）で現在と異なれば `conversations.topic_category` を更新し "Topic: <label_en>" システムメッセージを挿入、応答に `topic_category` を返す。プロンプトのトピック行は「開始トピックは文脈。最新の質問に答え、ルールに無ければ not_in_manual（システムが全マニュアルを検索する）」に変更。
+2. **not_in_manual 前のフォールバック（必須）**: 主呼び出しが `escalate` + `not_in_manual` のとき、**全AI対象ルールからキーワード一致（BM25）上位150件（FALLBACK_TOP_K）**を候補にして1回だけ再試行（ユーザー承認: 全件107Kトークンでは無料枠TPMを2回/分で使い切るため）。クエリ＝最新の顧客発言（PIIマスク後）＋ search_keywords。推定トピックのカテゴリに軽いブースト。回答できればエスカレしない。再試行でも not_in_manual なら `not_found` でエスカレ。price_question / account_specific / complaint / pending_case は再試行しない。topic=others は元から全件のため `scope_was_all`。候補0件ならLLMを呼ばず `no_candidates`。全ルール取得は主呼び出しと並行して開始。
+3. **時間配分（サーバ全体13.5秒。クライアントは15秒で打ち切るため）**: スコープ内取得 ~0.3–0.6s → 主LLM **8.0s で打ち切り** → フォールバック開始は経過 **7.5s 以内**のときのみ（超過は `skipped_no_time`）→ 検索 <0.1s（全件取得は並行済み）→ フォールバックLLMは全体期限13.5sまで → DB書き込み。
+4. **エスカレ中もAIが応答**: escalated / staff_replied でも新しい質問にはAIが回答。プロンプトに「先の質問がスタッフ対応中」行を追加し、その案件への催促・追加情報は新理由 **`pending_case`** でエスカレ。**連絡先が登録済みの会話でAIがエスカレした場合は、状況確認・連絡先カードを再表示せず**サーバが追加通知（Slack「🔁 Follow-up in an open case」、最新の質問を引用）: escalated なら期限・担当を維持、staff_replied 等なら escalated に戻し期限を再設定（担当は維持）。応答 `followup_escalated=true`。"Still need help" も同様。
+5. **診断ログ（必須、無言のエスカレ禁止）**: エスカレ時・フォールバック実施時・エラー時に `ai_meta.diag` を記録: `{ topic, topic_guess, scoped_rule_count, primary_reason, fallback_tried, fallback_result: answered|not_found|policy_escalation|no_candidates|rate_limited|timeout|skipped_no_time|scope_was_all|error, candidate_count, candidate_ids(順位順・≤150), top_scores(上位10), keywords, error: rate_limited|timeout|llm_error|parse_failed|rule_fetch_failed|null, timings{primary_ms,retrieve_ms,fallback_ms,total_ms} }`。Workers ログにも1行出力。
 
 ### 4.2 システムプロンプト要件（英語で記述）
 必ず含める指示:
@@ -357,7 +358,7 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 4. **AI回答後**: "Solved 👍 / Still need help" ボタン + 入力欄を常時表示に切替（フォローアップの自由入力を許可。以降はスコープ維持のままAI回答）
 5. **Still need help / エスカレ条件成立** → エスカレーションカード（連絡先1入力）→ 送信で Slack通知。以降は従来通り
 6. 会話がresolved/closedになった後の再訪では「New question」ボタンでカテゴリ選択に戻れる（新しいconversationを作成）
-7. **「別の質問をする」導線の常時表示（★v1.8 Phase 1）**: 会話中いつでも（AI回答後・エスカレ中・スタッフ返信後も）トピック選択に戻れるボタンを表示する（v1.5 では最初のメッセージ送信前のみ）。同じ conversation のまま topic_category を切り替え、"Topic: …" システムメッセージを残す。
+7. **「別の質問をする」導線の常時表示（★v1.8 Phase 1）**: 会話中いつでも（AI回答後・エスカレ中・スタッフ返信後も）トピック選択に戻れるボタンを表示する（v1.5 では最初のメッセージ送信前のみ）。同じ conversation のまま topic_category を切り替え（`POST /api/conversations/:token/topic`）、"Topic: …" システムメッセージを残す。履歴は保持。最初のメッセージ送信前は従来どおり「Change topic」（空の会話を破棄）、送信後は「Ask another question」と表示。トピック選択画面には「Back to chat」。連絡先登録済みで Plans & prices を選んだ場合はカードを出さず追加通知（price_question）。
 
 ### 6.2 画面構成
 1. ヘッダー: ロゴマーク(logo-mark.png, 28px) + SIM Point Support + ステータス表示。言語ピル
@@ -474,6 +475,12 @@ CSの目的は「新しいシートでまるごと入れ替える」ことであ
 - **Try it**: 質問を入力し、下書きプロンプトでの応答をその場で確認（DBに会話を作らない・顧客に影響しないサンドボックス）。
 - 全ての保存・公開・ロールバックを ai_prompt_change_log に記録。Publish 時は Slack 通知。
 
+### 7.9 AI diagnostics（★v1.8 Phase 1、adminのみ）
+左メニュー「AI diagnostics」。`ai_meta.diag` を持つAIメッセージ（最新500件）を新しい順に一覧（`GET /api/admin/ai-diagnostics?result=`）。
+- 結果別の件数サマリ（クリックで絞り込み）、各行に顧客の質問・トピック（→推定トピック）・結果・所要時間。
+- 行を開くと会話へのリンク、キーワード、検索結果のルールID（順位順）。**「Correct rule ID」入力でそのルールの順位（または上位150件圏外）を表示**し、150件閾値の妥当性を実データで検証できる。
+- 会話詳細（§7.3）にも同じ診断を折りたたみ表示。
+
 ## 8. エスカレーション & 通知
 
 ### 割り当てロジック
@@ -515,6 +522,8 @@ Workers Cron（毎時）: 期限4時間未満の escalated 会話を ⚠️ 再�
 | GET/POST/PATCH | /api/admin/rules… | JWT(admin) | ナレッジCRUD・承認キュー・Split |
 | GET/POST/PATCH | /api/admin/staff… | JWT(admin) | スタッフ管理 |
 | GET | /api/admin/changelog | JWT | 変更履歴 |
+| POST | /api/conversations/:token/topic | session | ★v1.8 同じ会話のトピック切替（Ask another question） |
+| GET | /api/admin/ai-diagnostics | JWT(admin) | ★v1.8 AI診断一覧（§7.9） |
 | GET/PUT | /api/admin/ai-behaviour… | JWT(admin) | ★v1.8 プロンプト②③の下書き・版一覧・差分 |
 | POST | /api/admin/ai-behaviour/publish, /rollback, /try | JWT(admin) | ★v1.8 セーフティテスト付き公開・ロールバック・Try it |
 | POST | /api/admin/rules/disable-view, /snapshots/:id/restore | JWT(admin) | ★v1.8 一括無効化・スナップショット復元 |
@@ -606,9 +615,10 @@ CSプロンプトのマージ（★v1.7 CS更新 Phase 3）:
 トピック切替・エスカレ（★v1.8 Phase 1）:
 54. 解約について質問した後、同じ会話でAPN設定について質問すると、エスカレーションせずに回答が返る（会話中にトピックが変わってもルールに基づいた回答が返る）
 55. エスカレーション中の会話でも、別トピックの新しい質問にはAIが回答する（元案件のスタッフ返信待ちは維持）
-56. not_in_manual のエスカレーションは、全件フォールバックを試した後にのみ発生する（ai_meta.diag.fallback_tried=true）
+56. not_in_manual のエスカレーションは、全マニュアルを対象としたフォールバック（キーワード上位150件）を試した後にのみ発生する（ai_meta.diag.fallback_tried=true。時間切れ・429・候補0件の場合もその理由が diag に記録される）
 57. 「別の質問をする」ボタンが会話中常に表示され、トピック選択に戻れる
-58. admin 会話詳細でエスカレの理由・トピック・スコープ内件数・フォールバック有無が確認できる
+58. admin 会話詳細と AI diagnostics でエスカレの理由・トピック・スコープ内件数・フォールバック結果が確認でき、正解ルールIDの検索順位を確認できる
+58a. 連絡先送信後にAIが再度エスカレしても、状況確認・連絡先カードが再表示されない（追加通知のみ）
 
 AI behaviour（★v1.8 Phase 2）:
 59. AI behaviour タブで安全ルールが編集できない
@@ -664,6 +674,11 @@ AI behaviour（★v1.8 Phase 2）:
 - AI取得（fetchScopedRules）: v1.5 でページング済みのため**打ち切りなし**。'others' 2,355件＝AI対象全件と一致。トピック別: internet 146 / payment 312 / lost 209 / cancel 464 / return 331 / replace 569 / reissue 326 / refund 326 / deposit 175 / plans 114。
 - 全件プロンプト: **107,141 トークン**（Gemini countTokens, gemini-2.5-flash）、314,193文字。コンテキスト窓（1,048,576）の10.2%。
 - 応答時間（実測各1回）: internet(146件) 2.3–5.1秒 / replace(569件) 5.0秒 / others(2,355件) 5.3秒。15秒タイムアウトに対し約10秒の余裕。
-- レート: 全件プロンプトを1分内に2回送った直後に **429**。無料枠の TPM（公開表で 250,000 TPM / 10 RPM / 250 RPD。プロジェクト別の実値は AI Studio で要確認）に対し、全件呼び出しは1分あたり約2回が上限。全件フォールバック（§4.1.1）はこの余裕を直接消費する。
+- レート: 全件プロンプトを1分内に2回送った直後に **429**。~~公開表の 250 RPD~~ → **訂正（Phase 1 検証時に API のエラー詳細で確認）: 本プロジェクトの gemini-2.5-flash 無料枠は `GenerateRequestsPerDayPerProjectPerModel-FreeTier` = 1日20リクエスト**。超過後は全ターンが約1秒で 429 → 定型文エスカレ（v1.8 以降は `diag.error=rate_limited` として記録）。**CS報告「何も考えずにエスカレ」の最大要因と判断**。運用上の対策（有料枠化 等）は要判断。
+
+### Phase 1 検証記録（2026-10-24、本番）
+- 修正前（解約→同じ会話で別トピック、`scripts/smoke_topic_switch.ts`）: APN は範囲外の一般ルール P155 で回答 / **紛失は reason=other で即エスカレ（2.8秒、原因記録なし）** / 電波・プラン変更は根拠ルール0件のまま質問。応答 4.9–8.1秒。
+- 修正後（429 に当たらなかったターン）: 解約→APN でトピックが internet に切替わり回線種別を質問 / 解約→紛失で lost に切替わり紛失ルール（R323/R324 等）で応答。応答 4.4–7.5秒（13.5秒予算内）。
+- 修正後の残りのターンは 1日20リクエストの上限到達で 429（約2–4秒で定型エスカレ、diag に記録）。全マニュアル検索フォールバックの本番実測は、上限リセット後または有料枠化後に実施する。
 - 計測スクリプト: `scripts/measure_rule_counts.ts`（読み取り専用）、`scripts/measure_prompt.ts`、`scripts/measure_latency.ts`。
 

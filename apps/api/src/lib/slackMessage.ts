@@ -58,6 +58,15 @@ export function buildEscalationMessage(f: SlackNoticeFields, dueLabel: string): 
   return [`🔔 Escalation — due in ${dueLabel}`, ...bodyLines(f)].join('\n');
 }
 
+/**
+ * ★v1.8: the AI escalated again in a conversation that is already with staff
+ * (contact on file) — e.g. the customer chased the open case or asked a new
+ * question the manual doesn't cover. Same body, distinct header.
+ */
+export function buildFollowUpMessage(f: SlackNoticeFields, dueLabel: string): string {
+  return [`🔁 Follow-up in an open case — due in ${dueLabel}`, ...bodyLines(f)].join('\n');
+}
+
 /** Hourly reminder (§8): ⚠️ when <4h remain, 🚨 when past due. */
 export function buildReminderMessage(
   kind: 'warn' | 'overdue',

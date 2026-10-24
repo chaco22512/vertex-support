@@ -66,6 +66,7 @@ describe('runAiReply', () => {
       rule_ids: ['R010'],
       follow_up: null,
       model: 'mock-model',
+      topic: null,
     });
   });
 

@@ -98,15 +98,31 @@ describe('buildSystemPrompt', () => {
     expect(prompt).toContain('## GENERAL RULES');
   });
 
-  it('injects the selected topic when provided (§4.1 v1.6)', () => {
+  it('injects the starting topic as context, not a fence (§4.1 v1.6 / v1.8)', () => {
     const withTopic = buildSystemPrompt([rule({ id: 'R1', category: 'X', rule_text: 'a' })], {
       topic: 'Signal stopped / re-issue',
     });
-    expect(withTopic).toContain('The customer chose this help topic: "Signal stopped / re-issue"');
+    expect(withTopic).toContain('started on the help topic "Signal stopped / re-issue"');
+    expect(withTopic).toContain('always help with their LATEST question');
+    expect(withTopic).toContain('search the full manual');
+    // The v1.6 "keep focused" fence is gone (it caused topic-stuck escalations).
+    expect(withTopic).not.toContain('Keep your help focused');
     // No topic → no topic line.
     expect(buildSystemPrompt([rule({ id: 'R1', category: 'X', rule_text: 'a' })])).not.toContain(
-      'chose this help topic',
+      'started on the help topic',
     );
+  });
+
+  it('lists help topics and asks for topic + English search_keywords (§4.1.1 v1.8)', () => {
+    const p = buildSystemPrompt([], { topics: [{ id: 'internet', label: 'Internet / APN' }] });
+    expect(p).toContain('- internet: Internet / APN');
+    expect(p).toContain('"search_keywords"');
+    expect(p).toContain('ALWAYS in English');
+  });
+
+  it('routes chasers on a staff case to pending_case only when one is open (§4.1.1 v1.8)', () => {
+    expect(buildSystemPrompt([], { pendingCase: true })).toContain('reason "pending_case"');
+    expect(buildSystemPrompt([], {})).not.toContain('already been passed to our staff');
   });
 });
 

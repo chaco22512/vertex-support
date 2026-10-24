@@ -12,6 +12,7 @@ import { useToast } from '../components/Toast';
 import { StatusBadge } from '../components/StatusBadge';
 import { ErrorState } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
+import { AiDiagPanel } from '../components/AiDiagPanel';
 
 type Load = 'loading' | 'ready' | 'error';
 
@@ -368,6 +369,7 @@ function Message({
           {translation || 'Translating…'}
         </div>
       ) : null}
+      {m.sender === 'ai' && m.ai_meta?.diag ? <AiDiagPanel diag={m.ai_meta.diag} reason={m.ai_meta.reason} /> : null}
       {ruleIds.length ? (
         <div className="rule-chips">
           {ruleIds.map((rid) =>

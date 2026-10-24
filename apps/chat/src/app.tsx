@@ -41,6 +41,11 @@ export function App(): JSX.Element {
         />
       )}
 
+      {state.view === 'category' && state.switchingTopic && (
+        <button class="btn btn--ghost btn--change-topic" onClick={chat.backToChat}>
+          ← {t.ui.backToChat}
+        </button>
+      )}
       {state.view === 'category' && (
         <CategoryGrid
           prompt={t.ui.categoryPrompt}

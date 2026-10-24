@@ -126,6 +126,53 @@ describe('admin rules', () => {
   });
 });
 
+describe('admin AI diagnostics (v1.8 §7.9)', () => {
+  const diag = (fallback_result: string | null, error: string | null = null) => ({
+    topic: 'cancel',
+    topic_guess: 'internet',
+    scoped_rule_count: 464,
+    primary_reason: 'not_in_manual',
+    fallback_tried: fallback_result !== null,
+    fallback_result,
+    candidate_count: 2,
+    candidate_ids: ['R657', 'R659'],
+    top_scores: [16.1, 15.8],
+    keywords: ['apn'],
+    error,
+    timings: { primary_ms: 4000, retrieve_ms: 30, fallback_ms: 3000, total_ms: 7100 },
+  });
+
+  it('lists diagnosed AI turns with the question they answered, newest first, plus a summary', async () => {
+    const { app, db, env } = setup('admin');
+    db.tables.messages.push(
+      { id: 1, conversation_id: 'c1', sender: 'customer', body: 'Cancel?', ai_meta: null },
+      { id: 2, conversation_id: 'c1', sender: 'ai', body: 'When did it start?', ai_meta: { action: 'ask' } },
+      { id: 3, conversation_id: 'c1', sender: 'customer', body: 'APN on iPhone?', ai_meta: null },
+      { id: 4, conversation_id: 'c1', sender: 'ai', body: 'Staff will reply.', ai_meta: { action: 'escalate', reason: 'not_in_manual', diag: diag('not_found') } },
+      { id: 5, conversation_id: 'c2', sender: 'customer', body: 'Lost SIM', ai_meta: null },
+      { id: 6, conversation_id: 'c2', sender: 'ai', body: 'Fee is ¥4,000.', ai_meta: { action: 'answer', reason: 'none', diag: diag('answered') } },
+      { id: 7, conversation_id: 'c3', sender: 'ai', body: 'Staff will reply.', ai_meta: { action: 'escalate', reason: 'other', diag: diag(null, 'rate_limited') } },
+    );
+    const res = await app.request('/api/admin/ai-diagnostics', { headers: admin }, env);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      rows: { message_id: number; question: string }[];
+      summary: Record<string, number>;
+    };
+    expect(body.rows.map((r) => r.message_id)).toEqual([7, 6, 4]);
+    expect(body.rows.find((r) => r.message_id === 4)!.question).toBe('APN on iPhone?');
+    expect(body.summary).toEqual({ not_found: 1, answered: 1, 'error:rate_limited': 1 });
+
+    const filtered = await app.request('/api/admin/ai-diagnostics?result=not_found', { headers: admin }, env);
+    expect(((await filtered.json()) as { rows: unknown[] }).rows).toHaveLength(1);
+  });
+
+  it('is admin-only', async () => {
+    const { app, env } = setup('staff');
+    expect((await app.request('/api/admin/ai-diagnostics', { headers: admin }, env)).status).toBe(403);
+  });
+});
+
 describe('admin translate', () => {
   it('returns an English translation (§7.3)', async () => {
     const { app, env } = setup('staff', mockLlm(['How do I pay?']));

@@ -13,6 +13,10 @@ export interface RunAiReplyInput {
   language: string;
   /** Customer-selected topic label, injected into the prompt for context (★v1.6). */
   topic?: string | null;
+  /** Menu topics the model may label the latest question with (★v1.8). */
+  topics?: { id: string; label: string }[];
+  /** An earlier question in the conversation is with staff (★v1.8). */
+  pendingCase?: boolean;
   llm: LlmClient;
   /** Optional abort signal forwarded to the LLM (timeout enforcement, §6.3). */
   signal?: AbortSignal;
@@ -25,6 +29,8 @@ export interface AiReplyResult {
   aiMeta: AiMeta;
   /** True when the pipeline fell back to escalation after unparseable output. */
   fellBack: boolean;
+  /** ★v1.8: English retrieval keywords from the model (empty on fallback). */
+  searchKeywords: string[];
 }
 
 const MAX_ATTEMPTS = 2; // initial try + one retry (§4.2)
@@ -32,10 +38,15 @@ const MAX_ATTEMPTS = 2; // initial try + one retry (§4.2)
 /**
  * Run the AI reply pipeline (§4.1–4.3): build prompt from scoped rules and
  * PII-masked history, call the LLM, parse JSON. On parse failure retry once,
- * then fall back to an escalation response.
+ * then fall back to an escalation response. LLM transport errors (429,
+ * timeout) propagate so the caller can record why (★v1.8).
  */
 export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult> {
-  const system = buildSystemPrompt(input.rules, { topic: input.topic });
+  const system = buildSystemPrompt(input.rules, {
+    topic: input.topic,
+    topics: input.topics,
+    pendingCase: input.pendingCase,
+  });
   const messages = buildLlmMessages(input.history);
 
   let parsed: AiResponse | null = null;
@@ -57,6 +68,7 @@ export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult>
         model: input.llm.model,
       },
       fellBack: true,
+      searchKeywords: [],
     };
   }
 
@@ -70,7 +82,9 @@ export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult>
       rule_ids: parsed.rule_ids,
       follow_up: parsed.follow_up,
       model: input.llm.model,
+      topic: parsed.topic,
     },
     fellBack: false,
+    searchKeywords: parsed.search_keywords,
   };
 }

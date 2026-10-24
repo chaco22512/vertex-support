@@ -29,10 +29,12 @@ export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers 
   return (
     <>
       <div class="scroll">
-        {/* Return to category selection — only before the first message is sent. */}
-        {!state.firstMessageSent && !state.resolved && (
+        {/* Return to category selection. ★v1.8: always available — before the
+            first message it switches topic; afterwards it asks another question
+            in the same conversation (history kept). */}
+        {!state.resolved && !state.awaitingAi && (
           <button class="btn btn--ghost btn--change-topic" onClick={handlers.changeTopic}>
-            ← {t.ui.changeTopic}
+            ← {state.firstMessageSent || state.contactSent ? t.ui.askAnother : t.ui.changeTopic}
           </button>
         )}
 

@@ -21,6 +21,13 @@ function Svg({ size = 18, children }: IconProps & { children: React.ReactNode })
   );
 }
 
+/** ★v1.8 AI diagnostics nav icon (stethoscope-like pulse line). */
+export const IconPulse = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 12h4l3 8 4-16 3 8h4" />
+  </Svg>
+);
+
 export const IconInbox = (p: IconProps) => (
   <Svg {...p}>
     <path d="M4 13h4l1 3h6l1-3h4" />

@@ -32,7 +32,11 @@ export interface PostMessageResult {
   customer_message: ApiMessage;
   reply: ApiMessage;
   escalated: boolean;
+  /** ★v1.8: staff were already notified (contact on file) — show no cards. */
+  followup_escalated?: boolean;
   status: string;
+  /** ★v1.8: the conversation's topic after this turn (may have switched). */
+  topic_category?: string;
 }
 
 export interface MessagesResult {
@@ -63,6 +67,17 @@ export function postMessage(token: string, body: string, signal?: AbortSignal): 
     method: 'POST',
     body: JSON.stringify({ body }),
     signal,
+  });
+}
+
+/** ★v1.8 "Ask another question": switch the same conversation's topic. */
+export function changeTopic(
+  token: string,
+  topicCategory: string,
+): Promise<{ topic_category: string; status: string; followup_escalated: boolean }> {
+  return request(`/api/conversations/${token}/topic`, {
+    method: 'POST',
+    body: JSON.stringify({ topic_category: topicCategory }),
   });
 }
 

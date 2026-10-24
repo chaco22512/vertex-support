@@ -68,6 +68,18 @@ export interface InboxRow {
   answered_by: string;
 }
 
+/** A diagnosed AI turn (★v1.8 §7.9). */
+export interface DiagnosticRow {
+  message_id: number;
+  conversation_id: string;
+  created_at: string;
+  question: string;
+  answer: string;
+  action: AiMeta['action'];
+  reason: AiMeta['reason'];
+  diag: NonNullable<AiMeta['diag']>;
+}
+
 export interface DetailMessage {
   id: number;
   conversation_id: string;
@@ -225,6 +237,11 @@ export const api = {
       body: JSON.stringify({}),
     }),
   listChangelog: () => request<{ entries: KbChangeLog[] }>(`/api/admin/changelog`),
+  // --- AI diagnostics (★v1.8 §7.9) ---
+  listAiDiagnostics: (result?: string) =>
+    request<{ rows: DiagnosticRow[]; summary: Record<string, number>; window: number }>(
+      `/api/admin/ai-diagnostics${result ? `?result=${encodeURIComponent(result)}` : ''}`,
+    ),
 
   // --- staff (§7.6) ---
   listStaff: () => request<{ staff: Staff[] }>(`/api/admin/staff`),

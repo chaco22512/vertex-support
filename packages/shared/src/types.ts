@@ -22,7 +22,9 @@ export type EscalationReason =
   | 'not_in_manual'
   | 'account_specific'
   | 'complaint'
-  | 'other';
+  | 'other'
+  /** ★v1.8: the customer is chasing / adding info to a case already with staff. */
+  | 'pending_case';
 
 /** AI turn outcome (spec §4.2, ★v1.6 diagnostic flow). */
 export type AiAction = 'answer' | 'ask' | 'escalate';
@@ -122,6 +124,53 @@ export interface AiMeta {
   /** Present only when action === 'ask' (the clarifier + its options). */
   follow_up: FollowUp | null;
   model: string;
+  /** ★v1.8: menu topic id the model assigned to the customer's latest question. */
+  topic?: string | null;
+  /** ★v1.8: escalation / fallback diagnostics (spec §4.1.1). */
+  diag?: AiDiag;
+}
+
+/** Outcome of the keyword-retrieval retry before a not_in_manual escalation (★v1.8). */
+export type FallbackResult =
+  | 'answered'
+  | 'not_found'
+  | 'policy_escalation'
+  | 'no_candidates'
+  | 'rate_limited'
+  | 'timeout'
+  | 'skipped_no_time'
+  | 'scope_was_all'
+  | 'error';
+
+/** Why an AI call failed (★v1.8). Recorded instead of a silent escalation. */
+export type AiErrorKind = 'rate_limited' | 'timeout' | 'llm_error' | 'parse_failed' | 'rule_fetch_failed';
+
+/**
+ * Per-turn AI diagnostics (spec v1.8 §4.1.1 / §7.9). Recorded on every
+ * escalation and on every turn that ran the retrieval fallback, so admins can
+ * see why the bot escalated and validate the top-K threshold.
+ */
+export interface AiDiag {
+  /** Conversation topic the turn was scoped to ('' = none). */
+  topic: string;
+  /** Topic the model assigned to the latest question (null when absent). */
+  topic_guess: string | null;
+  /** Rules in the scoped prompt. */
+  scoped_rule_count: number;
+  /** Reason of the first (scoped) attempt. */
+  primary_reason: EscalationReason | null;
+  fallback_tried: boolean;
+  fallback_result: FallbackResult | null;
+  /** Candidates handed to the fallback attempt (≤ top-K). */
+  candidate_count: number;
+  /** Candidate rule ids in rank order (rank 1 first). */
+  candidate_ids: string[];
+  /** Scores of the top 10 candidates, rank order. */
+  top_scores: number[];
+  /** Query terms used for retrieval. */
+  keywords: string[];
+  error: AiErrorKind | null;
+  timings: { primary_ms: number | null; retrieve_ms: number | null; fallback_ms: number | null; total_ms: number };
 }
 
 export interface Message {

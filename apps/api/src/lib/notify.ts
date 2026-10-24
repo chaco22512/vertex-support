@@ -1,6 +1,6 @@
 import type { EscalationReason, IntakeInfo } from '@vertex/shared';
 import type { Deps } from '../types';
-import { buildEscalationMessage } from './slackMessage';
+import { buildEscalationMessage, buildFollowUpMessage } from './slackMessage';
 import { buildStaffReplyEmail } from './emailTemplates';
 
 /** Whole hours until an ISO deadline, as a Slack label like "24h" (min "0h"). */
@@ -20,6 +20,8 @@ export interface EscalationNotice {
   assigneeSlackId: string | null;
   /** Pre-escalation intake details, if any (§6.2, v1.6). */
   intake?: IntakeInfo;
+  /** ★v1.8: follow-up in an open case — quote this (latest) question instead of the first. */
+  followUpQuestion?: string;
 }
 
 /** Slack notification on escalation (§8). Never throws (sendSlack swallows). */
@@ -31,9 +33,10 @@ export async function notifyEscalation(deps: Deps, notice: EscalationNotice): Pr
     .eq('sender', 'customer')
     .order('id', { ascending: true })
     .limit(1);
-  const question = ((data ?? []) as { body: string }[])[0]?.body ?? '';
+  const question = notice.followUpQuestion ?? ((data ?? []) as { body: string }[])[0]?.body ?? '';
 
-  const text = buildEscalationMessage(
+  const build = notice.followUpQuestion !== undefined ? buildFollowUpMessage : buildEscalationMessage;
+  const text = build(
     {
       channel: notice.channel,
       sourceTag: notice.sourceTag,

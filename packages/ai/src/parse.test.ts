@@ -10,17 +10,20 @@ const answer = {
   detected_language: 'en',
 };
 
+/** Normalized form: the ★v1.8 optional fields default to null / []. */
+const parsed = { ...answer, topic: null, search_keywords: [] };
+
 describe('parseAiResponse', () => {
   it('parses a clean answer object', () => {
-    expect(parseAiResponse(JSON.stringify(answer))).toEqual(answer);
+    expect(parseAiResponse(JSON.stringify(answer))).toEqual(parsed);
   });
 
   it('parses JSON wrapped in a code fence', () => {
-    expect(parseAiResponse('```json\n' + JSON.stringify(answer) + '\n```')).toEqual(answer);
+    expect(parseAiResponse('```json\n' + JSON.stringify(answer) + '\n```')).toEqual(parsed);
   });
 
   it('parses JSON with surrounding prose', () => {
-    expect(parseAiResponse('Sure:\n' + JSON.stringify(answer) + '\nThanks')).toEqual(answer);
+    expect(parseAiResponse('Sure:\n' + JSON.stringify(answer) + '\nThanks')).toEqual(parsed);
   });
 
   it('returns null for non-JSON', () => {
@@ -80,5 +83,22 @@ describe('parseAiResponse', () => {
       JSON.stringify({ answer: 'ok', escalate: false, reason: 'none', rule_ids: [], detected_language: 'en' }),
     );
     expect(parsed?.action).toBe('answer');
+  });
+
+  it('reads topic and normalizes search_keywords (★v1.8)', () => {
+    const res = parseAiResponse(
+      JSON.stringify({
+        ...answer,
+        topic: ' internet ',
+        search_keywords: ['APN', ' iPhone ', '', 'a', 'b', 'c', 'd', 'e', 'f', 'g'],
+      }),
+    );
+    expect(res?.topic).toBe('internet');
+    expect(res?.search_keywords).toEqual(['apn', 'iphone', 'a', 'b', 'c', 'd', 'e', 'f']);
+  });
+
+  it('accepts the pending_case reason (★v1.8)', () => {
+    const res = parseAiResponse(JSON.stringify({ ...answer, action: 'escalate', reason: 'pending_case' }));
+    expect(res?.reason).toBe('pending_case');
   });
 });

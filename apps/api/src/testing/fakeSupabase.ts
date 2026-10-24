@@ -80,6 +80,8 @@ class FakeQuery implements PromiseLike<Result> {
   private ins: [string, unknown[]][] = [];
   private gts: [string, number][] = [];
   private ilikes: [string, string][] = [];
+  /** `.not(col, 'is', null)` — col may be a JSON path like `ai_meta->diag`. */
+  private notNulls: string[] = [];
   private orderCol: string | null = null;
   private orderAsc = true;
   private limitN: number | null = null;
@@ -119,6 +121,11 @@ class FakeQuery implements PromiseLike<Result> {
   }
   gt(col: string, val: number): this {
     this.gts.push([col, val]);
+    return this;
+  }
+  not(col: string, op: string, val: unknown): this {
+    if (op !== 'is' || val !== null) throw new Error(`fake .not(${op}) unsupported`);
+    this.notNulls.push(col);
     return this;
   }
   ilike(col: string, pattern: string): this {
@@ -163,6 +170,11 @@ class FakeQuery implements PromiseLike<Result> {
     for (const [c, v] of this.eqs) if (row[c] !== v) return false;
     for (const [c, vals] of this.ins) if (!vals.includes(row[c])) return false;
     for (const [c, v] of this.gts) if (!(Number(row[c]) > v)) return false;
+    for (const path of this.notNulls) {
+      let v: unknown = row;
+      for (const key of path.split(/->>?/)) v = v && typeof v === 'object' ? (v as Row)[key] : undefined;
+      if (v === null || v === undefined) return false;
+    }
     for (const [c, pattern] of this.ilikes) {
       const re = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$', 'i');
       if (!re.test(String(row[c] ?? ''))) return false;

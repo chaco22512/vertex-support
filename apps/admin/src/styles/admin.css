@@ -610,3 +610,43 @@ textarea {
   border-radius: 999px;
   padding: 2px 10px;
 }
+
+/* ★v1.8 AI diagnostics (§7.3 / §7.9) */
+.diag {
+  margin-top: var(--sp-2);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.diag summary {
+  cursor: pointer;
+}
+.diag dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 2px var(--sp-3);
+  margin: var(--sp-2) 0 0;
+}
+.diag dt {
+  font-weight: 600;
+}
+.diag dd {
+  margin: 0;
+  color: var(--ink);
+}
+.summary-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+.rank-check {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+.chip.active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}

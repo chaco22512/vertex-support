@@ -46,6 +46,16 @@ export interface State {
   offline: boolean;
   error: string | null;
   lastMessageId: number;
+  /** ★v1.8: the topic picker was opened from a live conversation — keep its history. */
+  switchingTopic: boolean;
+}
+
+/** A topic the server switched the conversation to (★v1.8 §4.1.1). */
+export interface TopicChange {
+  id: string;
+  behavior: CategoryBehavior;
+  /** Staff-visible marker text, e.g. "Topic: Lost SIM or device". */
+  label: string;
 }
 
 export type Action =
@@ -61,10 +71,23 @@ export type Action =
     }
   | { type: 'CONVERSATION_CREATED'; token: string }
   | { type: 'SEND_START'; body: string; at: string }
-  | { type: 'AI_REPLY'; body: string; action: AiAction; options: string[]; messageId: number; at: string }
+  | {
+      type: 'AI_REPLY';
+      body: string;
+      action: AiAction;
+      options: string[];
+      messageId: number;
+      at: string;
+      /** ★v1.8: staff were already notified (contact on file) — show no cards, show this note. */
+      followUpNote?: string;
+      /** ★v1.8: the question moved the conversation to another topic. */
+      topic?: TopicChange;
+    }
   | { type: 'AI_ERROR' }
   | { type: 'OPEN_COMPOSER' }
   | { type: 'CHANGE_TOPIC' }
+  | { type: 'BACK_TO_CHAT' }
+  | { type: 'FOLLOWUP_NOTE'; note: string }
   | { type: 'SHOW_ESCALATION' }
   | { type: 'INTAKE_DONE'; intake: IntakeInfo }
   | { type: 'CONTACT_SENT'; contact: SubmittedContact }
@@ -100,6 +123,7 @@ export function initialState(language: LanguageCode | null, token: string | null
     offline: false,
     error: null,
     lastMessageId: 0,
+    switchingTopic: false,
   };
 }
 
@@ -114,25 +138,33 @@ export function reducer(state: State, action: Action): State {
       return { ...state, view: 'language' };
 
     case 'SELECT_CATEGORY': {
+      optimisticSeq += 1;
       const topicMsg: ChatMessage = {
-        key: `topic-${action.topicCategory}`,
+        key: `topic-${action.topicCategory}-${optimisticSeq}`,
         sender: 'system',
         body: action.topicLabel,
       };
+      // ★v1.8: "Ask another question" keeps the same conversation and its history.
+      // A restored session (token already set) is live too.
+      const history = state.switchingTopic || state.token ? state.messages : [];
       if (action.behavior === 'always_escalate') {
         // Plans & prices: no AI. Fixed message + intake card → contact (§6.1/§6.2).
+        // With contact already on file the server hands it to staff directly
+        // (★v1.8), so the cards are not shown again.
         return {
           ...state,
           view: 'chat',
+          switchingTopic: false,
           topicCategory: action.topicCategory,
           behavior: action.behavior,
           chips: [],
           messages: [
+            ...history,
             topicMsg,
-            { key: 'plans-msg', sender: 'ai', body: action.plansMessage },
+            { key: `plans-msg-${optimisticSeq}`, sender: 'ai', body: action.plansMessage },
           ],
           showComposer: false,
-          showIntake: true,
+          showIntake: !state.contactSent,
           showEscalation: false,
           showFeedback: false,
         };
@@ -142,11 +174,13 @@ export function reducer(state: State, action: Action): State {
         return {
           ...state,
           view: 'chat',
+          switchingTopic: false,
           topicCategory: action.topicCategory,
           behavior: action.behavior,
           chips: [],
-          messages: [topicMsg],
+          messages: [...history, topicMsg],
           showComposer: true,
+          showIntake: false,
           showEscalation: false,
           showFeedback: false,
         };
@@ -155,10 +189,12 @@ export function reducer(state: State, action: Action): State {
       return {
         ...state,
         view: 'chat',
+        switchingTopic: false,
         topicCategory: action.topicCategory,
         behavior: action.behavior,
         chips: action.chips,
-        messages: [topicMsg],
+        messages: [...history, topicMsg],
+        showIntake: false,
         showComposer: false,
         showEscalation: false,
         showFeedback: false,
@@ -186,7 +222,16 @@ export function reducer(state: State, action: Action): State {
 
     case 'AI_REPLY': {
       const messages = state.messages.map((m) => (m.pending ? { ...m, pending: false } : m));
+      // ★v1.8: the question moved the conversation to another topic — mirror the
+      // server's "Topic:" marker just before the reply.
+      const topicChanged = action.topic && action.topic.id !== state.topicCategory;
+      if (topicChanged) {
+        messages.push({ key: `topic-${action.topic!.id}-${action.messageId}`, sender: 'system', body: action.topic!.label });
+      }
       messages.push({ key: `ai-${action.messageId}`, sender: 'ai', body: action.body, at: action.at });
+      if (action.followUpNote) {
+        messages.push({ key: `note-${action.messageId}`, sender: 'system', body: action.followUpNote });
+      }
       // Three-way branch on the AI action (§4.2 v1.6):
       //  - ask     → show the clarifier options as chips, keep the composer, no feedback/escalation
       //  - answer  → show Solved / Still need help
@@ -197,16 +242,33 @@ export function reducer(state: State, action: Action): State {
         ...state,
         messages,
         awaitingAi: false,
+        topicCategory: topicChanged ? action.topic!.id : state.topicCategory,
+        behavior: topicChanged ? action.topic!.behavior : state.behavior,
         chips: asking ? action.options : [],
         showFeedback: action.action === 'answer',
-        // Escalation now routes through the intake card first (§6.2 v1.6).
-        showIntake: escalated,
+        // Escalation routes through the intake card first (§6.2 v1.6) — but only
+        // the FIRST time: once contact was sent (or the server already handed
+        // the message to staff), never ask for it again (★v1.8 bug fix: the
+        // cards re-appeared on every later escalation turn).
+        showIntake: escalated && !action.followUpNote && !state.contactSent,
         showEscalation: false,
         showComposer: true,
         escalated: state.escalated || escalated,
         lastMessageId: Math.max(state.lastMessageId, action.messageId),
       };
     }
+
+    case 'FOLLOWUP_NOTE':
+      // ★v1.8: the server handed this to staff (contact on file) — no cards.
+      optimisticSeq += 1;
+      return {
+        ...state,
+        messages: [...state.messages, { key: `note-${optimisticSeq}`, sender: 'system', body: action.note }],
+        showIntake: false,
+        showEscalation: false,
+        showFeedback: false,
+        escalated: true,
+      };
 
     case 'AI_ERROR':
       return { ...state, awaitingAi: false, error: 'error', showComposer: true };
@@ -226,9 +288,25 @@ export function reducer(state: State, action: Action): State {
       };
 
     case 'CHANGE_TOPIC':
-      // Allowed only before the first message is sent (§ spec addendum). Abandon
-      // the (empty) conversation and return to category selection.
-      return { ...initialState(state.language, null), view: 'category' };
+      // Before anything was sent: abandon the empty conversation (v1.5).
+      // ★v1.8 "Ask another question": in a live conversation, open the topic
+      // picker but keep the same conversation, its history and escalation state.
+      if (!state.firstMessageSent && !state.contactSent) {
+        return { ...initialState(state.language, null), view: 'category' };
+      }
+      return {
+        ...state,
+        view: 'category',
+        switchingTopic: true,
+        chips: [],
+        showIntake: false,
+        showEscalation: false,
+        showFeedback: false,
+        error: null,
+      };
+
+    case 'BACK_TO_CHAT':
+      return { ...state, view: 'chat', switchingTopic: false };
 
     case 'SHOW_ESCALATION':
       // "Still need help" → collect situation details first, then contact (§6.2 v1.6).

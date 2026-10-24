@@ -25,7 +25,7 @@ describe('reducer', () => {
     expect(s.showIntake).toBe(true);
     expect(s.showEscalation).toBe(false);
     expect(s.showComposer).toBe(false);
-    expect(s.messages.some((m) => m.key === 'plans-msg')).toBe(true);
+    expect(s.messages.some((m) => m.key.startsWith('plans-msg'))).toBe(true);
   });
 
   it('others category opens the composer', () => {
