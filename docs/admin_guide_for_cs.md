@@ -51,3 +51,45 @@ back the way it was. Every change (and the undo) is saved in **Change history**.
 - Only admins can upload. Anyone with admin access can download.
 - Prices for monthly plans, COD, and discounts are still never shown by the bot —
   the preview/validation won't let unfinished or formula text go live.
+
+## Replacing everything with a new sheet
+
+Use this when you have a complete new sheet and want the bot to use **only** what
+is in it. There is no "delete everything" button on purpose: if the bot had no
+rules, it could not answer anyone.
+
+1. Open **Knowledge** and click **Bulk actions → Replace all from CSV…**, then pick your file.
+2. A preview appears first — **nothing is changed yet.** It shows:
+   - rules that will change, and **new rules** that will be added
+     (rows with an empty Rule ID; give each one a **Topic** that already exists);
+   - rules that are **not in your file** — these will be **archived**;
+   - how many rules the bot will be able to use afterwards.
+     If that number is 0, you will see a red warning: the bot would pass every
+     question to staff.
+3. To go ahead, type **REPLACE** in the box and click **Replace all**.
+
+**Archived does not mean deleted.** Archived rules are kept and can come back at
+any time. To see them, set the **Status** filter on the Knowledge page to
+**Archived**.
+
+## Turning off a group of rules
+
+1. On **Knowledge**, pick a topic and/or type a search so the list shows only the
+   rules you want to turn off.
+2. Click **Bulk actions → Disable all in this view…**. The window tells you exactly
+   how many rules will be turned off.
+3. Click **Disable**. The rules stay in the list as *Disabled* and the bot stops using them.
+
+## Getting things back (Backups)
+
+Before every **Replace all** or **Disable all**, a full copy of the knowledge base
+is saved automatically. The latest 5 copies are kept.
+
+- Right after the change, click **Undo** in the message at the bottom of the screen.
+- Later, open **Bulk actions → Backups…**:
+  - **Undo this change** — puts back only the rules that change touched.
+  - **Restore everything** — puts every rule back to how it was at that time
+    (changes made after that time are undone too; the current state is saved first).
+
+Every bulk change, undo and restore is shown in **Change history**, and a message
+is posted in Slack so the team knows.

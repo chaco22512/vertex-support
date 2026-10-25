@@ -68,6 +68,108 @@ export class FakeSupabase {
     this.seq[table] = (this.seq[table] ?? 0) + 1;
     return this.seq[table];
   }
+
+  /** Calls made through `rpc`, for assertions. */
+  rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
+
+  /**
+   * In-memory mirrors of the v1.8 bulk-knowledge Postgres functions
+   * (supabase/migrations/20261025120014_kb_bulk_ops.sql). Same contract:
+   * snapshot (keep 5), bulk status, CSV patches, restore — all logged.
+   */
+  async rpc(name: string, args: Record<string, unknown>): Promise<Result> {
+    this.rpcCalls.push({ name, args });
+    const rules = this.tables.kb_rules;
+    const log = (rule_id: unknown, before: unknown, after: unknown, source: string, staff: unknown) =>
+      this.tables.kb_change_log.push({
+        id: this.nextId('kb_change_log'),
+        rule_id,
+        changed_by: staff,
+        changed_at: new Date().toISOString(),
+        before,
+        after,
+        source,
+      });
+    switch (name) {
+      case 'kb_take_snapshot': {
+        const snaps = (this.tables.kb_rule_snapshots ??= []);
+        const id = crypto.randomUUID();
+        snaps.push({
+          id,
+          kind: args.p_kind,
+          created_by: args.p_staff,
+          // Strictly increasing so "newest" is well defined within one test.
+          created_at: new Date(Date.UTC(2026, 0, 1) + this.nextId('snapshot') * 1000).toISOString(),
+          rule_count: rules.length,
+          affected_ids: [...((args.p_affected as string[]) ?? [])],
+          rows: JSON.parse(JSON.stringify(rules)) as Row[],
+          undone: false,
+          note: args.p_note ?? '',
+        });
+        snaps.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+        this.tables.kb_rule_snapshots = snaps.slice(0, 5);
+        return { data: id, error: null };
+      }
+      case 'kb_bulk_set_status': {
+        const ids = new Set(args.p_ids as string[]);
+        let n = 0;
+        for (const r of rules) {
+          if (!ids.has(r.id as string) || r.status === args.p_status) continue;
+          log(r.id, { status: r.status }, { status: args.p_status }, args.p_source as string, args.p_staff);
+          r.status = args.p_status;
+          r.updated_by = args.p_staff;
+          n += 1;
+        }
+        return { data: n, error: null };
+      }
+      case 'kb_apply_patches': {
+        let n = 0;
+        for (const item of args.p_patches as { id: string; patch: Row }[]) {
+          const r = rules.find((x) => x.id === item.id);
+          if (!r) continue;
+          const before = { ...r };
+          Object.assign(r, item.patch, { updated_by: args.p_staff });
+          log(r.id, before, { ...r }, args.p_source as string, args.p_staff);
+          n += 1;
+        }
+        return { data: n, error: null };
+      }
+      case 'kb_restore_snapshot': {
+        const snap = (this.tables.kb_rule_snapshots ?? []).find((s) => s.id === args.p_snapshot);
+        if (!snap) return { data: null, error: { message: 'snapshot_not_found' } };
+        const only = Boolean(args.p_only_affected);
+        const affected = new Set(snap.affected_ids as string[]);
+        const snapRows = snap.rows as Row[];
+        const inSnap = new Set(snapRows.map((r) => r.id));
+        const fields = [
+          'rule_text', 'fee_amounts_jpy', 'fee_is_fixed', 'links', 'audience', 'ai_can_answer',
+          'status', 'review_reason', 'category', 'subcategory', 'requires_fee_disclaimer',
+        ];
+        let n = 0;
+        for (const s of snapRows) {
+          if (only && !affected.has(s.id as string)) continue;
+          const r = rules.find((x) => x.id === s.id);
+          if (!r) continue;
+          if (fields.every((f) => JSON.stringify(r[f]) === JSON.stringify(s[f]))) continue;
+          const before = { ...r };
+          for (const f of fields) r[f] = s[f];
+          log(r.id, before, { ...r }, 'snapshot_restore', args.p_staff);
+          n += 1;
+        }
+        for (const r of rules) {
+          if (r.status === 'archived' || inSnap.has(r.id)) continue;
+          if (only && !affected.has(r.id as string)) continue;
+          log(r.id, { status: r.status }, { status: 'archived' }, 'snapshot_restore', args.p_staff);
+          r.status = 'archived';
+          n += 1;
+        }
+        if (only) snap.undone = true;
+        return { data: n, error: null };
+      }
+      default:
+        return { data: null, error: { message: `fake rpc ${name} not implemented` } };
+    }
+  }
 }
 
 /** Mirrors the Supabase project's PostgREST max-rows setting. */
@@ -248,9 +350,10 @@ class FakeQuery implements PromiseLike<Result> {
     let rows = this.table().filter((r) => this.matches(r));
     if (this.orderCol) {
       const col = this.orderCol;
-      rows = [...rows].sort((a, b) =>
-        this.orderAsc ? Number(a[col]) - Number(b[col]) : Number(b[col]) - Number(a[col]),
-      );
+      // Numbers compare numerically; anything else (ids, ISO timestamps) as strings.
+      const cmp = (x: unknown, y: unknown): number =>
+        typeof x === 'number' && typeof y === 'number' ? x - y : String(x ?? '').localeCompare(String(y ?? ''));
+      rows = [...rows].sort((a, b) => (this.orderAsc ? cmp(a[col], b[col]) : cmp(b[col], a[col])));
     }
     if (this.limitN !== null) rows = rows.slice(0, this.limitN);
     // .range(from, to) is inclusive on both ends (PostgREST semantics).

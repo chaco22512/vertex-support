@@ -12,6 +12,7 @@ import {
 import type { AppEnv } from '../../types';
 import { importCsvSchema, undoImportSchema } from '../../dto';
 import { fetchAllRules } from '../../lib/kbRules';
+import { applyReplace, diffReplace, replacePreviewBody } from './rulesBulk';
 
 const PAGE = 1000;
 const APPLY_CHUNK = 50;
@@ -103,6 +104,13 @@ export async function previewImport(c: Context<AppEnv>): Promise<Response> {
   const parsed = importCsvSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
 
+  // ★v1.8 Replace all: rules missing from the sheet are archived (§7.4.2).
+  if (parsed.data.mode === 'replace') {
+    const d = await diffReplace(db, parsed.data.csv);
+    if (d.headerError) return c.json({ error: 'invalid_csv', message: d.headerError }, 400);
+    return c.json(replacePreviewBody(d));
+  }
+
   const { headerError, entries, errors, ignored, unchanged } = await diffCsv(db, parsed.data.csv);
   if (headerError) return c.json({ error: 'invalid_csv', message: headerError }, 400);
   return c.json({
@@ -118,6 +126,7 @@ export async function applyImport(c: Context<AppEnv>): Promise<Response> {
   const staff = c.get('staff');
   const parsed = importCsvSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
+  if (parsed.data.mode === 'replace') return applyReplace(c, parsed.data.csv, parsed.data.confirm);
 
   const { headerError, entries, errors } = await diffCsv(db, parsed.data.csv);
   if (headerError) return c.json({ error: 'invalid_csv', message: headerError }, 400);

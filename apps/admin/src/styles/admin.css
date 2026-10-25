@@ -650,3 +650,38 @@ textarea {
   background: var(--accent-soft);
   border-color: var(--accent);
 }
+/* ★v1.8 Bulk actions menu (Knowledge) */
+.menu-wrap {
+  position: relative;
+}
+.menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: var(--shadow-header);
+  padding: var(--sp-1);
+}
+.menu button {
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+}
+.menu button:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.menu button:disabled {
+  color: var(--ink-muted);
+  cursor: default;
+}

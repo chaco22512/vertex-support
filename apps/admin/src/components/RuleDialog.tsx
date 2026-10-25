@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { KbRule } from '@vertex/shared';
+import type { KbRule, RuleStatus } from '@vertex/shared';
 import { api } from '../lib/api';
 import { Dialog } from './Dialog';
 
@@ -10,7 +10,7 @@ type Draft = {
   audience: 'customer' | 'internal';
   ai_can_answer: boolean;
   fee_is_fixed: boolean;
-  status: 'active' | 'pending_review' | 'disabled';
+  status: RuleStatus;
 };
 
 function toDraft(rule: KbRule): Draft {
@@ -125,6 +125,7 @@ export function RuleDialog({
             <option value="active">Active</option>
             <option value="pending_review">Pending review</option>
             <option value="disabled">Disabled</option>
+            <option value="archived">Archived</option>
           </select>
         </div>
         <label className="row" style={{ alignSelf: 'flex-end' }}>

@@ -4,7 +4,7 @@ import type { AppEnv } from '../../types';
 import { fetchAllRules } from '../../lib/kbRules';
 import { approveRulesSchema, createRuleSchema, splitRuleSchema, updateRuleSchema } from '../../dto';
 
-async function nextRuleId(db: SupabaseClient): Promise<string> {
+export async function nextRuleId(db: SupabaseClient): Promise<string> {
   const { data } = await db
     .from('kb_rules')
     .select('id')

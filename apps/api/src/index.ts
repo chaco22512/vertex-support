@@ -8,6 +8,7 @@ import { defaultDeps } from './lib/deps';
 import { createConversation } from './routes/conversations';
 import { postTopic } from './routes/topic';
 import { listAiDiagnostics } from './routes/admin/aiDiagnostics';
+import { disableView, listSnapshots, restoreSnapshot, undoSnapshot } from './routes/admin/rulesBulk';
 import { getMessages, postMessage } from './routes/messages';
 import { postContact } from './routes/contact';
 import { postFeedback } from './routes/feedback';
@@ -83,6 +84,10 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.post('/rules/import/preview', adminOnly, previewImport);
   admin.post('/rules/import/apply', adminOnly, applyImport);
   admin.post('/rules/import/undo', adminOnly, undoImport);
+  admin.post('/rules/disable-view', adminOnly, disableView);
+  admin.get('/rules/snapshots', adminOnly, listSnapshots);
+  admin.post('/rules/snapshots/:id/undo', adminOnly, undoSnapshot);
+  admin.post('/rules/snapshots/:id/restore', adminOnly, restoreSnapshot);
   admin.post('/rules/:id/split', adminOnly, splitRule);
   admin.patch('/rules/:id', adminOnly, updateRule);
   admin.get('/staff', adminOnly, listStaff);

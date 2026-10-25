@@ -144,17 +144,31 @@ export async function generateAiReply(
       `scope=${categories === null ? 'all' : `${categories.length} categories`} count=${scopedRules.length}`,
   );
 
-  const primary = deadline(Math.min(PRIMARY_TIMEOUT_MS, AI_BUDGET_MS - elapsed()));
-  const tPrimary = Date.now();
-  try {
-    result = await run(scopedRules, topic, primary.signal);
-    if (result.fellBack) diag.error = 'parse_failed';
-  } catch (err) {
-    diag.error = errorKind(err, primary.signal);
-    return finish(cannedEscalation(deps, conversation));
-  } finally {
-    primary.clear();
-    diag.timings.primary_ms = Date.now() - tPrimary;
+  if (scopedRules.length === 0) {
+    // ★v1.8 §4.1.0: with no usable knowledge at all, never let the model guess —
+    // escalate without calling it. If only this topic is empty, skip straight
+    // to the whole-manual search below.
+    const all = allRulesPromise ? await allRulesPromise : [];
+    if (!all || all.length === 0) {
+      diag.error = 'no_active_rules';
+      return finish(cannedEscalation(deps, conversation));
+    }
+    const canned = cannedEscalation(deps, conversation);
+    result = { ...canned, fellBack: false, aiMeta: { ...canned.aiMeta, reason: 'not_in_manual' } };
+    diag.timings.primary_ms = 0;
+  } else {
+    const primary = deadline(Math.min(PRIMARY_TIMEOUT_MS, AI_BUDGET_MS - elapsed()));
+    const tPrimary = Date.now();
+    try {
+      result = await run(scopedRules, topic, primary.signal);
+      if (result.fellBack) diag.error = 'parse_failed';
+    } catch (err) {
+      diag.error = errorKind(err, primary.signal);
+      return finish(cannedEscalation(deps, conversation));
+    } finally {
+      primary.clear();
+      diag.timings.primary_ms = Date.now() - tPrimary;
+    }
   }
   diag.primary_reason = result.aiMeta.reason;
   diag.topic_guess = validTopic(result.aiMeta.topic);

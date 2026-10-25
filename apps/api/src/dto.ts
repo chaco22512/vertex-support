@@ -71,7 +71,7 @@ export const createRuleSchema = z.object({
   ai_can_answer: z.boolean(),
   requires_fee_disclaimer: z.boolean().optional(),
   fee_is_fixed: z.boolean().optional(),
-  status: z.enum(['active', 'pending_review', 'disabled']).optional(),
+  status: z.enum(['active', 'pending_review', 'disabled', 'archived']).optional(),
 });
 export const updateRuleSchema = z.object({
   category: z.string().min(1).max(120).optional(),
@@ -83,13 +83,29 @@ export const updateRuleSchema = z.object({
   ai_can_answer: z.boolean().optional(),
   requires_fee_disclaimer: z.boolean().optional(),
   fee_is_fixed: z.boolean().optional(),
-  status: z.enum(['active', 'pending_review', 'disabled']).optional(),
+  status: z.enum(['active', 'pending_review', 'disabled', 'archived']).optional(),
   review_reason: z.string().max(400).optional(),
 });
 export const approveRulesSchema = z.object({ ids: z.array(z.string()).min(1).max(100) });
 
 // --- CSV import (§7.4 v1.7) ---
-export const importCsvSchema = z.object({ csv: z.string().min(1).max(8_000_000) });
+export const importCsvSchema = z.object({
+  csv: z.string().min(1).max(8_000_000),
+  /** ★v1.8: "replace" = Replace all (rules missing from the sheet are archived). */
+  mode: z.enum(['update', 'replace']).default('update'),
+  /** ★v1.8: Replace all must be confirmed by typing REPLACE. */
+  confirm: z.string().optional(),
+});
+
+/**
+ * POST /api/admin/rules/disable-view (★v1.8): the exact rule ids shown in the
+ * admin's current filtered view, plus a human description of that filter for
+ * the change history / Slack notice.
+ */
+export const disableViewSchema = z.object({
+  ids: z.array(z.string().min(1).max(64)).min(1).max(10_000),
+  description: z.string().max(300).default(''),
+});
 export const undoImportSchema = z.object({ snapshot_id: z.string().uuid().optional() });
 export const splitRuleSchema = z.object({
   customer_text: z.string().min(1).max(4000),

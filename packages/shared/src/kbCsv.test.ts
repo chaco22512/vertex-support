@@ -130,3 +130,30 @@ describe('computeRuleChanges', () => {
     expect(patch.status).toBe('active');
   });
 });
+
+describe('v1.8 Replace all parsing', () => {
+  const header = 'Rule ID,Topic,Sub-topic,Answer text,Status';
+
+  it('accepts Archived as a status', () => {
+    const { rows } = parseImportCsv(`${header}\nR1,X,,Hello,Archived`);
+    expect(rows[0]!.values.status).toBe('archived');
+    expect(rows[0]!.errors).toEqual([]);
+  });
+
+  it('skips blank-id rows by default, but parses them as new rules with allowNew', () => {
+    const csv = `${header}\n,LOST ITEM RULES,Fees,New answer,Active`;
+    expect(parseImportCsv(csv).rows[0]!.skip).toBe(true);
+    const row = parseImportCsv(csv, { allowNew: true }).rows[0]!;
+    expect(row).toMatchObject({ skip: false, isNew: true, topic: 'LOST ITEM RULES', subtopic: 'Fees' });
+    expect(row.values.rule_text).toBe('New answer');
+  });
+
+  it('a new rule without a Topic is a row error', () => {
+    const row = parseImportCsv(`${header}\n,,,New answer,Active`, { allowNew: true }).rows[0]!;
+    expect(row.errors).toContain('A new rule needs a Topic.');
+  });
+
+  it('a blank-id row without answer text is still ignored even with allowNew', () => {
+    expect(parseImportCsv(`${header}\n,X,,,`, { allowNew: true }).rows[0]!.skip).toBe(true);
+  });
+});

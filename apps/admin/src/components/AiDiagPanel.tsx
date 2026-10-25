@@ -19,6 +19,7 @@ export const ERROR_LABELS: Record<NonNullable<AiDiag['error']>, string> = {
   llm_error: 'AI service error',
   parse_failed: 'AI reply unreadable',
   rule_fetch_failed: 'Could not load rules',
+  no_active_rules: 'No active rules — all passed to staff',
 };
 
 /** One-line outcome for a diagnosed AI turn. */

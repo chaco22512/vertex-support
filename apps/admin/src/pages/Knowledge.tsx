@@ -1,28 +1,46 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { KbRule } from '@vertex/shared';
-import { api, type ImportApplyResult } from '../lib/api';
+import type { KbRule, RuleStatus } from '@vertex/shared';
+import { api, type ImportApplyResult, type ImportMode } from '../lib/api';
 import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
 import { ImportPreviewDialog } from '../components/ImportPreviewDialog';
+import { BackupsDialog, DisableViewDialog } from '../components/BulkActions';
 import { Dialog } from '../components/Dialog';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../lib/auth';
 
 type Load = 'loading' | 'ready' | 'error';
 
+/** Status filter (★v1.8): archived rules are hidden by default. */
+type StatusFilter = 'not_archived' | RuleStatus | 'all';
+const STATUS_FILTER_LABEL: Record<StatusFilter, string> = {
+  not_archived: 'All except archived',
+  active: 'Active',
+  pending_review: 'Waiting for review',
+  disabled: 'Disabled',
+  archived: 'Archived',
+  all: 'Everything',
+};
+
 export function Knowledge() {
   const toast = useToast();
   const { staff } = useAuth();
   const isAdmin = staff?.role === 'admin';
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const replaceFileRef = useRef<HTMLInputElement | null>(null);
   const [rules, setRules] = useState<KbRule[]>([]);
   const [load, setLoad] = useState<Load>('loading');
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  // ★v1.8: archived rules (set aside by Replace all) are hidden unless asked for.
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('not_archived');
   const [editing, setEditing] = useState<KbRule | null>(null);
   const [creating, setCreating] = useState(false);
-  const [importCsv, setImportCsv] = useState<{ text: string; name: string } | null>(null);
+  const [importCsv, setImportCsv] = useState<{ text: string; name: string; mode: ImportMode } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [disabling, setDisabling] = useState(false);
+  const [backupsOpen, setBackupsOpen] = useState(false);
 
   const fetchRules = useCallback(async () => {
     setLoad('loading');
@@ -39,15 +57,23 @@ export function Knowledge() {
     void fetchRules();
   }, [fetchRules]);
 
+  const statusRules = useMemo(
+    () =>
+      rules.filter((r) =>
+        statusFilter === 'all' ? true : statusFilter === 'not_archived' ? r.status !== 'archived' : r.status === statusFilter,
+      ),
+    [rules, statusFilter],
+  );
+
   const categories = useMemo(
-    () => [...new Set(rules.map((r) => r.category))].sort(),
-    [rules],
+    () => [...new Set(statusRules.map((r) => r.category))].sort(),
+    [statusRules],
   );
 
   // Incremental full-text filter (§7.4): narrows on each keystroke.
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return rules.filter((r) => {
+    return statusRules.filter((r) => {
       if (activeCategory && r.category !== activeCategory) return false;
       if (!q) return true;
       return (
@@ -56,7 +82,49 @@ export function Knowledge() {
         r.subcategory.toLowerCase().includes(q)
       );
     });
-  }, [rules, search, activeCategory]);
+  }, [statusRules, search, activeCategory]);
+
+  // ★v1.8 "Disable all in this view": exactly the rows on screen that are still on.
+  const disableTargets = useMemo(
+    () => filtered.filter((r) => r.status !== 'disabled' && r.status !== 'archived'),
+    [filtered],
+  );
+  const viewDescription = [
+    activeCategory ? `Topic: ${activeCategory}` : 'All topics',
+    search.trim() ? `search "${search.trim()}"` : '',
+    statusFilter !== 'not_archived' ? `status: ${STATUS_FILTER_LABEL[statusFilter]}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const usableAfterDisable = useMemo(() => {
+    const off = new Set(disableTargets.map((r) => r.id));
+    return rules.filter((r) => r.status === 'active' && r.audience === 'customer' && r.ai_can_answer && !off.has(r.id))
+      .length;
+  }, [rules, disableTargets]);
+
+  /** Toast with a one-click Undo backed by the bulk-change backup (★v1.8). */
+  function showBulkUndo(message: string, snapshotId: string | null) {
+    toast.show(
+      {
+        message,
+        ...(snapshotId
+          ? {
+              actionLabel: 'Undo',
+              onAction: async () => {
+                try {
+                  const u = await api.undoSnapshot(snapshotId);
+                  toast.show({ message: `Undone — ${u.restored} rule(s) put back.` });
+                  void fetchRules();
+                } catch {
+                  toast.show({ message: 'Undo failed. You can also undo from Backups.' });
+                }
+              },
+            }
+          : {}),
+      },
+      30_000,
+    );
+  }
 
   function applySaved(updated: KbRule) {
     setRules((rs) => rs.map((r) => (r.id === updated.id ? updated : r)));
@@ -79,12 +147,27 @@ export function Knowledge() {
     const file = e.target.files?.[0];
     e.target.value = ''; // allow re-selecting the same file
     if (!file) return;
-    setImportCsv({ text: await file.text(), name: file.name });
+    setImportCsv({ text: await file.text(), name: file.name, mode: 'update' });
+  }
+
+  async function onReplaceFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImportCsv({ text: await file.text(), name: file.name, mode: 'replace' });
   }
 
   function onApplied(result: ImportApplyResult) {
+    const mode = importCsv?.mode ?? 'update';
     setImportCsv(null);
     void fetchRules();
+    if (mode === 'replace') {
+      showBulkUndo(
+        `Replaced: ${result.applied} updated, ${result.added ?? 0} added, ${result.archived ?? 0} archived (kept, not deleted).`,
+        result.snapshot_id,
+      );
+      return;
+    }
     toast.show(
       {
         message: `Imported ${result.applied} change(s)${result.skipped ? `, ${result.skipped} skipped` : ''}.`,
@@ -126,6 +209,36 @@ export function Knowledge() {
                 style={{ display: 'none' }}
                 onChange={(e) => void onFile(e)}
               />
+              <input
+                ref={replaceFileRef}
+                type="file"
+                accept=".csv,text/csv"
+                style={{ display: 'none' }}
+                onChange={(e) => void onReplaceFile(e)}
+              />
+              <div className="menu-wrap">
+                <button
+                  className="btn btn-sm"
+                  aria-haspopup="menu"
+                  aria-expanded={bulkOpen}
+                  onClick={() => setBulkOpen((o) => !o)}
+                >
+                  Bulk actions ▾
+                </button>
+                {bulkOpen ? (
+                  <div className="menu" role="menu" onClick={() => setBulkOpen(false)}>
+                    <button role="menuitem" onClick={() => replaceFileRef.current?.click()}>
+                      Replace all from CSV…
+                    </button>
+                    <button role="menuitem" onClick={() => setDisabling(true)} disabled={disableTargets.length === 0}>
+                      Disable all in this view ({disableTargets.length})…
+                    </button>
+                    <button role="menuitem" onClick={() => setBackupsOpen(true)}>
+                      Backups…
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </>
           ) : null}
           <button className="btn btn-sm btn-primary" onClick={() => setCreating(true)}>
@@ -144,6 +257,20 @@ export function Knowledge() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
+        </div>
+        <div className="field">
+          <label htmlFor="kb-status">Status</label>
+          <select
+            id="kb-status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          >
+            {(Object.keys(STATUS_FILTER_LABEL) as StatusFilter[]).map((k) => (
+              <option key={k} value={k}>
+                {STATUS_FILTER_LABEL[k]}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -180,7 +307,9 @@ export function Knowledge() {
                       </td>
                       <td>{r.audience}</td>
                       <td>
-                        <span className={`badge status-${r.status === 'active' ? 'resolved' : r.status === 'disabled' ? 'closed' : 'escalated'}`}>
+                        <span
+                          className={`badge status-${r.status === 'active' ? 'resolved' : r.status === 'disabled' || r.status === 'archived' ? 'closed' : 'escalated'}`}
+                        >
                           {r.status}
                         </span>
                       </td>
@@ -199,7 +328,7 @@ export function Knowledge() {
                   className={`nav-link${activeCategory === null ? ' active' : ''}`}
                   onClick={() => setActiveCategory(null)}
                 >
-                  All ({rules.length})
+                  All ({statusRules.length})
                 </button>
               </li>
               {categories.map((cat) => (
@@ -208,7 +337,7 @@ export function Knowledge() {
                     className={`nav-link${activeCategory === cat ? ' active' : ''}`}
                     onClick={() => setActiveCategory(cat)}
                   >
-                    {cat} ({rules.filter((r) => r.category === cat).length})
+                    {cat} ({statusRules.filter((r) => r.category === cat).length})
                   </button>
                 </li>
               ))}
@@ -224,8 +353,31 @@ export function Knowledge() {
         <ImportPreviewDialog
           csv={importCsv.text}
           fileName={importCsv.name}
+          mode={importCsv.mode}
           onClose={() => setImportCsv(null)}
           onApplied={onApplied}
+        />
+      ) : null}
+      {disabling ? (
+        <DisableViewDialog
+          ids={disableTargets.map((r) => r.id)}
+          description={viewDescription}
+          usableAfter={usableAfterDisable}
+          onClose={() => setDisabling(false)}
+          onDone={(result) => {
+            setDisabling(false);
+            void fetchRules();
+            showBulkUndo(`Disabled ${result.disabled} rule(s) (kept, not deleted).`, result.snapshot_id);
+          }}
+        />
+      ) : null}
+      {backupsOpen ? (
+        <BackupsDialog
+          onClose={() => setBackupsOpen(false)}
+          onChanged={(message) => {
+            toast.show({ message });
+            void fetchRules();
+          }}
         />
       ) : null}
       {creating ? (

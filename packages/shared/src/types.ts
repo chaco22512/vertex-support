@@ -6,7 +6,8 @@
 
 // --- enums (§3) ---
 export type Audience = 'customer' | 'internal';
-export type RuleStatus = 'active' | 'pending_review' | 'disabled';
+/** ★v1.8: 'archived' = set aside by Replace all (kept, restorable, never in the AI prompt). */
+export type RuleStatus = 'active' | 'pending_review' | 'disabled' | 'archived';
 export type Channel = 'webchat' | 'whatsapp' | 'line' | 'messenger';
 export type ConvStatus = 'ai_handling' | 'escalated' | 'staff_replied' | 'resolved' | 'closed';
 export type Sender = 'customer' | 'ai' | 'staff' | 'system';
@@ -143,7 +144,14 @@ export type FallbackResult =
   | 'error';
 
 /** Why an AI call failed (★v1.8). Recorded instead of a silent escalation. */
-export type AiErrorKind = 'rate_limited' | 'timeout' | 'llm_error' | 'parse_failed' | 'rule_fetch_failed';
+export type AiErrorKind =
+  | 'rate_limited'
+  | 'timeout'
+  | 'llm_error'
+  | 'parse_failed'
+  | 'rule_fetch_failed'
+  /** ★v1.8 Phase 3: no active customer rules at all — escalated without calling the model. */
+  | 'no_active_rules';
 
 /**
  * Per-turn AI diagnostics (spec v1.8 §4.1.1 / §7.9). Recorded on every

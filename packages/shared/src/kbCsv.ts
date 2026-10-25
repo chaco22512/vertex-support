@@ -44,6 +44,7 @@ const STATUS_TO_LABEL: Record<RuleStatus, string> = {
   active: 'Active',
   pending_review: 'Waiting for review',
   disabled: 'Disabled',
+  archived: 'Archived',
 };
 const LABEL_TO_AUDIENCE: Record<string, Audience> = { customer: 'customer', internal: 'internal' };
 const LABEL_TO_STATUS: Record<string, RuleStatus> = {
@@ -51,6 +52,7 @@ const LABEL_TO_STATUS: Record<string, RuleStatus> = {
   'waiting for review': 'pending_review',
   'pending review': 'pending_review',
   disabled: 'disabled',
+  archived: 'archived',
 };
 
 const yesNo = (b: boolean): string => (b ? 'Yes' : 'No');
@@ -130,6 +132,14 @@ export interface ParsedImportRow {
   decision: CsDecision;
   errors: string[]; // format/validation errors; a non-empty list means skip the row
   skip: boolean; // EXAMPLE / blank id → intentionally ignored (not an error)
+  /** ★v1.8: Topic / Sub-topic as written (only used to create a NEW rule). */
+  topic: string;
+  subtopic: string;
+  /**
+   * ★v1.8 Replace all: a blank Rule ID row that has an answer text — a new rule
+   * to add (only produced when parsing with `allowNew`; otherwise it is skipped).
+   */
+  isNew: boolean;
 }
 
 function parseYesNo(raw: string, label: string, errors: string[]): boolean | undefined {
@@ -169,8 +179,15 @@ function parseDecision(raw: string, errors: string[]): CsDecision {
   return '';
 }
 
-/** Parse + format-validate an uploaded CSV. Returns a header error if unusable. */
-export function parseImportCsv(text: string): { headerError?: string; rows: ParsedImportRow[] } {
+/**
+ * Parse + format-validate an uploaded CSV. Returns a header error if unusable.
+ * `allowNew` (★v1.8 Replace all): a row with a blank Rule ID but an answer text
+ * is parsed as a new rule (`isNew`) instead of being skipped.
+ */
+export function parseImportCsv(
+  text: string,
+  opts: { allowNew?: boolean } = {},
+): { headerError?: string; rows: ParsedImportRow[] } {
   const grid = parseCsv(text);
   if (grid.length === 0) return { headerError: 'The file is empty.', rows: [] };
   const header = grid[0]!.map((h) => h.trim().toLowerCase());
@@ -180,6 +197,8 @@ export function parseImportCsv(text: string): { headerError?: string; rows: Pars
 
   const c = {
     id: idCol,
+    topic: col('Topic'),
+    subtopic: col('Sub-topic'),
     text: col('Answer text'),
     fees: col('Fee amounts (JPY)'),
     fixed: col('Fixed fee?'),
@@ -196,8 +215,11 @@ export function parseImportCsv(text: string): { headerError?: string; rows: Pars
     const at = (i: number): string => (i >= 0 && i < cells.length ? (cells[i] ?? '') : '');
     const id = at(c.id).trim();
     const line = r + 1;
-    if (!id || id.toUpperCase() === 'EXAMPLE') {
-      rows.push({ line, id, values: {}, decision: '', errors: [], skip: true });
+    const topic = at(c.topic).trim();
+    const subtopic = at(c.subtopic).trim();
+    const isNew = !id && Boolean(opts.allowNew) && at(c.text).trim() !== '';
+    if ((!id && !isNew) || id.toUpperCase() === 'EXAMPLE') {
+      rows.push({ line, id, values: {}, decision: '', errors: [], skip: true, topic, subtopic, isNew: false });
       continue;
     }
     const errors: string[] = [];
@@ -241,12 +263,16 @@ export function parseImportCsv(text: string): { headerError?: string; rows: Pars
       if (v !== '') {
         const s = LABEL_TO_STATUS[v];
         if (s) values.status = s;
-        else errors.push(`Status must be Active, Waiting for review, or Disabled (got "${at(c.status).trim()}")`);
+        else
+          errors.push(
+            `Status must be Active, Waiting for review, Disabled, or Archived (got "${at(c.status).trim()}")`,
+          );
       }
     }
     const decision = parseDecision(c.decision >= 0 ? at(c.decision) : '', errors);
+    if (isNew && !topic) errors.push('A new rule needs a Topic.');
 
-    rows.push({ line, id, values, decision, errors, skip: false });
+    rows.push({ line, id, values, decision, errors, skip: false, topic, subtopic, isNew });
   }
   return { rows };
 }

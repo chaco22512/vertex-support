@@ -167,6 +167,25 @@ describe('generateAiReply — v1.8 fallback', () => {
     }
   });
 
+  it('with no active rules at all, escalates WITHOUT calling the model (v1.8 §4.1.0)', async () => {
+    const llm = recordingLlm([goodResponse()]);
+    const res = await generateAiReply(deps(llm, new FakeSupabase()), conversation(), apnQ);
+    expect(llm.calls).toHaveLength(0);
+    expect(res.aiMeta.action).toBe('escalate');
+    expect(diagOf(res.aiMeta)).toMatchObject({ error: 'no_active_rules' });
+  });
+
+  it('an empty topic scope goes straight to the whole-manual search (one model call)', async () => {
+    const db = seed();
+    for (const r of db.tables.kb_rules) if (r.category === 'CS AI DOC: AI_Cancellation') r.status = 'archived';
+    const llm = recordingLlm([goodResponse({ answer: 'Open Settings.', rule_ids: ['R657'] })]);
+    const res = await generateAiReply(deps(llm, db), conversation(), apnQ);
+    expect(llm.calls).toHaveLength(1);
+    expect(llm.calls[0]!.system).toContain('[R657]');
+    expect(res.aiMeta.action).toBe('answer');
+    expect(diagOf(res.aiMeta)).toMatchObject({ scoped_rule_count: 0, fallback_result: 'answered' });
+  });
+
   it('tells the model about the open staff case when the conversation is escalated', async () => {
     const llm = recordingLlm([goodResponse()]);
     await generateAiReply(deps(llm), conversation({ status: 'escalated' }), apnQ);

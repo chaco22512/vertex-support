@@ -176,7 +176,8 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
   before jsonb, after jsonb
 );
 -- Phase 3: 一括操作前の全ルールスナップショット（最低3世代保持、画面から復元可）
--- kb_rule_snapshots(id, kind, created_by, created_at, rule_count, rows jsonb)
+-- kb_rule_snapshots(id, kind, created_by, created_at, rule_count, affected_ids text[], rows jsonb, undone, note)
+-- 実体: supabase/migrations/20261025120013_add_archived_status.sql / 20261025120014_kb_bulk_ops.sql
 ```
 ※ 詳細スキーマは各Phaseの計画で確定し、マイグレーションとして追加する（既存データの削除・型変更を伴わない追加のみ）。
 
@@ -431,12 +432,15 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
   - (e) 適用前の対象行スナップショットを `kb_import_snapshots` に保存し **「Undo import」** で直前を取消可能（最低1世代）。
   - 想定最大2,781行。サーバはチャンク（100/50件）で処理。
 
-#### 7.4.2 一括操作（★v1.8 Phase 3。「all clear」要望の安全版）
-CSの目的は「新しいシートでまるごと入れ替える」ことであり、空にすることではない。**物理削除する一括機能は作らない**。
-- **Replace all モード**（Upload reviewed CSV に追加。既存の差分更新モードと選択式）: CSVに無い既存ルールを `status='archived'` にし、CSVの内容を取り込む。差分プレビュー（archive予定件数を明示）→ Apply → Undo import の既存フローをそのまま適用。**確認を一段強化: 影響件数を表示し `REPLACE` と入力しないと実行不可**。
-- **Disable all in this view**（Knowledge）: 現在の絞り込み結果（カテゴリ／検索）を一括で `status='disabled'`。対象件数を明示し確認ダイアログを経て実行。Undo 可能。
-- **安全装置（共通）**: 実行前に全ルールのスナップショットを自動保存（最低3世代保持、画面から復元可）。adminのみ。実行内容を変更履歴に記録し Slack 通知。アクティブなルールが0件になる操作は警告を出す（実行された場合 AI は全質問をエスカレ: §4.1.0）。
-- archived はAIプロンプト・Review queue の対象外。Knowledge のステータスフィルタで表示・復元できる。
+#### 7.4.2 一括操作（★v1.8 Phase 3。「all clear」要望の安全版、実装確定）
+CSの目的は「新しいシートでまるごと入れ替える」ことであり、空にすることではない。**物理削除する一括機能は作らない**。Knowledge 右上「Bulk actions ▾」に3項目。adminのみ。
+- **Replace all from CSV**（`POST /rules/import/preview|apply` に `mode:"replace"`）: CSVに無い既存の非archivedルールを `status='archived'`。シートにある既存ルールは差分を適用（archived だったルールはシートに載っていれば active に戻る。Status 列が Archived なら archived のまま）。**Rule ID 空欄で回答文のある行は新規ルール**として追加（ID は `M###` 自動採番、未登録IDはそのIDで追加）。**新規行の Topic は既存カテゴリのみ可**（未知は行エラー＝AIのトピック範囲を壊さない）。行エラーのあるルールIDはアーカイブ対象にしない（入力ミスでルールを止めない）。プレビューは 変更/新規/アーカイブ件数・アーカイブ対象の一覧・**AIが使えるルール数 before→after** を表示し、after=0 は赤い警告。**影響件数を表示し `REPLACE` と入力するまで実行不可（サーバ側でも `confirm:"REPLACE"` 必須、無ければ 400）**。
+- **Disable all in this view**（`POST /rules/disable-view {ids, description}`）: 画面の絞り込み結果のうち有効なルールの **ID 一覧をそのまま送る**（画面と実行対象の不一致を防ぐ。未知IDは 409）。対象件数と「実行後にAIが使えるルール数」を確認ダイアログで明示。
+- **Backups**: 一括操作の前に **全ルールのスナップショット**を自動保存（`kb_rule_snapshots`、**最新5世代保持**、古いスナップショット行は自動で世代整理）。各世代に「Undo this change（その操作の対象だけ戻す）」と「Restore everything（全体をその時点に戻す。実行前に現状も自動保存）」。Undo 後に追加されていたルールは archived にする（削除しない）。
+- **一括処理は Postgres 関数で1リクエスト**（`kb_take_snapshot` / `kb_bulk_set_status` / `kb_apply_patches` / `kb_restore_snapshot`、service role のみ実行可）。1件ずつの更新は Workers のサブリクエスト上限を超えるため。全変更を `kb_change_log`（source: replace_all / disable_view / snapshot_restore）に記録し、Slack に「🗂 Knowledge bulk change」を通知。
+- 実測（本番データ、ROLLBACK 試験）: スナップショット 2,886件 0.5秒・276KB、全体復元 0.4秒。
+- archived はAIプロンプト・Review queue の対象外。Knowledge のステータスフィルタ（既定は Archived 以外）で表示でき、CSV の Status 列にも `Archived` を追加。
+- **アクティブな顧客向けルールが0件なら AI は LLM を呼ばず全質問をエスカレ**（`diag.error='no_active_rules'`、§4.1.0）。トピック内だけ0件なら全マニュアル検索へ直行。
 
 ### 7.5 承認待ちキュー（Review queue）
 - pending_review を reason 別タブに分類（★v1.5: Pシリーズ取込で reason が増えたため4タブ化）:
@@ -526,7 +530,9 @@ Workers Cron（毎時）: 期限4時間未満の escalated 会話を ⚠️ 再�
 | GET | /api/admin/ai-diagnostics | JWT(admin) | ★v1.8 AI診断一覧（§7.9） |
 | GET/PUT | /api/admin/ai-behaviour… | JWT(admin) | ★v1.8 プロンプト②③の下書き・版一覧・差分 |
 | POST | /api/admin/ai-behaviour/publish, /rollback, /try | JWT(admin) | ★v1.8 セーフティテスト付き公開・ロールバック・Try it |
-| POST | /api/admin/rules/disable-view, /snapshots/:id/restore | JWT(admin) | ★v1.8 一括無効化・スナップショット復元 |
+| POST | /api/admin/rules/import/preview・apply（mode:"replace", confirm:"REPLACE"） | JWT(admin) | ★v1.8 Replace all |
+| POST | /api/admin/rules/disable-view | JWT(admin) | ★v1.8 表示中のルールを一括無効化 |
+| GET/POST | /api/admin/rules/snapshots, /snapshots/:id/undo, /snapshots/:id/restore | JWT(admin) | ★v1.8 バックアップ一覧・Undo・全体復元 |
 
 ---
 

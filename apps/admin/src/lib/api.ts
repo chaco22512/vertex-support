@@ -142,16 +142,48 @@ export interface ImportError {
   id: string;
   reason: string;
 }
+export type ImportMode = 'update' | 'replace';
+
 export interface ImportPreview {
-  summary: { changed: number; unchanged: number; ignored: number; errors: number };
+  summary: {
+    changed: number;
+    unchanged: number;
+    ignored: number;
+    errors: number;
+    /** ★v1.8 Replace all only. */
+    added?: number;
+    archived?: number;
+  };
   changes: ImportChange[];
   errors: ImportError[];
+  /** ★v1.8 Replace all only. */
+  mode?: ImportMode;
+  new_rules?: { line: number; id: string; category: string; text: string }[];
+  to_archive?: { count: number; sample: { id: string; category: string; status: string }[] };
+  active_before?: number;
+  active_after?: number;
 }
 export interface ImportApplyResult {
   applied: number;
   skipped: number;
   snapshot_id: string | null;
   errors: ImportError[];
+  /** ★v1.8 Replace all only. */
+  added?: number;
+  archived?: number;
+  active_after?: number;
+}
+
+/** A kept knowledge backup (★v1.8 §7.4.2). */
+export interface KbSnapshot {
+  id: string;
+  kind: 'replace_all' | 'disable_view' | 'restore' | string;
+  created_at: string;
+  created_by_name: string;
+  rule_count: number;
+  affected_count: number;
+  undone: boolean;
+  note: string;
 }
 
 export type ExportFilters = { q?: string; category?: string; status?: string };
@@ -227,10 +259,27 @@ export const api = {
       body: JSON.stringify({ customer_text, internal_text }),
     }),
   downloadRulesCsv,
-  importPreview: (csv: string) =>
-    request<ImportPreview>(`/api/admin/rules/import/preview`, { method: 'POST', body: JSON.stringify({ csv }) }),
-  importApply: (csv: string) =>
-    request<ImportApplyResult>(`/api/admin/rules/import/apply`, { method: 'POST', body: JSON.stringify({ csv }) }),
+  importPreview: (csv: string, mode: ImportMode = 'update') =>
+    request<ImportPreview>(`/api/admin/rules/import/preview`, {
+      method: 'POST',
+      body: JSON.stringify({ csv, mode }),
+    }),
+  importApply: (csv: string, mode: ImportMode = 'update', confirm?: string) =>
+    request<ImportApplyResult>(`/api/admin/rules/import/apply`, {
+      method: 'POST',
+      body: JSON.stringify({ csv, mode, confirm }),
+    }),
+  // --- bulk operations + backups (★v1.8 §7.4.2) ---
+  disableView: (ids: string[], description: string) =>
+    request<{ disabled: number; snapshot_id: string | null; active_after?: number }>(`/api/admin/rules/disable-view`, {
+      method: 'POST',
+      body: JSON.stringify({ ids, description }),
+    }),
+  listSnapshots: () => request<{ snapshots: KbSnapshot[] }>(`/api/admin/rules/snapshots`),
+  undoSnapshot: (id: string) =>
+    request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/undo`, { method: 'POST', body: '{}' }),
+  restoreSnapshot: (id: string) =>
+    request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/restore`, { method: 'POST', body: '{}' }),
   importUndo: () =>
     request<{ restored: number; snapshot_id: string }>(`/api/admin/rules/import/undo`, {
       method: 'POST',

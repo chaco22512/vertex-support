@@ -1,32 +1,42 @@
 import { useEffect, useState } from 'react';
-import { api, type ImportApplyResult, type ImportPreview } from '../lib/api';
+import { api, type ImportApplyResult, type ImportMode, type ImportPreview } from '../lib/api';
 import { Dialog } from './Dialog';
 
 type Phase = 'previewing' | 'ready' | 'applying' | 'error';
 
+/** The word an admin must type to run Replace all (spec v1.8 §7.4.2). */
+export const REPLACE_WORD = 'REPLACE';
+
 /**
- * CSV import: shows a diff preview and only applies on an explicit "Apply
- * changes" click (spec v1.7 §7.4 safety requirement). No write happens on load.
+ * CSV import: shows a diff preview and only applies on an explicit click
+ * (spec v1.7 §7.4 safety requirement). No write happens on load.
+ * ★v1.8 `mode="replace"` (Replace all): also lists the rules that will be set
+ * aside (archived — kept, restorable), the new rules, and how many rules the
+ * bot can use afterwards, and requires typing REPLACE to run.
  */
 export function ImportPreviewDialog({
   csv,
   fileName,
+  mode = 'update',
   onClose,
   onApplied,
 }: {
   csv: string;
   fileName: string;
+  mode?: ImportMode;
   onClose: () => void;
   onApplied: (result: ImportApplyResult) => void;
 }) {
   const [phase, setPhase] = useState<Phase>('previewing');
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [typed, setTyped] = useState('');
+  const replace = mode === 'replace';
 
   useEffect(() => {
     let cancelled = false;
     api
-      .importPreview(csv)
+      .importPreview(csv, mode)
       .then((p) => {
         if (cancelled) return;
         setPreview(p);
@@ -40,22 +50,28 @@ export function ImportPreviewDialog({
     return () => {
       cancelled = true;
     };
-  }, [csv]);
+  }, [csv, mode]);
 
   async function apply() {
     setPhase('applying');
     try {
-      const result = await api.importApply(csv);
+      const result = await api.importApply(csv, mode, replace ? typed : undefined);
       onApplied(result);
     } catch {
-      setError('Could not apply the changes. Please try again.');
+      setError('Could not apply the changes. Nothing was changed if a backup could not be saved. Please try again.');
       setPhase('error');
     }
   }
 
   const s = preview?.summary;
+  const added = s?.added ?? 0;
+  const archived = s?.archived ?? 0;
+  const total = (s?.changed ?? 0) + added + archived;
+  const canApply =
+    phase === 'ready' && total > 0 && (!replace || typed.trim() === REPLACE_WORD);
+
   return (
-    <Dialog title={`Review import — ${fileName}`} onClose={onClose}>
+    <Dialog title={`${replace ? 'Replace all' : 'Review import'} — ${fileName}`} onClose={onClose}>
       {phase === 'previewing' ? (
         <p className="muted">Reading and comparing the file…</p>
       ) : phase === 'error' ? (
@@ -66,10 +82,50 @@ export function ImportPreviewDialog({
         <>
           <div className="row wrap" style={{ gap: 12 }}>
             <strong>{s!.changed} to change</strong>
+            {replace ? <strong>· {added} new</strong> : null}
+            {replace ? <strong>· {archived} to archive</strong> : null}
             <span className="muted">· {s!.unchanged} unchanged</span>
             <span className="muted">· {s!.ignored} ignored</span>
             {s!.errors > 0 ? <span style={{ color: 'var(--danger)' }}>· {s!.errors} with errors (skipped)</span> : null}
           </div>
+
+          {replace ? (
+            <>
+              <p style={{ marginBottom: 0 }}>
+                Rules that are not in this file will be <strong>archived</strong> — kept and restorable, not deleted.
+                A backup of every rule is saved first.
+              </p>
+              <p className="muted" style={{ marginTop: 'var(--sp-1)' }}>
+                Rules the bot can use: {preview!.active_before} → <strong>{preview!.active_after}</strong>
+              </p>
+              {preview!.active_after === 0 ? (
+                <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
+                  After this the bot will have no rules to use and will pass every question to staff.
+                </div>
+              ) : null}
+              {archived > 0 ? (
+                <details style={{ marginTop: 'var(--sp-2)' }}>
+                  <summary>{archived} rule(s) will be archived</summary>
+                  <p className="muted" style={{ margin: '4px 0 0' }}>
+                    {preview!.to_archive!.sample.map((r) => r.id).join(', ')}
+                    {archived > preview!.to_archive!.sample.length ? ', …' : ''}
+                  </p>
+                </details>
+              ) : null}
+              {added > 0 ? (
+                <details style={{ marginTop: 'var(--sp-2)' }}>
+                  <summary>{added} new rule(s) will be added</summary>
+                  <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                    {preview!.new_rules!.slice(0, 50).map((n) => (
+                      <li key={n.line}>
+                        Line {n.line} · {n.id || 'new id'} · {n.category}: {n.text}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
+            </>
+          ) : null}
 
           {preview!.changes.length > 0 ? (
             <div className="table-wrap" style={{ maxHeight: 300, overflow: 'auto', marginTop: 'var(--sp-3)' }}>
@@ -105,11 +161,11 @@ export function ImportPreviewDialog({
                 </tbody>
               </table>
             </div>
-          ) : (
+          ) : !replace ? (
             <p className="muted" style={{ marginTop: 'var(--sp-3)' }}>
               No changes to apply.
             </p>
-          )}
+          ) : null}
 
           {preview!.errors.length > 0 ? (
             <details style={{ marginTop: 'var(--sp-3)' }}>
@@ -124,16 +180,31 @@ export function ImportPreviewDialog({
             </details>
           ) : null}
 
+          {replace && total > 0 ? (
+            <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
+              <label htmlFor="replace-confirm">
+                This affects {total} rule(s). Type {REPLACE_WORD} to confirm.
+              </label>
+              <input
+                id="replace-confirm"
+                type="text"
+                autoComplete="off"
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+              />
+            </div>
+          ) : null}
+
           <div className="dialog-actions">
             <button className="btn" onClick={onClose} disabled={phase === 'applying'}>
               Cancel
             </button>
-            <button
-              className="btn btn-primary"
-              onClick={() => void apply()}
-              disabled={phase === 'applying' || preview!.changes.length === 0}
-            >
-              {phase === 'applying' ? 'Applying…' : `Apply changes (${s!.changed})`}
+            <button className="btn btn-primary" onClick={() => void apply()} disabled={!canApply}>
+              {phase === 'applying'
+                ? 'Applying…'
+                : replace
+                  ? `Replace all (${total})`
+                  : `Apply changes (${s!.changed})`}
             </button>
           </div>
         </>
