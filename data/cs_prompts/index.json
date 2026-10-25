@@ -1,0 +1,32 @@
+{
+ "core": {
+  "source_tab": "Core_System_Prompt",
+  "file": "core.md",
+  "chars": 5368,
+  "est_tokens": 1342
+ },
+ "cancel": {
+  "source_tab": "AI_System_Prompt_Cancellation",
+  "file": "cancel.md",
+  "chars": 4936,
+  "est_tokens": 1234
+ },
+ "return": {
+  "source_tab": "AI_System_Prompt_Returning SIMD",
+  "file": "return.md",
+  "chars": 9766,
+  "est_tokens": 2441
+ },
+ "refund": {
+  "source_tab": "AI_System_Prompt_Deposit Refund",
+  "file": "refund.md",
+  "chars": 5443,
+  "est_tokens": 1360
+ },
+ "replace": {
+  "source_tab": "AI_System_Prompt_ReplacementCha",
+  "file": "replace.md",
+  "chars": 8724,
+  "est_tokens": 2181
+ }
+}

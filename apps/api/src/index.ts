@@ -8,6 +8,14 @@ import { defaultDeps } from './lib/deps';
 import { createConversation } from './routes/conversations';
 import { postTopic } from './routes/topic';
 import { listAiDiagnostics } from './routes/admin/aiDiagnostics';
+import {
+  getAiBehaviour,
+  getVersion,
+  publishVersion,
+  restoreVersion,
+  saveVersion,
+  tryBehaviour,
+} from './routes/admin/aiBehaviour';
 import { disableView, listSnapshots, restoreSnapshot, undoSnapshot } from './routes/admin/rulesBulk';
 import { getMessages, postMessage } from './routes/messages';
 import { postContact } from './routes/contact';
@@ -96,6 +104,12 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.delete('/staff/:id', adminOnly, deleteStaff);
   admin.get('/changelog', adminOnly, listChangelog);
   admin.get('/ai-diagnostics', adminOnly, listAiDiagnostics);
+  admin.get('/ai-behaviour', adminOnly, getAiBehaviour);
+  admin.get('/ai-behaviour/versions/:id', adminOnly, getVersion);
+  admin.post('/ai-behaviour/versions', adminOnly, saveVersion);
+  admin.post('/ai-behaviour/versions/:id/publish', adminOnly, publishVersion);
+  admin.post('/ai-behaviour/versions/:id/restore', adminOnly, restoreVersion);
+  admin.post('/ai-behaviour/try', adminOnly, tryBehaviour);
   app.route('/api/admin', admin);
 
   return app;

@@ -13,6 +13,7 @@ import {
 import type { AiDiag, AiErrorKind, Conversation, FallbackResult, KbRule } from '@vertex/shared';
 import type { Deps } from '../types';
 import { menu } from './menu';
+import { behaviourFor, loadPublishedBehaviour, type BehaviourContent } from './aiBehaviour';
 
 /**
  * Server-side budget for a whole AI turn (spec v1.8 §4.1.1). The chat client
@@ -115,8 +116,11 @@ export async function generateAiReply(
     categories === null
       ? null
       : fetchScopedRules(deps.db, null).catch(() => null);
+  // ★v1.8 Phase 2: the CS-published behaviour (②/③), read alongside the rules.
+  const behaviourPromise = loadPublishedBehaviour(deps.db);
+  let published: BehaviourContent | null = null;
 
-  const run = (rules: KbRule[], label: string | null, signal: AbortSignal) =>
+  const run = (rules: KbRule[], label: string | null, topicId: string | null, signal: AbortSignal) =>
     runAiReply({
       rules,
       history,
@@ -124,6 +128,7 @@ export async function generateAiReply(
       topic: label,
       topics: TOPICS,
       pendingCase,
+      behaviour: behaviourFor(published, topicId),
       llm: deps.llm,
       signal,
     });
@@ -132,7 +137,7 @@ export async function generateAiReply(
   let result: AiReplyResult;
   let scopedRules: KbRule[];
   try {
-    scopedRules = await fetchScopedRules(deps.db, categories);
+    [scopedRules, published] = await Promise.all([fetchScopedRules(deps.db, categories), behaviourPromise]);
   } catch {
     diag.error = 'rule_fetch_failed';
     return finish(cannedEscalation(deps, conversation));
@@ -160,7 +165,7 @@ export async function generateAiReply(
     const primary = deadline(Math.min(PRIMARY_TIMEOUT_MS, AI_BUDGET_MS - elapsed()));
     const tPrimary = Date.now();
     try {
-      result = await run(scopedRules, topic, primary.signal);
+      result = await run(scopedRules, topic, currentTopic || null, primary.signal);
       if (result.fellBack) diag.error = 'parse_failed';
     } catch (err) {
       diag.error = errorKind(err, primary.signal);
@@ -205,6 +210,7 @@ export async function generateAiReply(
     retry = await run(
       ranked.map((r) => r.rule),
       guessLabel,
+      diag.topic_guess ?? (currentTopic || null),
       fallback.signal,
     );
   } catch (err) {

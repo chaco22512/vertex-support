@@ -9,6 +9,7 @@
     "measure:counts": "tsx measure_rule_counts.ts",
     "measure:latency": "tsx measure_latency.ts",
     "measure:retrieval": "tsx measure_retrieval.ts",
+    "seed:ai-behaviour": "tsx seed_ai_behaviour.ts",
     "smoke:gemini": "tsx smoke_gemini.ts",
     "seed:admin": "tsx seed_admin.ts",
     "apply:migration": "tsx apply_migration.ts",

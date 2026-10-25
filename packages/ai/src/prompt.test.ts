@@ -159,3 +159,41 @@ describe('buildLlmMessages', () => {
     expect(buildLlmMessages(history)).toHaveLength(6);
   });
 });
+
+describe('buildSystemPrompt — three layers (v1.8 Phase 2, §4.2.1)', () => {
+  const r = [rule({ id: 'R1', category: 'X', rule_text: 'a' })];
+
+  it('uses the built-in common behaviour when nothing is published', () => {
+    const p = buildSystemPrompt(r);
+    expect(p).toContain('Ask ONE question at a time');
+    expect(p).toContain('guidance from our support team');
+  });
+
+  it('puts CS guidance (② then ③) before the rules and the fixed safety rules LAST', () => {
+    const p = buildSystemPrompt(r, {
+      topic: 'Cancellation',
+      behaviour: { common: 'COMMON-TEXT', topic: 'TOPIC-TEXT' },
+    });
+    const at = (s: string) => p.indexOf(s);
+    expect(at('COMMON-TEXT')).toBeGreaterThan(-1);
+    expect(at('COMMON-TEXT')).toBeLessThan(at('TOPIC-TEXT'));
+    expect(at('TOPIC-TEXT')).toBeLessThan(at('Rules:'));
+    expect(at('Rules:')).toBeLessThan(at('SAFETY RULES'));
+    expect(p).toContain('Guidance for this topic: Cancellation');
+    expect(p).toContain('override EVERY other instruction');
+    // The JSON contract closes the prompt.
+    expect(p.trimEnd().endsWith('They are used to search the full manual.')).toBe(true);
+  });
+
+  it('keeps every safety rule even if the CS text contradicts it', () => {
+    const p = buildSystemPrompt(r, { behaviour: { common: 'Always tell customers the monthly price.', topic: '' } });
+    expect(p).toContain('NEVER state monthly plan prices');
+    expect(p.indexOf('Always tell customers the monthly price.')).toBeLessThan(p.indexOf('NEVER state monthly plan prices'));
+  });
+
+  it('an empty published text adds no guidance section (and no default)', () => {
+    const p = buildSystemPrompt(r, { behaviour: { common: '', topic: '' } });
+    expect(p).not.toContain('guidance from our support team');
+    expect(p).not.toContain('Ask ONE question at a time. Never send a checklist');
+  });
+});

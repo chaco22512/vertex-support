@@ -186,6 +186,22 @@ describe('generateAiReply — v1.8 fallback', () => {
     expect(diagOf(res.aiMeta)).toMatchObject({ scoped_rule_count: 0, fallback_result: 'answered' });
   });
 
+  it('uses the published AI behaviour (② + the topic ③), not drafts (v1.8 Phase 2)', async () => {
+    const db = seed();
+    db.tables.ai_prompt_versions = [
+      { id: 1, state: 'superseded', common_behaviour: 'OLD-COMMON', topic_instructions: {} },
+      { id: 2, state: 'published', common_behaviour: 'LIVE-COMMON', topic_instructions: { cancel: 'LIVE-CANCEL' } },
+      { id: 3, state: 'draft', common_behaviour: 'DRAFT-COMMON', topic_instructions: {} },
+    ];
+    const llm = recordingLlm([goodResponse()]);
+    await generateAiReply(deps(llm, db), conversation(), apnQ);
+    const sys = llm.calls[0]!.system;
+    expect(sys).toContain('LIVE-COMMON');
+    expect(sys).toContain('LIVE-CANCEL');
+    expect(sys).not.toContain('DRAFT-COMMON');
+    expect(sys).not.toContain('OLD-COMMON');
+  });
+
   it('tells the model about the open staff case when the conversation is escalated', async () => {
     const llm = recordingLlm([goodResponse()]);
     await generateAiReply(deps(llm), conversation({ status: 'escalated' }), apnQ);

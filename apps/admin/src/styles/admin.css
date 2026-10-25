@@ -685,3 +685,25 @@ textarea {
   color: var(--ink-muted);
   cursor: default;
 }
+/* ★v1.8 AI behaviour — version diff */
+.line-diff {
+  margin: var(--sp-2) 0 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  padding: var(--sp-2);
+  background: var(--surface);
+}
+.line-add {
+  background: var(--success-soft);
+  color: var(--ink);
+}
+.line-del {
+  background: var(--danger-soft);
+  color: var(--ink-muted);
+  text-decoration: line-through;
+}
+.line-same {
+  color: var(--ink-muted);
+}

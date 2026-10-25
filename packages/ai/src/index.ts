@@ -21,9 +21,22 @@ export {
   formatRule,
   type HistoryMessage,
   type SystemPromptOptions,
+  type PromptBehaviour,
+  SYSTEM_TEXT,
+  SAFETY_RULES_TEXT,
+  DEFAULT_COMMON_BEHAVIOUR,
 } from './prompt';
 export { parseAiResponse, aiResponseSchema, ESCALATION_REASONS, type AiResponse } from './parse';
 export { fallbackEscalationMessage, FALLBACK_ESCALATION_MESSAGE } from './locales';
 export { runAiReply, type RunAiReplyInput, type AiReplyResult } from './pipeline';
 export { GeminiClient, GeminiError, DEFAULT_GEMINI_MODEL, type GeminiConfig } from './gemini';
 export { translateToEnglish, draftStaffReply } from './admin';
+export {
+  SAFETY_TESTS,
+  evaluateSafety,
+  type SafetyTestCase,
+  type SafetyRun,
+  type SafetyCheck,
+  type SafetyReport,
+  type SafetyContext,
+} from './safety';

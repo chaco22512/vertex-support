@@ -1,6 +1,6 @@
 import type { AiMeta, KbRule } from '@vertex/shared';
 import type { LlmClient } from './llm';
-import { buildLlmMessages, buildSystemPrompt, type HistoryMessage } from './prompt';
+import { buildLlmMessages, buildSystemPrompt, type HistoryMessage, type PromptBehaviour } from './prompt';
 import { parseAiResponse, type AiResponse } from './parse';
 import { fallbackEscalationMessage } from './locales';
 
@@ -17,6 +17,8 @@ export interface RunAiReplyInput {
   topics?: { id: string; label: string }[];
   /** An earlier question in the conversation is with staff (★v1.8). */
   pendingCase?: boolean;
+  /** CS-written guidance ②/③ (★v1.8 Phase 2); omitted → built-in default. */
+  behaviour?: PromptBehaviour;
   llm: LlmClient;
   /** Optional abort signal forwarded to the LLM (timeout enforcement, §6.3). */
   signal?: AbortSignal;
@@ -46,6 +48,7 @@ export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult>
     topic: input.topic,
     topics: input.topics,
     pendingCase: input.pendingCase,
+    behaviour: input.behaviour,
   });
   const messages = buildLlmMessages(input.history);
 

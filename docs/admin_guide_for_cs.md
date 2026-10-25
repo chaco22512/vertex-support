@@ -93,3 +93,44 @@ is saved automatically. The latest 5 copies are kept.
 
 Every bulk change, undo and restore is shown in **Change history**, and a message
 is posted in Slack so the team knows.
+
+## Changing how the bot talks (AI behaviour)
+
+Open **AI behaviour** in the left menu (admins only). It has three parts:
+
+- **① Safety rules (fixed)** — rules the bot always follows, such as never giving
+  monthly plan, COD or discount prices, never mentioning internal tools or staff
+  names, and always replying in the customer's language. You can read them but
+  not change them. They always win over anything written below.
+- **② Common behaviour** — how the bot talks on every topic (tone, asking one
+  question at a time, …). It starts with your *Core_System_Prompt* sheet.
+- **③ Topic instructions** — extra guidance for one topic only (for example, which
+  facts to ask for, in order). Cancellation, Returning, Deposit refund and
+  Replacement start with your topic sheets.
+
+The counter under each box shows its length. Very long text makes the bot slower,
+so try to stay under the recommended size.
+
+### Try before you publish
+Under **Try it**, pick a topic, type a customer question and click **Try it**. You
+see how the bot would answer with the text in the boxes right now — even before
+saving. Customers are not affected.
+
+### Save and publish
+1. **Save draft** keeps your changes as a new version. Customers do not see it yet.
+2. **Publish** first asks the bot 4 test questions with your text and checks that:
+   it does not give a monthly price, it gives the lost-SIM fee, it never mentions
+   internal words or staff names, its replies are in the right format, and it
+   answers an Indonesian question in Indonesian.
+3. If every check passes, your version goes live straight away and a message is
+   posted in Slack. If any check fails, **nothing is published**: the page lists
+   what failed and shows the start of the bot's reply, so you can fix the text
+   and try again.
+
+Each test question and each **Try it** uses some of the bot's daily allowance,
+which is shared with customers — avoid publishing many times in one day.
+
+### Going back to an earlier version
+Under **Versions**, click **View changes** to see what changed in a version
+(added lines in green, removed lines crossed out), or **Restore this version** to
+make that text live again. Restoring runs the same 4 safety checks first.

@@ -19,6 +19,8 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public code = '',
+    /** Parsed JSON error body, when the server sent one. */
+    public body: unknown = null,
   ) {
     super(message);
   }
@@ -38,13 +40,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (!res.ok) {
     // Surface the server's error code (e.g. 'last_active_admin') when present.
     let code = '';
+    let body: unknown = null;
     try {
-      const body = (await res.clone().json()) as { error?: string; message?: string };
-      code = body.error ?? '';
+      body = await res.clone().json();
+      code = (body as { error?: string }).error ?? '';
     } catch {
       /* non-JSON error body */
     }
-    throw new ApiError(res.status, `request_failed_${res.status}`, code);
+    throw new ApiError(res.status, `request_failed_${res.status}`, code, body);
   }
   if (res.status === 204) return undefined as T;
   return (await res.json()) as T;
@@ -174,6 +177,65 @@ export interface ImportApplyResult {
   active_after?: number;
 }
 
+// --- AI behaviour (★v1.8 Phase 2, §7.8) ---
+export interface AiSafetyCheck {
+  id: string;
+  label: string;
+  pass: boolean;
+  detail: string;
+  excerpt?: string;
+}
+export interface AiSafetyReport {
+  passed: boolean;
+  checks: AiSafetyCheck[];
+  ran_at: string;
+}
+export interface AiBehaviourVersion {
+  id: number;
+  state: 'draft' | 'published' | 'superseded';
+  common_behaviour: string;
+  topic_instructions: Record<string, string>;
+  created_at: string;
+  published_at: string | null;
+  safety_report: AiSafetyReport | null;
+  note: string;
+  based_on: number | null;
+}
+export interface AiBehaviourVersionSummary {
+  id: number;
+  state: AiBehaviourVersion['state'];
+  created_at: string;
+  created_by_name: string;
+  published_at: string | null;
+  published_by_name: string;
+  note: string;
+  based_on: number | null;
+  safety_passed: boolean | null;
+}
+export interface AiBehaviourState {
+  fixed: { system: string; safety_rules: string };
+  default_common_behaviour: string;
+  topics: { id: string; label: string }[];
+  limits: { commonTarget: number; topicTarget: number; max: number };
+  latest: AiBehaviourVersion | null;
+  published: AiBehaviourVersion | null;
+  versions: AiBehaviourVersionSummary[];
+}
+export interface AiPublishResult {
+  published: boolean;
+  version_id: number;
+  report: AiSafetyReport;
+}
+export interface AiTryResult {
+  answer: string;
+  action: string;
+  reason: string;
+  follow_up: { question: string; options: string[] } | null;
+  rule_ids: string[];
+  detected_language: string;
+  format_ok: boolean;
+}
+
 /** A kept knowledge backup (★v1.8 §7.4.2). */
 export interface KbSnapshot {
   id: string;
@@ -207,6 +269,19 @@ async function downloadRulesCsv(scope: 'all' | 'filtered', filters: ExportFilter
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Publish / restore (★v1.8 §7.8): a 422 is not an error for the caller — it
+ * carries the safety report saying why the version was NOT published.
+ */
+async function publishLike(path: string): Promise<AiPublishResult> {
+  try {
+    return await request<AiPublishResult>(path, { method: 'POST', body: '{}' });
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 422 && e.body) return e.body as AiPublishResult;
+    throw e;
+  }
 }
 
 export const api = {
@@ -269,6 +344,24 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ csv, mode, confirm }),
     }),
+  // --- AI behaviour (★v1.8 Phase 2, §7.8) ---
+  getAiBehaviour: () => request<AiBehaviourState>(`/api/admin/ai-behaviour`),
+  getAiBehaviourVersion: (id: number) =>
+    request<{ version: AiBehaviourVersion }>(`/api/admin/ai-behaviour/versions/${id}`),
+  saveAiBehaviour: (body: {
+    common_behaviour: string;
+    topic_instructions: Record<string, string>;
+    note: string;
+    based_on?: number;
+  }) =>
+    request<{ version: AiBehaviourVersion }>(`/api/admin/ai-behaviour/versions`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  publishAiBehaviour: (id: number) => publishLike(`/api/admin/ai-behaviour/versions/${id}/publish`),
+  restoreAiBehaviour: (id: number) => publishLike(`/api/admin/ai-behaviour/versions/${id}/restore`),
+  tryAiBehaviour: (body: { question: string; topic: string; common_behaviour: string; topic_text: string }) =>
+    request<AiTryResult>(`/api/admin/ai-behaviour/try`, { method: 'POST', body: JSON.stringify(body) }),
   // --- bulk operations + backups (★v1.8 §7.4.2) ---
   disableView: (ids: string[], description: string) =>
     request<{ disabled: number; snapshot_id: string | null; active_after?: number }>(`/api/admin/rules/disable-view`, {

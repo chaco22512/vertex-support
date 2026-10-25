@@ -128,3 +128,18 @@ export const updateStaffSchema = z.object({
   slack_member_id: z.string().max(64).optional(),
   is_active: z.boolean().optional(),
 });
+
+// --- AI behaviour (★v1.8 Phase 2, §7.8) ---
+const behaviourText = z.string().max(12_000);
+export const saveBehaviourSchema = z.object({
+  common_behaviour: behaviourText,
+  topic_instructions: z.record(z.string().min(1).max(64), behaviourText),
+  note: z.string().max(300).default(''),
+  based_on: z.number().int().positive().optional(),
+});
+export const tryBehaviourSchema = z.object({
+  question: z.string().min(1).max(1000),
+  topic: z.string().min(1).max(64),
+  common_behaviour: behaviourText,
+  topic_text: behaviourText.default(''),
+});
