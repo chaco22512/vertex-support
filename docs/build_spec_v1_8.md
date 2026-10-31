@@ -420,6 +420,7 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 ### 7.1 ダッシュボード（トップ）
 メトリクスカード4枚: Today's inquiries / Solved by AI（件数と%）/ Waiting for staff / Due within 4h（赤表示）。カードクリックで該当フィルタのInboxへ。
 - **空ナレッジ警告（★v1.8）**: AI が使えるルール（active+customer+ai_can_answer）が0件なら赤いバナー「The knowledge base has no active rules — the bot is passing every question to staff.」（admin には Knowledge へのリンク）。`GET /api/admin/kb-health`（件数のみ、staff も可）。
+- **AI 使用回数（★v1.8）**: カード「AI requests today」＝今日（太平洋時間 0:00 リセット＝日本時間 16:00/17:00）の Gemini 呼び出し数／上限、残り回数、リセット時刻（JST）。残り3以下で警告色、Google から「1日の上限到達」の応答があれば赤バナー「The AI has used up today's allowance…」。**ボット自身の呼び出しを数えた推定値**（同じ Google プロジェクトの他の利用は含まない。正式な数字は AI Studio）。仕組み: 全モデル呼び出しを包むラッパーが `ai_call_log`（at, model, outcome = ok/error/rate_limited/daily_limit。文面は保存しない）に記録、`GET /api/admin/ai-usage`（staff も可）。上限値は Worker 設定 `GEMINI_DAILY_LIMIT`（既定 20、課金化後は 0＝上限なし）。AI behaviour 画面にも残り回数を表示（Publish 4回・Try it 1回）。429 応答からは quotaId だけを読む（本文は保存しない）。
 
 ### 7.2 Inbox（デフォルトは「要対応」ビュー）
 - デフォルトフィルタ: status=escalated、期限昇順（**開いた瞬間に「今やるべきもの」が最上部**にある状態を正とする）

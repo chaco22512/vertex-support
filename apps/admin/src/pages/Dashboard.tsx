@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, type InboxRow } from '../lib/api';
+import { api, jstTime, type AiUsage, type InboxRow } from '../lib/api';
 import { ErrorState } from '../components/states';
 import { useAuth } from '../lib/auth';
 
@@ -40,16 +40,20 @@ export function Dashboard() {
   // ★v1.8 §7.1: warn when the bot has no rules to use (it hands everything to staff).
   const [activeRules, setActiveRules] = useState<number | null>(null);
   const { staff } = useAuth();
+  // ★v1.8 §7.1: AI requests used / left today (the free tier allows 20 a day).
+  const [usage, setUsage] = useState<AiUsage | null>(null);
 
   const load = useCallback(async () => {
     setError(false);
     try {
-      const [{ conversations }, health] = await Promise.all([
+      const [{ conversations }, health, ai] = await Promise.all([
         api.listConversations(),
         api.kbHealth().catch(() => null),
+        api.aiUsage().catch(() => null),
       ]);
       setMetrics(compute(conversations, Date.now()));
       setActiveRules(health ? health.active_rules : null);
+      setUsage(ai);
     } catch {
       setError(true);
     }
@@ -75,6 +79,21 @@ export function Dashboard() {
           danger: true,
           to: '/inbox?status=escalated&due=soon',
         },
+        ...(usage
+          ? [
+              {
+                label: 'AI requests today',
+                value: usage.limit > 0 ? `${usage.used_today} / ${usage.limit}` : String(usage.used_today),
+                sub: usage.daily_limit_hit
+                  ? `Daily limit reached · resets ${jstTime(usage.resets_at)} (JST)`
+                  : usage.remaining !== null
+                    ? `${usage.remaining} left · resets ${jstTime(usage.resets_at)} (JST)`
+                    : `No daily cap · counter resets ${jstTime(usage.resets_at)} (JST)`,
+                danger: usage.daily_limit_hit || (usage.remaining !== null && usage.remaining <= 3),
+                to: staff?.role === 'admin' ? '/ai-diagnostics' : '/',
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -89,6 +108,12 @@ export function Dashboard() {
           {staff?.role === 'admin' ? <Link to="/knowledge">Upload the CS sheet in Knowledge</Link> : 'Please tell an admin.'}
         </div>
       ) : null}
+      {usage?.daily_limit_hit ? (
+        <div className="state error" role="alert" style={{ padding: 'var(--sp-3) 0' }}>
+          <strong>The AI has used up today's allowance</strong> — the bot is passing every question to staff until{' '}
+          {jstTime(usage.resets_at)} (JST).
+        </div>
+      ) : null}
       {error ? (
         <ErrorState onRetry={() => void load()} />
       ) : (
@@ -101,7 +126,7 @@ export function Dashboard() {
                   {c.sub ? <div className="metric-sub">{c.sub}</div> : null}
                 </button>
               ))
-            : Array.from({ length: 4 }).map((_, i) => (
+            : Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="metric-card" aria-busy="true">
                   <div className="skeleton" style={{ height: 12, width: '60%' }} />
                   <div className="skeleton" style={{ height: 30, width: '40%', marginTop: 12 }} />
@@ -109,6 +134,11 @@ export function Dashboard() {
               ))}
         </div>
       )}
+      {usage ? (
+        <p className="muted" style={{ fontSize: 12 }}>
+          AI requests: an estimate from this bot's own calls. Google AI Studio has the official numbers.
+        </p>
+      ) : null}
     </>
   );
 }

@@ -53,8 +53,10 @@ export class GeminiClient implements LlmClient {
 
     if (!resp.ok) {
       // Include status only. Do not echo the response body (may contain the
-      // prompt / customer text) or the API key.
-      throw new GeminiError(resp.status, this.model);
+      // prompt / customer text) or the API key. ★v1.8: for a 429, keep just
+      // the quota id (e.g. "…PerDay…") so usage tracking can tell a daily cap
+      // from a per-minute one.
+      throw new GeminiError(resp.status, this.model, resp.status === 429 ? await quotaIdOf(resp) : null);
     }
 
     const data = (await resp.json()) as GeminiResponse;
@@ -66,8 +68,32 @@ export class GeminiError extends Error {
   constructor(
     readonly status: number,
     readonly model: string,
+    /** 429 only: which quota was hit (Google's quotaId), else null. */
+    readonly quotaId: string | null = null,
   ) {
     super(`Gemini request failed (status ${status}, model ${model})`);
     this.name = 'GeminiError';
   }
+
+  /** True when Google rejected the call because the per-day cap is used up. */
+  get isDailyLimit(): boolean {
+    return this.status === 429 && /PerDay/i.test(this.quotaId ?? '');
+  }
+}
+
+/** The first quotaId in a 429 error body — nothing else from the body is kept. */
+async function quotaIdOf(resp: Response): Promise<string | null> {
+  try {
+    const body = (await resp.json()) as {
+      error?: { details?: { violations?: { quotaId?: unknown }[] }[] };
+    };
+    for (const d of body.error?.details ?? []) {
+      for (const v of d.violations ?? []) {
+        if (typeof v.quotaId === 'string' && /^[\w-]{1,120}$/.test(v.quotaId)) return v.quotaId;
+      }
+    }
+  } catch {
+    /* not JSON */
+  }
+  return null;
 }

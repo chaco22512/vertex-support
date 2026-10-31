@@ -219,3 +219,16 @@ describe('staff reply email (§8, criterion 6)', () => {
     expect(email.calls).toHaveLength(0);
   });
 });
+
+describe('admin AI usage (v1.8 §7.1)', () => {
+  it('any staff member can read today\'s count and remaining (default cap 20)', async () => {
+    const { app, db, env } = setup('staff');
+    db.tables.ai_call_log = [
+      { id: 1, at: new Date().toISOString(), outcome: 'ok' },
+      { id: 2, at: new Date().toISOString(), outcome: 'rate_limited' },
+    ];
+    const res = await app.request('/api/admin/ai-usage', { headers: admin }, env);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ used_today: 1, limit: 20, remaining: 19, daily_limit_hit: false });
+  });
+});

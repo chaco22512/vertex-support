@@ -16,6 +16,9 @@ port = 8787
 [vars]
 ADMIN_BASE_URL = "https://simpoint-support-admin.pages.dev"
 CHAT_BASE_URL = "https://simpoint-support-chat.pages.dev"
+# Gemini requests per Pacific day for the admin "AI requests today" display.
+# Free tier = 20; set "0" (no cap) after enabling billing.
+GEMINI_DAILY_LIMIT = "20"
 
 # Per-session rate limiting store (§2, 10 req/min). Local dev uses Miniflare's
 # in-memory KV; this id is the production namespace (not a secret).

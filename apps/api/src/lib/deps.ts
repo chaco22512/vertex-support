@@ -3,6 +3,7 @@ import { createAnonClient, createServiceClient, parseEnv, type Role } from '@ver
 import type { ApiBindings, Deps, StaffAuth } from '../types';
 import { postSlack } from './slack';
 import { DEFAULT_EMAIL_FROM, sendResend } from './email';
+import { countingLlm } from './countingLlm';
 
 /** Build the real per-request dependencies from Worker bindings. */
 export function defaultDeps(env: ApiBindings): Deps {
@@ -11,7 +12,8 @@ export function defaultDeps(env: ApiBindings): Deps {
 
   return {
     db,
-    llm: new GeminiClient({ apiKey: parsed.GEMINI_API_KEY }),
+    // ★v1.8: every model call is logged for the "AI requests today" display.
+    llm: countingLlm(new GeminiClient({ apiKey: parsed.GEMINI_API_KEY }), db),
     kv: env.RATE_LIMIT,
     adminOrigin: env.ADMIN_BASE_URL,
     chatOrigin: env.CHAT_BASE_URL ?? 'http://localhost:5173',
@@ -30,5 +32,12 @@ export function defaultDeps(env: ApiBindings): Deps {
     sendSlack: (text: string) => postSlack(env.SLACK_WEBHOOK_URL, text),
     sendEmail: (msg) => sendResend(env.RESEND_API_KEY, env.EMAIL_FROM || DEFAULT_EMAIL_FROM, msg),
     emailFrom: env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
+    aiDailyLimit: dailyLimit(env.GEMINI_DAILY_LIMIT),
   };
+}
+
+/** GEMINI_DAILY_LIMIT → a non-negative integer (default 20, the current free-tier cap). */
+function dailyLimit(raw: string | undefined): number {
+  const n = Number(raw);
+  return raw !== undefined && raw !== '' && Number.isInteger(n) && n >= 0 ? n : 20;
 }

@@ -8,8 +8,20 @@ import { MemoryRouter } from 'react-router-dom';
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
 
 const kbHealth = vi.fn();
+const aiUsage = vi.fn(async () => ({
+  used_today: 3,
+  limit: 20,
+  remaining: 17,
+  resets_at: '2026-11-01T07:00:00.000Z',
+  daily_limit_hit: false,
+}));
 vi.mock('../lib/api', () => ({
-  api: { listConversations: async () => ({ conversations: [] }), kbHealth: () => kbHealth() },
+  api: {
+    listConversations: async () => ({ conversations: [] }),
+    kbHealth: () => kbHealth(),
+    aiUsage: () => aiUsage(),
+  },
+  jstTime: () => '16:00',
 }));
 vi.mock('../lib/auth', () => ({ useAuth: () => ({ staff: { role: 'admin' } }) }));
 
@@ -49,5 +61,28 @@ describe('Dashboard knowledge warning (v1.8 §7.1)', () => {
     kbHealth.mockResolvedValue({ active_rules: 15 });
     await mount();
     expect(container!.textContent).not.toContain('no active rules');
+  });
+});
+
+describe('Dashboard AI requests card (v1.8 §7.1)', () => {
+  it('shows used / limit and how many are left', async () => {
+    kbHealth.mockResolvedValue({ active_rules: 15 });
+    await mount();
+    expect(container!.textContent).toContain('AI requests today');
+    expect(container!.textContent).toContain('3 / 20');
+    expect(container!.textContent).toContain('17 left · resets 16:00 (JST)');
+  });
+
+  it('warns when the daily allowance is used up', async () => {
+    kbHealth.mockResolvedValue({ active_rules: 15 });
+    aiUsage.mockResolvedValueOnce({
+      used_today: 20,
+      limit: 20,
+      remaining: 0,
+      resets_at: '2026-11-01T07:00:00.000Z',
+      daily_limit_hit: true,
+    });
+    await mount();
+    expect(container!.textContent).toContain("The AI has used up today's allowance");
   });
 });

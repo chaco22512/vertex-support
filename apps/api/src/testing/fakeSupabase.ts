@@ -257,6 +257,7 @@ class FakeQuery implements PromiseLike<Result> {
   private gts: [string, number][] = [];
   private ilikes: [string, string][] = [];
   private headCount = false;
+  private gtes: [string, number | string][] = [];
   /** `.or('col.ilike.X%,col.ilike.Y%')` groups (only ilike conditions supported). */
   private ors: [string, string][][] = [];
   /** `.not(col, 'is', null)` — col may be a JSON path like `ai_meta->diag`. */
@@ -301,6 +302,11 @@ class FakeQuery implements PromiseLike<Result> {
   }
   gt(col: string, val: number): this {
     this.gts.push([col, val]);
+    return this;
+  }
+  /** `>=`; numbers compare numerically, strings (ISO timestamps) lexically. */
+  gte(col: string, val: number | string): this {
+    this.gtes.push([col, val]);
     return this;
   }
   or(expr: string): this {
@@ -359,6 +365,9 @@ class FakeQuery implements PromiseLike<Result> {
     for (const [c, v] of this.eqs) if (row[c] !== v) return false;
     for (const [c, vals] of this.ins) if (!vals.includes(row[c])) return false;
     for (const [c, v] of this.gts) if (!(Number(row[c]) > v)) return false;
+    for (const [c, v] of this.gtes) {
+      if (typeof v === 'number' ? !(Number(row[c]) >= v) : !(String(row[c] ?? '') >= v)) return false;
+    }
     for (const path of this.notNulls) {
       let v: unknown = row;
       for (const key of path.split(/->>?/)) v = v && typeof v === 'object' ? (v as Row)[key] : undefined;

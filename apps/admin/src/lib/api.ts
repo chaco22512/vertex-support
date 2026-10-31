@@ -236,6 +236,23 @@ export interface AiTryResult {
   format_ok: boolean;
 }
 
+/** Gemini requests today (Pacific day) — an estimate from the bot's own calls (★v1.8 §7.1). */
+export interface AiUsage {
+  used_today: number;
+  /** 0 = no daily cap configured. */
+  limit: number;
+  remaining: number | null;
+  resets_at: string;
+  daily_limit_hit: boolean;
+}
+
+/** "17:00" — a reset time shown in Japan time for the CS team. */
+export function jstTime(iso: string): string {
+  return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' }).format(
+    new Date(iso),
+  );
+}
+
 /** A kept knowledge backup (★v1.8 §7.4.2). */
 export interface KbSnapshot {
   id: string;
@@ -383,6 +400,8 @@ export const api = {
     request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/undo`, { method: 'POST', body: '{}' }),
   restoreSnapshot: (id: string) =>
     request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/restore`, { method: 'POST', body: '{}' }),
+  /** ★v1.8: Gemini requests used / left today (estimate). */
+  aiUsage: () => request<AiUsage>(`/api/admin/ai-usage`),
   /** ★v1.8: rules the bot can use right now (Dashboard warning when 0). */
   kbHealth: () => request<{ active_rules: number }>(`/api/admin/kb-health`),
   listChangelog: () => request<{ entries: KbChangeLog[] }>(`/api/admin/changelog`),

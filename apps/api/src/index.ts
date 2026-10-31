@@ -9,6 +9,7 @@ import { createConversation } from './routes/conversations';
 import { postTopic } from './routes/topic';
 import { listAiDiagnostics } from './routes/admin/aiDiagnostics';
 import { getKbHealth } from './routes/admin/kbHealth';
+import { getAiUsage } from './routes/admin/aiUsage';
 import {
   getAiBehaviour,
   getVersion,
@@ -115,6 +116,7 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.get('/changelog', adminOnly, listChangelog);
   admin.get('/ai-diagnostics', adminOnly, listAiDiagnostics);
   admin.get('/kb-health', getKbHealth);
+  admin.get('/ai-usage', getAiUsage);
   admin.get('/ai-behaviour', adminOnly, getAiBehaviour);
   admin.get('/ai-behaviour/versions/:id', adminOnly, getVersion);
   admin.post('/ai-behaviour/versions', adminOnly, saveVersion);

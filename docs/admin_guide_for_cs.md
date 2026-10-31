@@ -164,3 +164,16 @@ which is shared with customers — avoid publishing many times in one day.
 Under **Versions**, click **View changes** to see what changed in a version
 (added lines in green, removed lines crossed out), or **Restore this version** to
 make that text live again. Restoring runs the same 4 safety checks first.
+
+## How many AI answers are left today
+
+The **Dashboard** card **AI requests today** shows how many times the bot has
+used the AI today, how many are left, and when the count resets (shown in Japan
+time). On the current free plan the AI can be used **20 times a day**. When that
+runs out, a red message appears and the bot passes every question to staff until
+the reset.
+
+The number is counted by the bot itself, so it is a close estimate; Google's own
+page has the official figure. The **AI behaviour** page also shows how many are
+left before you click **Publish** (uses 4) or **Try it** (uses 1).
+

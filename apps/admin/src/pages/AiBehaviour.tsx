@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   api,
+  jstTime,
+  type AiUsage,
   type AiBehaviourState,
   type AiBehaviourVersion,
   type AiBehaviourVersionSummary,
@@ -79,6 +81,8 @@ export function AiBehaviour() {
   const [report, setReport] = useState<{ report: AiSafetyReport; published: boolean | null } | null>(null);
   const [diffFor, setDiffFor] = useState<AiBehaviourVersionSummary | null>(null);
   const [restoreFor, setRestoreFor] = useState<AiBehaviourVersionSummary | null>(null);
+  // ★v1.8: how many AI requests are left today (Publish uses 4, Try it 1).
+  const [usage, setUsage] = useState<AiUsage | null>(null);
 
   const editorKey = (c: string, t: Record<string, string>) => JSON.stringify([c, t]);
 
@@ -86,6 +90,7 @@ export function AiBehaviour() {
     try {
       const s = await api.getAiBehaviour();
       setState(s);
+      setUsage(await api.aiUsage().catch(() => null));
       if (resetEditor) {
         const v = s.latest;
         const c = v ? v.common_behaviour : s.default_common_behaviour;
@@ -200,6 +205,16 @@ export function AiBehaviour() {
         Publishing first runs 4 test questions with your text; it only goes live if all safety checks pass. Each test
         question and each “Try it” uses the AI’s daily allowance, which is shared with customers.
       </p>
+      {usage && usage.limit > 0 ? (
+        <p
+          style={{ color: usage.daily_limit_hit || (usage.remaining ?? 0) < 4 ? 'var(--danger)' : 'var(--ink-muted)' }}
+          role="status"
+        >
+          {usage.daily_limit_hit
+            ? `The AI's daily allowance is used up — Publish and Try it will not work until ${jstTime(usage.resets_at)} (JST).`
+            : `AI requests left today: ${usage.remaining} of ${usage.limit} (Publish uses 4, Try it uses 1) · resets ${jstTime(usage.resets_at)} (JST).`}
+        </p>
+      ) : null}
 
       {report ? <SafetyReportPanel report={report.report} published={report.published} /> : null}
 
