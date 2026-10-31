@@ -707,3 +707,14 @@ textarea {
 .line-same {
   color: var(--ink-muted);
 }
+.menu-sep {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: var(--sp-1) 0;
+}
+.menu button.menu-danger:not(:disabled) {
+  color: var(--danger);
+}
+.menu button.menu-danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+}

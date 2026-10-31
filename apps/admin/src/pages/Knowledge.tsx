@@ -4,7 +4,7 @@ import { api, type ImportApplyResult, type ImportMode } from '../lib/api';
 import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
 import { ImportPreviewDialog } from '../components/ImportPreviewDialog';
-import { BackupsDialog, DisableViewDialog } from '../components/BulkActions';
+import { BackupsDialog, ConfirmAllDialog, DisableViewDialog } from '../components/BulkActions';
 import { Dialog } from '../components/Dialog';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../lib/auth';
@@ -41,6 +41,10 @@ export function Knowledge() {
   const [bulkOpen, setBulkOpen] = useState(false);
   const [disabling, setDisabling] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
+  // ★v1.8 (owner decision 2026-10-31): Archive all / permanent delete of archived rules.
+  const [confirmAll, setConfirmAll] = useState<'archive' | 'delete' | null>(null);
+  const archivedCount = useMemo(() => rules.filter((r) => r.status === 'archived').length, [rules]);
+  const liveCount = rules.length - archivedCount;
 
   const fetchRules = useCallback(async () => {
     setLoad('loading');
@@ -216,8 +220,20 @@ export function Knowledge() {
                     <button role="menuitem" onClick={() => setDisabling(true)} disabled={disableTargets.length === 0}>
                       Disable all in this view ({disableTargets.length})…
                     </button>
+                    <button role="menuitem" onClick={() => setConfirmAll('archive')} disabled={liveCount === 0}>
+                      Archive all ({liveCount})…
+                    </button>
                     <button role="menuitem" onClick={() => setBackupsOpen(true)}>
                       Backups…
+                    </button>
+                    <hr className="menu-sep" />
+                    <button
+                      role="menuitem"
+                      className="menu-danger"
+                      onClick={() => setConfirmAll('delete')}
+                      disabled={archivedCount === 0}
+                    >
+                      Delete archived rules permanently ({archivedCount})…
                     </button>
                   </div>
                 ) : null}
@@ -351,6 +367,24 @@ export function Knowledge() {
             setDisabling(false);
             void fetchRules();
             showBulkUndo(`Disabled ${result.disabled} rule(s) (kept, not deleted).`, result.snapshot_id);
+          }}
+        />
+      ) : null}
+      {confirmAll ? (
+        <ConfirmAllDialog
+          kind={confirmAll}
+          count={confirmAll === 'archive' ? liveCount : archivedCount}
+          onClose={() => setConfirmAll(null)}
+          onDone={(r) => {
+            const kind = confirmAll;
+            setConfirmAll(null);
+            void fetchRules();
+            showBulkUndo(
+              kind === 'archive'
+                ? `Archived ${r.count} rule(s) (kept, not deleted). The bot now passes every question to staff.`
+                : `Permanently deleted ${r.count} archived rule(s). Change history is kept.`,
+              r.snapshot_id,
+            );
           }}
         />
       ) : null}

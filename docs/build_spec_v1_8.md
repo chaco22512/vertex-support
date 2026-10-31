@@ -466,6 +466,8 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 - CS の正本ファイルはリポジトリ `data/kb/` にも保存（初回: `Deposit_Refund_formatted_for_KB.csv`）。
 
 #### 7.4.2 一括操作（★v1.8 Phase 3。「all clear」要望の安全版、実装確定）
+> **改訂（オーナー判断 2026-10-31）**: 下記「物理削除する一括機能は作らない」の例外として、(1) **Archive all**（全ルールを archived、Replace all を空シートで行うのと同じ・1トランザクション・バックアップ付き）と、(2) **Delete archived rules permanently**（**archived のルールだけ**を物理削除。AI が使うルールは消えない）を追加。(2) は: 変更履歴を残す（`kb_change_log.rule_id` の外部キーを外し Rule ID の文字列で保持、削除ごとに source=`delete_archived` の履歴行）、削除前に全ルールのバックアップ（Backups の「Undo」「Restore everything」で削除したルールを再作成。保持は最新5世代のため古くなると戻せない）、画面で確認した件数との一致と `DELETE` の入力が必須、Slack 通知。Knowledge → Bulk actions の最下部（区切り線の下、赤字）。マイグレーション `20261031120017_kb_delete_archived.sql`、API `POST /api/admin/rules/archive-all {confirm:"ARCHIVE", confirm_count}` / `POST /api/admin/rules/delete-archived {confirm:"DELETE", confirm_count}`（adminのみ）。
+
 CSの目的は「新しいシートでまるごと入れ替える」ことであり、空にすることではない。**物理削除する一括機能は作らない**。Knowledge 右上「Bulk actions ▾」に3項目。adminのみ。
 - **Replace all from CSV**（`POST /rules/import/preview|apply` に `mode:"replace"`）: CSVに無い既存の非archivedルールを `status='archived'`。シートにある既存ルールは差分を適用（archived だったルールはシートに載っていれば active に戻る。Status 列が Archived なら archived のまま）。**Rule ID 空欄で回答文のある行は新規ルール**として追加（ID は `M###` 自動採番、未登録IDはそのIDで追加）。**新規行の Topic は既存カテゴリのみ可**（未知は行エラー＝AIのトピック範囲を壊さない）。行エラーのあるルールIDはアーカイブ対象にしない（入力ミスでルールを止めない）。プレビューは 変更/新規/アーカイブ件数・アーカイブ対象の一覧・**AIが使えるルール数 before→after** を表示し、after=0 は赤い警告。**影響件数を表示し `REPLACE` と入力するまで実行不可（サーバ側でも `confirm:"REPLACE"` 必須、無ければ 400）**。
 - **Disable all in this view**（`POST /rules/disable-view {ids, description}`）: 画面の絞り込み結果のうち有効なルールの **ID 一覧をそのまま送る**（画面と実行対象の不一致を防ぐ。未知IDは 409）。対象件数と「実行後にAIが使えるルール数」を確認ダイアログで明示。
@@ -568,6 +570,7 @@ Workers Cron（毎時）: 期限4時間未満の escalated 会話を ⚠️ 再�
 | POST | /api/admin/ai-behaviour/versions/:id/publish, /versions/:id/restore, /ai-behaviour/try | JWT(admin) | ★v1.8 セーフティテスト付き公開・復元・Try it |
 | POST | /api/admin/rules/import/preview・apply（mode:"replace", confirm:"REPLACE"） | JWT(admin) | ★v1.8 Replace all |
 | POST | /api/admin/rules/disable-view | JWT(admin) | ★v1.8 表示中のルールを一括無効化 |
+| POST | /api/admin/rules/archive-all, /rules/delete-archived | JWT(admin) | ★v1.8 全ルールの archive／archived ルールの完全削除（確認語＋件数必須） |
 | GET/POST | /api/admin/rules/snapshots, /snapshots/:id/undo, /snapshots/:id/restore | JWT(admin) | ★v1.8 バックアップ一覧・Undo・全体復元 |
 
 ---
@@ -679,6 +682,11 @@ CS管理CSVによるナレッジ運用（★v1.8 2026-10-31）:
 68. 適用が途中で失敗しても何も変わらない（1トランザクション）
 69. Rule ID の規約違反・未知の記号・CSV 内の重複（大文字小文字違い含む）・ID 空欄は、次にすべきことが分かるエラーとしてその行だけスキップされる
 70. AI が使えるルールが0件のとき、AI はモデルを呼ばず全件エスカレし、Dashboard に警告が出る
+
+Archive all／完全削除（★v1.8 オーナー判断 2026-10-31）:
+71. Archive all は ARCHIVE の入力と件数一致が必要で、全ルールが archived になり（削除されない）、Undo で戻る
+72. Delete archived rules permanently は DELETE の入力と件数一致が必要で、archived のルールだけが消え、AI が使うルールは残る
+73. 削除後も変更履歴は残り（削除の記録付き）、Backups の Undo／Restore everything で削除したルールが再作成される
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

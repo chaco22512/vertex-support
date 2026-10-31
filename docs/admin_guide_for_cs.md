@@ -80,6 +80,28 @@ Later, use **Bulk actions → Backups…** (a full copy is saved before every up
 the same format. The first data row is an EXAMPLE row and is ignored on upload.
 Japanese, Vietnamese and Nepali text open correctly in Excel.
 
+## Emptying the knowledge (Archive all)
+
+To start again from nothing, open **Knowledge → Bulk actions → Archive all…**,
+type **ARCHIVE** and confirm. Every rule is moved to storage (*Archived*) — not
+deleted — and can be brought back with **Undo** or **Backups**.
+
+Until you upload a new sheet, the bot has no rules and passes every question to
+staff (the Dashboard shows a red warning). Usually it is easier to just upload
+your new sheet with **Replace all**: it swaps the knowledge in one step, with no
+empty period in between.
+
+### Deleting archived rules for good (you will normally not need this)
+
+At the very bottom of **Bulk actions** (in red) is **Delete archived rules
+permanently…**. It deletes only rules that are already *Archived* — rules the bot
+is using are never touched — and their change history is kept. Type **DELETE**
+to confirm.
+
+A copy is saved first, so it can still be undone from **Backups**, but only the
+latest 5 copies are kept: after 5 more bulk changes, deleted rules cannot come
+back. If in doubt, leave archived rules where they are — they do no harm.
+
 ## Turning off a group of rules
 
 1. On **Knowledge**, pick a topic and/or type a search so the list shows only the

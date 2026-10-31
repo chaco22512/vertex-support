@@ -17,7 +17,14 @@ import {
   saveVersion,
   tryBehaviour,
 } from './routes/admin/aiBehaviour';
-import { disableView, listSnapshots, restoreSnapshot, undoSnapshot } from './routes/admin/rulesBulk';
+import {
+  archiveAll,
+  deleteArchived,
+  disableView,
+  listSnapshots,
+  restoreSnapshot,
+  undoSnapshot,
+} from './routes/admin/rulesBulk';
 import { getMessages, postMessage } from './routes/messages';
 import { postContact } from './routes/contact';
 import { postFeedback } from './routes/feedback';
@@ -94,6 +101,8 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.post('/rules/import/apply', adminOnly, applyImport);
   admin.post('/rules/import/undo', adminOnly, undoImport);
   admin.post('/rules/disable-view', adminOnly, disableView);
+  admin.post('/rules/archive-all', adminOnly, archiveAll);
+  admin.post('/rules/delete-archived', adminOnly, deleteArchived);
   admin.get('/rules/snapshots', adminOnly, listSnapshots);
   admin.post('/rules/snapshots/:id/undo', adminOnly, undoSnapshot);
   admin.post('/rules/snapshots/:id/restore', adminOnly, restoreSnapshot);

@@ -73,6 +73,7 @@ const KIND_LABEL: Record<string, string> = {
   replace_all: 'Replace all',
   disable_view: 'Disable all in view',
   csv_import: 'CSV import (add / update)',
+  delete_archived: 'Delete archived rules (permanent)',
   restore: 'Before a restore',
 };
 
@@ -199,6 +200,94 @@ export function BackupsDialog({ onClose, onChanged }: { onClose: () => void; onC
           </button>
         </div>
       )}
+    </Dialog>
+  );
+}
+
+/**
+ * Type-to-confirm dialog for the two all-knowledge actions (owner decision
+ * 2026-10-31): "Archive all" (kept, restorable) and "Delete archived rules
+ * permanently" (archived rules only; history kept; restorable from Backups
+ * while the backup is among the latest 5).
+ */
+export function ConfirmAllDialog({
+  kind,
+  count,
+  onClose,
+  onDone,
+}: {
+  kind: 'archive' | 'delete';
+  count: number;
+  onClose: () => void;
+  onDone: (result: { count: number; snapshot_id: string | null }) => void;
+}) {
+  const word = kind === 'archive' ? 'ARCHIVE' : 'DELETE';
+  const [typed, setTyped] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      if (kind === 'archive') {
+        const r = await api.archiveAll(count);
+        onDone({ count: r.archived, snapshot_id: r.snapshot_id });
+      } else {
+        const r = await api.deleteArchived(count);
+        onDone({ count: r.deleted, snapshot_id: r.snapshot_id });
+      }
+    } catch {
+      setError('That did not work and nothing was changed. Reload the page and try again.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog title={kind === 'archive' ? 'Archive all rules' : 'Delete archived rules permanently'} onClose={onClose}>
+      {kind === 'archive' ? (
+        <>
+          <p>
+            This archives <strong>all {count} rule(s)</strong> that are not archived yet. They are kept and can be
+            brought back (Undo / Backups).
+          </p>
+          <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
+            Afterwards the bot has no rules and passes every question to staff, until you upload a new sheet.
+          </div>
+        </>
+      ) : (
+        <>
+          <p>
+            This <strong>permanently deletes {count} archived rule(s)</strong>. Rules the bot is using are not touched,
+            and the change history is kept.
+          </p>
+          <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
+            A backup is saved first, but only the latest 5 backups are kept — after 5 more bulk changes these rules
+            cannot be brought back. You will normally not need this.
+          </div>
+        </>
+      )}
+      <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
+        <label htmlFor="confirm-all">Type {word} to confirm.</label>
+        <input id="confirm-all" type="text" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
+      </div>
+      {error ? (
+        <div className="state error" role="alert" style={{ padding: 0 }}>
+          {error}
+        </div>
+      ) : null}
+      <div className="dialog-actions">
+        <button className="btn" onClick={onClose} disabled={busy}>
+          Cancel
+        </button>
+        <button
+          className={`btn ${kind === 'delete' ? 'btn-danger' : 'btn-primary'}`}
+          onClick={() => void run()}
+          disabled={busy || typed.trim() !== word || count === 0}
+        >
+          {busy ? 'Working…' : kind === 'archive' ? `Archive ${count} rule(s)` : `Delete ${count} rule(s) permanently`}
+        </button>
+      </div>
     </Dialog>
   );
 }

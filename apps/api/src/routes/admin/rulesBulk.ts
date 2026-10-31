@@ -11,7 +11,7 @@ import {
   type ParsedImportRow,
 } from '@vertex/shared';
 import type { AppEnv, Deps } from '../../types';
-import { disableViewSchema } from '../../dto';
+import { archiveAllSchema, deleteArchivedSchema, disableViewSchema } from '../../dto';
 import { fetchAllRules } from '../../lib/kbRules';
 
 /**
@@ -268,6 +268,73 @@ export async function applyImportDiff(
     active_after: d.activeAfter,
     errors: d.errors,
   });
+}
+
+// --- Archive all / delete archived (owner decision 2026-10-31) ---------------
+
+/**
+ * POST /api/admin/rules/archive-all — set every rule aside (archived) in one
+ * transaction with a backup (kb_import_apply in Replace-all mode with an empty
+ * sheet). The bot then hands every question to staff (§4.1.0).
+ */
+export async function archiveAll(c: Context<AppEnv>): Promise<Response> {
+  const deps = c.get('deps');
+  const staff = c.get('staff');
+  const parsed = archiveAllSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: 'confirm_required', message: 'Type ARCHIVE to confirm.' }, 400);
+
+  const ids = (await fetchAllRules(deps.db, {})).filter((r) => r.status !== 'archived').map((r) => r.id);
+  if (ids.length !== parsed.data.confirm_count) {
+    return c.json({ error: 'count_changed', message: 'The rules changed meanwhile. Reload and try again.' }, 409);
+  }
+  if (ids.length === 0) return c.json({ archived: 0, snapshot_id: null });
+
+  const { data, error } = await deps.db.rpc('kb_import_apply', {
+    p_mode: 'replace',
+    p_patches: [],
+    p_new: [],
+    p_archive: ids,
+    p_staff: staff.userId,
+    p_note: `Archive all: ${ids.length} archived`,
+  });
+  if (error || !data) return c.json({ error: 'server_error', message: 'Nothing was changed. Please try again.' }, 500);
+  const r = data as { snapshot_id: string; archived: number };
+  await notifyBulk(
+    deps,
+    `Archive all by ${staff.name}: ${r.archived} rule(s) archived (kept, not deleted). ` +
+      'The bot now has no rules and passes every question to staff. A backup was saved; it can be undone.',
+  );
+  return c.json({ archived: r.archived, snapshot_id: r.snapshot_id });
+}
+
+/**
+ * POST /api/admin/rules/delete-archived — PERMANENTLY delete archived rules
+ * only (never ones the bot uses). One transaction: backup → a history row per
+ * rule → delete. History is kept; Backups can re-create the rules while the
+ * backup is among the latest 5.
+ */
+export async function deleteArchived(c: Context<AppEnv>): Promise<Response> {
+  const deps = c.get('deps');
+  const staff = c.get('staff');
+  const parsed = deleteArchivedSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: 'confirm_required', message: 'Type DELETE to confirm.' }, 400);
+
+  const { data, error } = await deps.db.rpc('kb_delete_archived', {
+    p_staff: staff.userId,
+    p_expected: parsed.data.confirm_count,
+  });
+  if (error) {
+    return error.message.includes('count_mismatch')
+      ? c.json({ error: 'count_changed', message: 'The archived rules changed meanwhile. Reload and try again.' }, 409)
+      : c.json({ error: 'server_error', message: 'Nothing was deleted. Please try again.' }, 500);
+  }
+  const r = data as { snapshot_id: string | null; deleted: number };
+  await notifyBulk(
+    deps,
+    `⚠️ Permanent delete by ${staff.name}: ${r.deleted} archived rule(s) deleted. Rules the bot uses were not ` +
+      'touched; their change history is kept. A backup was saved (restorable while it is among the latest 5).',
+  );
+  return c.json({ deleted: r.deleted, snapshot_id: r.snapshot_id });
 }
 
 // --- Disable all in this view ----------------------------------------------

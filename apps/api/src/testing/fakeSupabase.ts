@@ -149,6 +149,14 @@ export class FakeSupabase {
           'status', 'review_reason', 'category', 'subcategory', 'requires_fee_disclaimer',
         ];
         let n = 0;
+        // Rules deleted since the snapshot (within scope) are re-created.
+        for (const s of snapRows) {
+          if (only && !affected.has(s.id as string)) continue;
+          if (rules.some((x) => x.id === s.id)) continue;
+          rules.push({ ...s });
+          log(s.id, { deleted: true }, { ...s }, 'snapshot_restore', args.p_staff);
+          n += 1;
+        }
         for (const s of snapRows) {
           if (only && !affected.has(s.id as string)) continue;
           const r = rules.find((x) => x.id === s.id);
@@ -168,6 +176,22 @@ export class FakeSupabase {
         }
         if (only) snap.undone = true;
         return { data: n, error: null };
+      }
+      case 'kb_delete_archived': {
+        const ids = rules.filter((r) => r.status === 'archived').map((r) => r.id as string);
+        if (ids.length !== args.p_expected) return { data: null, error: { message: 'count_mismatch' } };
+        if (ids.length === 0) return { data: { snapshot_id: null, deleted: 0 }, error: null };
+        const snap = await this.rpc('kb_take_snapshot', {
+          p_kind: 'delete_archived',
+          p_staff: args.p_staff,
+          p_affected: ids,
+          p_note: `Deleted ${ids.length} archived rules`,
+        });
+        for (const r of rules.filter((x) => x.status === 'archived')) {
+          log(r.id, { ...r }, { deleted: true }, 'delete_archived', args.p_staff);
+        }
+        this.tables.kb_rules = rules.filter((r) => r.status !== 'archived');
+        return { data: { snapshot_id: snap.data, deleted: ids.length }, error: null };
       }
       case 'kb_import_apply': {
         // All-or-nothing like the SQL function: a failure changes nothing.

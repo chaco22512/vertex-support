@@ -143,3 +143,14 @@ export const tryBehaviourSchema = z.object({
   common_behaviour: behaviourText,
   topic_text: behaviourText.default(''),
 });
+
+// --- Archive all / delete archived (★v1.8, owner decision 2026-10-31) ---
+export const archiveAllSchema = z.object({
+  confirm: z.literal('ARCHIVE'),
+  /** The count the admin saw; must still match. */
+  confirm_count: z.number().int().min(0),
+});
+export const deleteArchivedSchema = z.object({
+  confirm: z.literal('DELETE'),
+  confirm_count: z.number().int().min(1),
+});

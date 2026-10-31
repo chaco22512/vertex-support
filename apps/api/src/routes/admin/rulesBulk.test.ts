@@ -248,3 +248,80 @@ describe('Backups', () => {
     expect(kinds).toContain('restore');
   });
 });
+
+describe('Archive all (owner decision 2026-10-31)', () => {
+  it('requires ARCHIVE and the confirmed count; archives everything in one go; Undo restores', async () => {
+    const s = setup();
+    expect((await s.post('/api/admin/rules/archive-all', { confirm_count: 3 })).status).toBe(400);
+    expect((await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 2 })).status).toBe(409);
+    expect(ruleById(s.db, 'R1').status).toBe('active');
+
+    const res = await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 3 });
+    const body = (await res.json()) as { archived: number; snapshot_id: string };
+    expect(body.archived).toBe(3);
+    expect(s.db.tables.kb_rules.every((r) => r.status === 'archived')).toBe(true);
+    expect(s.db.tables.kb_rules).toHaveLength(3); // nothing deleted
+    expect(s.slack.calls.at(-1)).toContain('Archive all');
+
+    await s.post(`/api/admin/rules/snapshots/${body.snapshot_id}/undo`, {});
+    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id).status)).toEqual(['active', 'active', 'active']);
+  });
+});
+
+describe('Delete archived rules permanently (owner decision 2026-10-31)', () => {
+  function withArchived(s: ReturnType<typeof setup>) {
+    ruleById(s.db, 'R2').status = 'archived';
+    ruleById(s.db, 'R3').status = 'archived';
+  }
+
+  it('requires DELETE and the confirmed count; nothing is deleted otherwise', async () => {
+    const s = setup();
+    withArchived(s);
+    expect((await s.post('/api/admin/rules/delete-archived', { confirm_count: 2 })).status).toBe(400);
+    expect((await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 5 })).status).toBe(409);
+    expect(s.db.tables.kb_rules).toHaveLength(3);
+  });
+
+  it('deletes ONLY archived rules, keeps their history, records the deletion, and notifies', async () => {
+    const s = setup();
+    withArchived(s);
+    s.db.tables.kb_change_log.push({ id: 900, rule_id: 'R2', source: 'admin_edit', before: {}, after: {} });
+
+    const res = await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 2 });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { deleted: number }).deleted).toBe(2);
+    expect(s.db.tables.kb_rules.map((r) => r.id)).toEqual(['R1']); // the rule the bot uses stays
+    const r2History = s.db.tables.kb_change_log.filter((l) => l.rule_id === 'R2');
+    expect(r2History.map((l) => l.source)).toEqual(['admin_edit', 'delete_archived']); // old history kept
+    expect(s.slack.calls.at(-1)).toContain('Permanent delete');
+  });
+
+  it('Undo re-creates the deleted rules from the backup', async () => {
+    const s = setup();
+    withArchived(s);
+    const body = (await (
+      await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 2 })
+    ).json()) as { snapshot_id: string };
+    const undo = await s.post(`/api/admin/rules/snapshots/${body.snapshot_id}/undo`, {});
+    expect(undo.status).toBe(200);
+    expect(s.db.tables.kb_rules.map((r) => r.id).sort()).toEqual(['R1', 'R2', 'R3']);
+    expect(ruleById(s.db, 'R2')).toMatchObject({ status: 'archived', rule_text: 'Text of R2' });
+  });
+
+  it('an older backup\'s "Restore everything" also brings deleted rules back', async () => {
+    const s = setup();
+    const before = (await (await s.post('/api/admin/rules/disable-view', { ids: ['R1'] })).json()) as {
+      snapshot_id: string;
+    };
+    withArchived(s);
+    await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 2 });
+    await s.post(`/api/admin/rules/snapshots/${before.snapshot_id}/restore`, {});
+    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id)?.status)).toEqual(['active', 'active', 'active']);
+  });
+
+  it('is admin-only', async () => {
+    const s = setup('staff');
+    expect((await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 1 })).status).toBe(403);
+    expect((await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 3 })).status).toBe(403);
+  });
+});

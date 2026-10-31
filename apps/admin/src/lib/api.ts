@@ -368,6 +368,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ ids, description }),
     }),
+  archiveAll: (confirmCount: number) =>
+    request<{ archived: number; snapshot_id: string | null }>(`/api/admin/rules/archive-all`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm: 'ARCHIVE', confirm_count: confirmCount }),
+    }),
+  deleteArchived: (confirmCount: number) =>
+    request<{ deleted: number; snapshot_id: string | null }>(`/api/admin/rules/delete-archived`, {
+      method: 'POST',
+      body: JSON.stringify({ confirm: 'DELETE', confirm_count: confirmCount }),
+    }),
   listSnapshots: () => request<{ snapshots: KbSnapshot[] }>(`/api/admin/rules/snapshots`),
   undoSnapshot: (id: string) =>
     request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/undo`, { method: 'POST', body: '{}' }),
