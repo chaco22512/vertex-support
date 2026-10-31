@@ -61,6 +61,16 @@ describe('ImportPreviewDialog', () => {
     expect(onApplied).toHaveBeenCalledWith({ applied: 1, skipped: 0, snapshot_id: 's1', errors: [] });
   });
 
+  it('switching to Replace all re-runs the preview in that mode (v1.8)', async () => {
+    importPreview.mockResolvedValue(preview);
+    await mount();
+    expect(importPreview).toHaveBeenLastCalledWith('Rule ID\\nR1', 'update');
+    const replaceRadio = [...container!.querySelectorAll<HTMLInputElement>('input[type="radio"]')][1]!;
+    await act(async () => replaceRadio.click());
+    expect(importPreview).toHaveBeenLastCalledWith('Rule ID\\nR1', 'replace');
+    expect(container!.querySelector('#replace-confirm')).toBeTruthy();
+  });
+
   it('Replace all: shows archive count + empty-bot warning and stays disabled until REPLACE is typed (v1.8)', async () => {
     importPreview.mockResolvedValue({
       ...preview,

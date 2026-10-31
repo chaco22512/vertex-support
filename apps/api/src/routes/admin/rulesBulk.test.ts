@@ -71,12 +71,11 @@ function setup(role: Role = 'admin') {
 
 const ruleById = (db: FakeSupabase, id: string) => db.tables.kb_rules.find((r) => r.id === id)!;
 
-/** Sheet = R1 (edited), R2 (as is), one new row on CAT A; R3 left out. */
-function replacementSheet(db: FakeSupabase, newTopic = 'CAT A'): string {
+/** Sheet = R1 (edited), R2 (as is), one NEW rule (DR001 by default); R3 left out. */
+function replacementSheet(db: FakeSupabase, newId = 'DR001'): string {
   const keep = (db.tables.kb_rules as unknown as KbRule[]).filter((r) => r.id !== 'R3');
   const csv = buildKbCsv(keep.map((r) => (r.id === 'R1' ? { ...r, rule_text: 'New text R1' } : r)));
-  // A new rule: blank Rule ID, Topic, answer text.
-  return `${csv}\r\n,${newTopic},,Brand new answer,,No,,Customer,Yes,Active,,,,,\r\n`;
+  return `${csv}\r\n${newId},Deposit refund,,Brand new answer,,No,,Customer,Yes,Active,,,,,\r\n`;
 }
 
 describe('Replace all (CSV mode=replace)', () => {
@@ -117,8 +116,14 @@ describe('Replace all (CSV mode=replace)', () => {
     expect(s.db.tables.kb_rules).toHaveLength(4); // nothing deleted
     expect(ruleById(s.db, 'R3').status).toBe('archived');
     expect(ruleById(s.db, 'R1').rule_text).toBe('New text R1');
-    expect(ruleById(s.db, 'M001')).toMatchObject({ rule_text: 'Brand new answer', category: 'CAT A', status: 'active' });
-    expect(s.db.rpcCalls[0]!.name).toBe('kb_take_snapshot');
+    expect(ruleById(s.db, 'DR001')).toMatchObject({
+      rule_text: 'Brand new answer',
+      category: 'Deposit refund',
+      status: 'active',
+    });
+    // One transaction: everything goes through kb_import_apply, backup first.
+    expect(s.db.rpcCalls[0]!.name).toBe('kb_import_apply');
+    expect(s.db.rpcCalls[1]!.name).toBe('kb_take_snapshot');
     expect(s.db.tables.kb_change_log.filter((l) => l.source === 'replace_all')).toHaveLength(3);
     expect(s.slack.calls[0]).toContain('Replace all');
     expect(s.slack.calls[0]).toContain('not deleted');
@@ -133,21 +138,39 @@ describe('Replace all (CSV mode=replace)', () => {
     expect(res.status).toBe(200);
     expect(ruleById(s.db, 'R3').status).toBe('active');
     expect(ruleById(s.db, 'R1').rule_text).toBe('Text of R1');
-    expect(ruleById(s.db, 'M001').status).toBe('archived');
+    expect(ruleById(s.db, 'DR001').status).toBe('archived');
     expect(s.db.tables.kb_rules).toHaveLength(4);
     // A second undo of the same backup is refused.
     expect((await s.post(`/api/admin/rules/snapshots/${applied.snapshot_id}/undo`, {})).status).toBe(409);
   });
 
-  it('rejects a new row whose Topic does not exist (row error, not added)', async () => {
+  it('rejects a new row whose Rule ID breaks the convention, saying what to do (row error, not added)', async () => {
     const s = setup();
-    const res = await s.post('/api/admin/rules/import/preview', {
-      csv: replacementSheet(s.db, 'NO SUCH TOPIC'),
+    for (const [id, hint] of [
+      ['XX001', 'not a topic code'],
+      ['DR01', '2 letters for the topic + 3 numbers'],
+      ['', 'no Rule ID'],
+    ] as const) {
+      const res = await s.post('/api/admin/rules/import/preview', { csv: replacementSheet(s.db, id), mode: 'replace' });
+      const body = (await res.json()) as { summary: Record<string, number>; errors: { reason: string }[] };
+      expect(body.summary).toMatchObject({ added: 0, errors: 1 });
+      expect(body.errors[0]!.reason).toContain(hint);
+    }
+  });
+
+  it('a failed apply changes nothing (one transaction)', async () => {
+    const s = setup();
+    s.db.failRpc.add('kb_import_apply');
+    const res = await s.post('/api/admin/rules/import/apply', {
+      csv: replacementSheet(s.db),
       mode: 'replace',
+      confirm: 'REPLACE',
     });
-    const body = (await res.json()) as { summary: Record<string, number>; errors: { reason: string }[] };
-    expect(body.summary).toMatchObject({ added: 0, errors: 1 });
-    expect(body.errors[0]!.reason).toContain('does not exist');
+    expect(res.status).toBe(500);
+    expect(ruleById(s.db, 'R3').status).toBe('active');
+    expect(ruleById(s.db, 'R1').rule_text).toBe('Text of R1');
+    expect(s.db.tables.kb_rules).toHaveLength(3);
+    expect(s.db.tables.kb_rule_snapshots ?? []).toHaveLength(0);
   });
 
   it('warns that nothing would be left for the bot when the sheet is empty', async () => {

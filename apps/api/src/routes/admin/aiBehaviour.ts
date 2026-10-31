@@ -7,6 +7,7 @@ import {
   SYSTEM_TEXT,
   evaluateSafety,
   fetchScopedRules,
+  resolveIdPrefixes,
   resolveKbCategories,
   resolveTopicLabel,
   runAiReply,
@@ -138,10 +139,10 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
   const topicIds = [...new Set(SAFETY_TESTS.map((t) => t.topic))];
   const rulesByTopic = new Map(
     await Promise.all(
-      topicIds.map(async (id) => [id, await fetchScopedRules(deps.db, resolveKbCategories(id, menu))] as const),
+      topicIds.map(async (id) => [id, await fetchScopedRules(deps.db, resolveKbCategories(id, menu), resolveIdPrefixes(id, menu))] as const),
     ),
   );
-  const lostRules = rulesByTopic.get('lost') ?? (await fetchScopedRules(deps.db, resolveKbCategories('lost', menu)));
+  const lostRules = rulesByTopic.get('lost') ?? (await fetchScopedRules(deps.db, resolveKbCategories('lost', menu), resolveIdPrefixes('lost', menu)));
   const lostFees = [...new Set(lostRules.flatMap((r) => r.fee_amounts_jpy))];
   const { data: staffRows } = await deps.db.from('staff').select('name,is_active');
   const names = ((staffRows ?? []) as { name: string; is_active: boolean }[])
@@ -259,7 +260,11 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
   if (!BEHAVIOUR_TOPICS.some((t) => t.id === parsed.data.topic)) return c.json({ error: 'unknown_topic' }, 400);
 
-  const rules = await fetchScopedRules(deps.db, resolveKbCategories(parsed.data.topic, menu));
+  const rules = await fetchScopedRules(
+    deps.db,
+    resolveKbCategories(parsed.data.topic, menu),
+    resolveIdPrefixes(parsed.data.topic, menu),
+  );
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TEST_TIMEOUT_MS);
   try {

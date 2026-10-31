@@ -373,11 +373,8 @@ export const api = {
     request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/undo`, { method: 'POST', body: '{}' }),
   restoreSnapshot: (id: string) =>
     request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/restore`, { method: 'POST', body: '{}' }),
-  importUndo: () =>
-    request<{ restored: number; snapshot_id: string }>(`/api/admin/rules/import/undo`, {
-      method: 'POST',
-      body: JSON.stringify({}),
-    }),
+  /** ★v1.8: rules the bot can use right now (Dashboard warning when 0). */
+  kbHealth: () => request<{ active_rules: number }>(`/api/admin/kb-health`),
   listChangelog: () => request<{ entries: KbChangeLog[] }>(`/api/admin/changelog`),
   // --- AI diagnostics (★v1.8 §7.9) ---
   listAiDiagnostics: (result?: string) =>

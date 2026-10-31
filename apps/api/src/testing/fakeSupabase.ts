@@ -9,6 +9,7 @@ type Row = Record<string, unknown>;
 interface Result {
   data: unknown;
   error: { message: string } | null;
+  count?: number;
 }
 
 export class FakeSupabase {
@@ -71,6 +72,8 @@ export class FakeSupabase {
 
   /** Calls made through `rpc`, for assertions. */
   rpcCalls: { name: string; args: Record<string, unknown> }[] = [];
+  /** rpc names that should fail (to test that a failed apply changes nothing). */
+  failRpc = new Set<string>();
 
   /**
    * In-memory mirrors of the v1.8 bulk-knowledge Postgres functions
@@ -166,6 +169,53 @@ export class FakeSupabase {
         if (only) snap.undone = true;
         return { data: n, error: null };
       }
+      case 'kb_import_apply': {
+        // All-or-nothing like the SQL function: a failure changes nothing.
+        if (this.failRpc.has(name)) return { data: null, error: { message: `injected failure: ${name}` } };
+        const mode = args.p_mode as string;
+        const source = mode === 'replace' ? 'replace_all' : 'csv_import';
+        const patches = (args.p_patches as { id: string }[]) ?? [];
+        const created = (args.p_new as Row[]) ?? [];
+        const archive = (args.p_archive as string[]) ?? [];
+        const affected = [...patches.map((p) => p.id), ...created.map((n) => n.id as string), ...archive];
+        const snap = await this.rpc('kb_take_snapshot', {
+          p_kind: source,
+          p_staff: args.p_staff,
+          p_affected: affected,
+          p_note: args.p_note,
+        });
+        const applied = patches.length
+          ? ((await this.rpc('kb_apply_patches', { p_patches: patches, p_staff: args.p_staff, p_source: source }))
+              .data as number)
+          : 0;
+        for (const n of created) {
+          const row: Row = {
+            subcategory: '',
+            fee_amounts_jpy: [],
+            fee_is_fixed: false,
+            links: [],
+            audience: 'customer',
+            ai_can_answer: true,
+            status: 'active',
+            review_reason: '',
+            ...n,
+            updated_by: args.p_staff,
+            updated_at: new Date().toISOString(),
+          };
+          rules.push(row);
+          log(row.id, {}, { ...row }, source, args.p_staff);
+        }
+        const archived =
+          mode === 'replace' && archive.length
+            ? ((await this.rpc('kb_bulk_set_status', {
+                p_ids: archive,
+                p_status: 'archived',
+                p_staff: args.p_staff,
+                p_source: source,
+              })).data as number)
+            : 0;
+        return { data: { snapshot_id: snap.data, applied, added: created.length, archived }, error: null };
+      }
       default:
         return { data: null, error: { message: `fake rpc ${name} not implemented` } };
     }
@@ -182,6 +232,9 @@ class FakeQuery implements PromiseLike<Result> {
   private ins: [string, unknown[]][] = [];
   private gts: [string, number][] = [];
   private ilikes: [string, string][] = [];
+  private headCount = false;
+  /** `.or('col.ilike.X%,col.ilike.Y%')` groups (only ilike conditions supported). */
+  private ors: [string, string][][] = [];
   /** `.not(col, 'is', null)` — col may be a JSON path like `ai_meta->diag`. */
   private notNulls: string[] = [];
   private orderCol: string | null = null;
@@ -196,7 +249,8 @@ class FakeQuery implements PromiseLike<Result> {
     private readonly name: string,
   ) {}
 
-  select(): this {
+  select(_cols?: string, opts?: { count?: string; head?: boolean }): this {
+    if (opts?.head) this.headCount = true;
     return this;
   }
   insert(payload: Row | Row[]): this {
@@ -223,6 +277,15 @@ class FakeQuery implements PromiseLike<Result> {
   }
   gt(col: string, val: number): this {
     this.gts.push([col, val]);
+    return this;
+  }
+  or(expr: string): this {
+    const group = expr.split(',').map((part) => {
+      const m = part.match(/^(\w+)\.ilike\.(.+)$/);
+      if (!m) throw new Error(`fake .or(${part}) unsupported`);
+      return [m[1]!, m[2]!] as [string, string];
+    });
+    this.ors.push(group);
     return this;
   }
   not(col: string, op: string, val: unknown): this {
@@ -277,10 +340,12 @@ class FakeQuery implements PromiseLike<Result> {
       for (const key of path.split(/->>?/)) v = v && typeof v === 'object' ? (v as Row)[key] : undefined;
       if (v === null || v === undefined) return false;
     }
-    for (const [c, pattern] of this.ilikes) {
-      const re = new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$', 'i');
-      if (!re.test(String(row[c] ?? ''))) return false;
-    }
+    const like = (v: unknown, pattern: string) =>
+      new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$', 'i').test(
+        String(v ?? ''),
+      );
+    for (const [c, pattern] of this.ilikes) if (!like(row[c], pattern)) return false;
+    for (const group of this.ors) if (!group.some(([c, pattern]) => like(row[c], pattern))) return false;
     return true;
   }
 
@@ -366,6 +431,8 @@ class FakeQuery implements PromiseLike<Result> {
       return { data: this.singleMode !== 'none' ? (copies[0] ?? null) : copies, error: null };
     }
     let rows = this.table().filter((r) => this.matches(r));
+    // `.select('*', { count: 'exact', head: true })` → just the matching count.
+    if (this.headCount) return { data: null, error: null, count: rows.length };
     if (this.orderCol) {
       const col = this.orderCol;
       // Numbers compare numerically; anything else (ids, ISO timestamps) as strings.

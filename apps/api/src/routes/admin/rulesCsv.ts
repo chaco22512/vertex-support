@@ -1,21 +1,10 @@
 import type { Context } from 'hono';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { KbRule } from '@vertex/shared';
-import {
-  buildKbCsv,
-  computeRuleChanges,
-  parseImportCsv,
-  type EditableValues,
-  type FieldChange,
-  type ParsedImportRow,
-} from '@vertex/shared';
+import { buildKbCsv, type KbRule } from '@vertex/shared';
 import type { AppEnv } from '../../types';
 import { importCsvSchema, undoImportSchema } from '../../dto';
 import { fetchAllRules } from '../../lib/kbRules';
-import { applyReplace, diffReplace, replacePreviewBody } from './rulesBulk';
-
-const PAGE = 1000;
-const APPLY_CHUNK = 50;
+import { applyImportDiff, diffImport, importPreviewBody } from './rulesBulk';
 
 async function staffNameMap(db: SupabaseClient): Promise<Map<string, string>> {
   const { data } = await db.from('staff').select('id,name');
@@ -41,138 +30,32 @@ export async function exportRules(c: Context<AppEnv>): Promise<Response> {
   }
 }
 
-interface ChangeEntry {
-  id: string;
-  category: string;
-  decision: ParsedImportRow['decision'];
-  changes: FieldChange[];
-  patch: EditableValues;
-}
-
 /**
- * Re-parse the CSV and diff it against the current DB. Shared by preview and
- * apply so apply never trusts a stale client-side preview.
+ * POST /api/admin/rules/import/preview — diff only, no writes (§7.4.1).
+ * ★v1.8: both modes add rules with new IDs; Replace all also archives rules
+ * missing from the sheet (§7.4.2).
  */
-async function diffCsv(
-  db: SupabaseClient,
-  csv: string,
-): Promise<{
-  headerError?: string;
-  entries: ChangeEntry[];
-  errors: { line: number; id: string; reason: string }[];
-  ignored: number;
-  unchanged: number;
-}> {
-  const { headerError, rows } = parseImportCsv(csv);
-  if (headerError) return { headerError, entries: [], errors: [], ignored: 0, unchanged: 0 };
-
-  const ids = [...new Set(rows.filter((r) => !r.skip && r.errors.length === 0).map((r) => r.id))];
-  const byId = new Map<string, KbRule>();
-  for (let i = 0; i < ids.length; i += PAGE) {
-    const { data } = await db.from('kb_rules').select('*').in('id', ids.slice(i, i + PAGE));
-    for (const r of (data ?? []) as KbRule[]) byId.set(r.id, r);
-  }
-
-  const entries: ChangeEntry[] = [];
-  const errors: { line: number; id: string; reason: string }[] = [];
-  let ignored = 0;
-  let unchanged = 0;
-  for (const row of rows) {
-    if (row.skip) {
-      ignored += 1;
-      continue;
-    }
-    if (row.errors.length > 0) {
-      errors.push({ line: row.line, id: row.id, reason: row.errors.join(' ') });
-      continue;
-    }
-    const current = byId.get(row.id);
-    if (!current) {
-      errors.push({ line: row.line, id: row.id, reason: `Unknown Rule ID "${row.id}".` });
-      continue;
-    }
-    const { changes, patch } = computeRuleChanges(current, row);
-    if (changes.length === 0) unchanged += 1;
-    else entries.push({ id: row.id, category: current.category, decision: row.decision, changes, patch });
-  }
-  return { entries, errors, ignored, unchanged };
-}
-
-/** POST /api/admin/rules/import/preview — diff only, no writes (§7.4 v1.7). */
 export async function previewImport(c: Context<AppEnv>): Promise<Response> {
   const { db } = c.get('deps');
   const parsed = importCsvSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
-
-  // ★v1.8 Replace all: rules missing from the sheet are archived (§7.4.2).
-  if (parsed.data.mode === 'replace') {
-    const d = await diffReplace(db, parsed.data.csv);
-    if (d.headerError) return c.json({ error: 'invalid_csv', message: d.headerError }, 400);
-    return c.json(replacePreviewBody(d));
-  }
-
-  const { headerError, entries, errors, ignored, unchanged } = await diffCsv(db, parsed.data.csv);
-  if (headerError) return c.json({ error: 'invalid_csv', message: headerError }, 400);
-  return c.json({
-    summary: { changed: entries.length, unchanged, ignored, errors: errors.length },
-    changes: entries,
-    errors,
-  });
+  const d = await diffImport(db, parsed.data.csv, parsed.data.mode);
+  if (d.headerError) return c.json({ error: 'invalid_csv', message: d.headerError }, 400);
+  return c.json(importPreviewBody(d));
 }
 
-/** POST /api/admin/rules/import/apply — snapshot, apply, log (§7.4 v1.7). */
+/** POST /api/admin/rules/import/apply — one-transaction apply with a backup (§7.4.1). */
 export async function applyImport(c: Context<AppEnv>): Promise<Response> {
-  const { db } = c.get('deps');
-  const staff = c.get('staff');
   const parsed = importCsvSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
-  if (parsed.data.mode === 'replace') return applyReplace(c, parsed.data.csv, parsed.data.confirm);
-
-  const { headerError, entries, errors } = await diffCsv(db, parsed.data.csv);
-  if (headerError) return c.json({ error: 'invalid_csv', message: headerError }, 400);
-  if (entries.length === 0) return c.json({ applied: 0, skipped: errors.length, snapshot_id: null, errors });
-
-  // Snapshot the current state of every rule we're about to change (for Undo).
-  const ids = entries.map((e) => e.id);
-  const before = new Map<string, KbRule>();
-  for (let i = 0; i < ids.length; i += PAGE) {
-    const { data } = await db.from('kb_rules').select('*').in('id', ids.slice(i, i + PAGE));
-    for (const r of (data ?? []) as KbRule[]) before.set(r.id, r);
-  }
-  const { data: snap, error: snapErr } = await db
-    .from('kb_import_snapshots')
-    .insert({ created_by: staff.userId, rows: [...before.values()], applied_count: entries.length })
-    .select('id')
-    .single();
-  if (snapErr || !snap) return c.json({ error: 'server_error' }, 500);
-  const snapshotId = (snap as { id: string }).id;
-
-  // Apply in chunks; log each change with source='csv_import'.
-  const now = new Date().toISOString();
-  let applied = 0;
-  for (let i = 0; i < entries.length; i += APPLY_CHUNK) {
-    await Promise.all(
-      entries.slice(i, i + APPLY_CHUNK).map(async (e) => {
-        const { data: after, error } = await db
-          .from('kb_rules')
-          .update({ ...e.patch, updated_by: staff.userId, updated_at: now })
-          .eq('id', e.id)
-          .select()
-          .single();
-        if (error || !after) return;
-        applied += 1;
-        await db.from('kb_change_log').insert({
-          rule_id: e.id,
-          changed_by: staff.userId,
-          before: before.get(e.id) ?? {},
-          after,
-          source: 'csv_import',
-        });
-      }),
-    );
-  }
-  return c.json({ applied, skipped: errors.length, snapshot_id: snapshotId, errors });
+  return applyImportDiff(c, parsed.data.csv, parsed.data.mode, parsed.data.confirm);
 }
+
+/*
+ * Legacy (v1.7): imports before v1.8 were backed up in kb_import_snapshots.
+ * New imports use kb_rule_snapshots (Backups); this endpoint only undoes the
+ * old ones.
+ */
 
 const RESTORE_FIELDS = [
   'rule_text',

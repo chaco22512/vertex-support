@@ -72,6 +72,7 @@ export function DisableViewDialog({
 const KIND_LABEL: Record<string, string> = {
   replace_all: 'Replace all',
   disable_view: 'Disable all in view',
+  csv_import: 'CSV import (add / update)',
   restore: 'Before a restore',
 };
 

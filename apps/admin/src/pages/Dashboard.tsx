@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api, type InboxRow } from '../lib/api';
 import { ErrorState } from '../components/states';
+import { useAuth } from '../lib/auth';
 
 interface Metrics {
   today: number;
@@ -36,12 +37,19 @@ export function Dashboard() {
   const navigate = useNavigate();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [error, setError] = useState(false);
+  // ★v1.8 §7.1: warn when the bot has no rules to use (it hands everything to staff).
+  const [activeRules, setActiveRules] = useState<number | null>(null);
+  const { staff } = useAuth();
 
   const load = useCallback(async () => {
     setError(false);
     try {
-      const { conversations } = await api.listConversations();
+      const [{ conversations }, health] = await Promise.all([
+        api.listConversations(),
+        api.kbHealth().catch(() => null),
+      ]);
       setMetrics(compute(conversations, Date.now()));
+      setActiveRules(health ? health.active_rules : null);
     } catch {
       setError(true);
     }
@@ -75,6 +83,12 @@ export function Dashboard() {
       <div className="page-head">
         <h1>Dashboard</h1>
       </div>
+      {activeRules === 0 ? (
+        <div className="state error" role="alert" style={{ padding: 'var(--sp-3) 0' }}>
+          <strong>The knowledge base has no active rules</strong> — the bot is passing every question to staff.{' '}
+          {staff?.role === 'admin' ? <Link to="/knowledge">Upload the CS sheet in Knowledge</Link> : 'Please tell an admin.'}
+        </div>
+      ) : null}
       {error ? (
         <ErrorState onRetry={() => void load()} />
       ) : (

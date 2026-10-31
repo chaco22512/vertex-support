@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   draftStaffReply,
   fetchScopedRules,
+  resolveIdPrefixes,
   resolveKbCategories,
   translateToEnglish,
   type HistoryMessage,
@@ -224,7 +225,7 @@ export async function aiDraft(c: Context<AppEnv>): Promise<Response> {
   const conversation = conv as { language: string; topic_category: string };
 
   const categories = resolveKbCategories(conversation.topic_category, menu);
-  const rules = await fetchScopedRules(db, categories);
+  const rules = await fetchScopedRules(db, categories, resolveIdPrefixes(conversation.topic_category, menu));
   const draft = await draftStaffReply(llm, {
     rules,
     history: await history(db, id),

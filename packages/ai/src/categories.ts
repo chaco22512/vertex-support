@@ -8,6 +8,8 @@ export interface MenuCategory {
   id: string;
   label_en?: string;
   kb_categories?: string[];
+  /** ★v1.8: Rule ID topic codes used for this tile (e.g. DR001 → "DR"). */
+  id_prefixes?: string[];
   behavior?: string;
 }
 
@@ -46,4 +48,15 @@ export function resolveKbCategories(
   const set = new Set(kb);
   set.add(GENERAL_CATEGORY);
   return [...set];
+}
+
+/**
+ * ★v1.8 §3.1 / §4.1: Rule ID topic codes (e.g. "DR") whose rules belong to
+ * this tile, read from menu_categories.json `id_prefixes`. CS-managed rules
+ * are scoped by their ID, so the free-text Topic column never breaks scoping.
+ * Returns [] for unknown topics; callers pass null categories for "all".
+ */
+export function resolveIdPrefixes(topicCategory: string, menu: MenuCategories): string[] {
+  const category = menu.categories.find((c) => c.id === topicCategory);
+  return (category?.id_prefixes ?? []).filter((p) => /^[A-Z]{2}$/.test(p));
 }

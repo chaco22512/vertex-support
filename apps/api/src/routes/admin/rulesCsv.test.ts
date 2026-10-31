@@ -118,14 +118,15 @@ describe('CSV import apply + undo', () => {
     expect(db.tables.kb_rules.find((r) => r.id === 'R1')!.rule_text).toBe('New answer');
     expect(db.tables.kb_rules.find((r) => r.id === 'R2')!.status).toBe('active'); // Approve
     expect(db.tables.kb_change_log.filter((l) => l.source === 'csv_import')).toHaveLength(2);
-    expect(db.tables.kb_import_snapshots).toHaveLength(1);
+    // ★v1.8: imports are backed up in kb_rule_snapshots (Backups) …
+    expect(db.tables.kb_rule_snapshots).toHaveLength(1);
 
-    // Undo restores the pre-import state.
-    const undoRes = await post(app, env, '/api/admin/rules/import/undo', {});
+    // … and undone from there.
+    const undoRes = await post(app, env, `/api/admin/rules/snapshots/${apply.snapshot_id}/undo`, {});
     const undo = (await undoRes.json()) as { restored: number };
     expect(undo.restored).toBe(2);
     expect(db.tables.kb_rules.find((r) => r.id === 'R1')!.rule_text).toBe('Old text');
     expect(db.tables.kb_rules.find((r) => r.id === 'R2')!.status).toBe('pending_review');
-    expect(db.tables.kb_import_snapshots?.[0]?.undone).toBe(true);
+    expect(db.tables.kb_rule_snapshots?.[0]?.undone).toBe(true);
   });
 });

@@ -2,75 +2,83 @@
 
 Short, non-technical how-tos for the CS team using the admin site.
 
-## Reviewing rules in a spreadsheet
+## Managing the knowledge with your CSV
 
-You can take the whole knowledge base into Excel (or Google Sheets), check it,
-write your decisions, and send the changes back — without touching the live site
-until you've reviewed a preview.
+**Your CSV is the master copy of what the bot knows.** Whenever you change the
+knowledge, edit your sheet and upload it again. The bot only uses the rules from
+your sheets (the old manuals are kept in storage as *Archived* and are not used).
 
-### 1. Download
-1. Open **Knowledge** (or **Review queue**).
-2. Click **Download CSV** to get the rules you're currently looking at (your
-   search / category filter is included), or **Download all** for everything.
-3. A file like `knowledge-all-2026-07-11.csv` is saved to your computer.
+### Rule IDs — please read this first
 
-### 2. Open and check in Excel
-- Double-click the file. Japanese, Vietnamese and Nepali text show correctly
-  (the file is saved so Excel reads these languages properly).
-- The first data row is an **EXAMPLE** row showing how to fill things in. It is
-  ignored when you upload, so you can leave it or delete it.
-- Columns you may change: **Answer text, Fee amounts (JPY), Fixed fee?, Links,
-  Who can see, Bot may use?, Status.** Changes to any other column are ignored.
-- Two blank columns are for you: **CS decision** and **CS comment**.
+Every row needs a **Rule ID**: a 2-letter topic code + a 3-digit number, for
+example **DR001**. Letters and numbers only. Capital or small letters don't
+matter (dr001 is the same as DR001). Each ID can appear only once in a file.
 
-### 3. Write your decisions
-In the **CS decision** column, for any row you want to act on, type one of:
-- **Approve** — move a rule from *Waiting for review* to *Active*.
-- **Keep internal** — mark it staff-only (and Active).
-- **Disable** — stop using the rule.
-- *(leave blank)* — no change from this column.
+The topic code decides **which chat topic the bot uses the rule for**, so pick
+the code that matches the topic:
 
-Use **CS comment** for a note to the team (it's not applied to the rule).
-Save the file (keep it as CSV).
+| Code | Topic | Used on these chat topics |
+|---|---|---|
+| IN | Internet / APN | Internet |
+| PY | Payment & monthly bill | Payment |
+| LS | Lost SIM or device | Lost |
+| CN | Cancellation | Cancellation, Deposit refund |
+| RT | Returning SIM / device | Returning |
+| RP | Replacement / change plan | Replacement |
+| RI | Signal stopped / re-issue | Re-issue, Lost |
+| RF | Refund / deposit / cashback | Refund, Deposit refund |
+| DR | Deposit refund | Deposit refund, Refund |
+| PL | Plans & prices | Only when a customer asks under "Others" |
+| GN | General — used on every topic | All topics |
+| OT | Other | Only when a customer asks under "Others" |
 
-### 4. Upload and review the preview
-1. Back on the **Knowledge** page, click **Upload reviewed CSV** and pick your file.
-2. A **preview** appears first — **nothing is changed yet.** It shows:
-   - how many rows will change, stay the same, or be ignored;
-   - each change as *from → to* (fee changes are highlighted);
-   - any rows with a problem (e.g. an unknown Rule ID, a price that isn't a number,
-     or an unfinished placeholder) — those rows are listed and will be **skipped**,
-     while the good rows still go through.
-3. If it looks right, click **Apply changes.** Only now are the rules updated.
+**Always keep the same ID for the same rule.** If you change the wording of DR003,
+keep it DR003 — do not give it a new number, and never reuse an old number for a
+different rule. Then the **Change history** shows the whole story of that rule
+(who changed what, and when). For a brand-new rule, use the next free number
+(e.g. DR016).
 
-### 5. If you change your mind
-Right after applying, a message shows **Undo import** — click it to put everything
-back the way it was. Every change (and the undo) is saved in **Change history**.
+The **Topic** column is just a label for you — write it however you like.
 
-### Notes
-- Only admins can upload. Anyone with admin access can download.
-- Prices for monthly plans, COD, and discounts are still never shown by the bot —
-  the preview/validation won't let unfinished or formula text go live.
+### Updating the knowledge
 
-## Replacing everything with a new sheet
+1. Open **Knowledge** and click **Upload CSV**, then pick your file.
+2. Choose how to apply it (you can switch in the window — the preview updates):
+   - **Add / update only** (the normal choice): rows in your file are added or
+     updated. Rules that are not in your file stay as they are.
+   - **Replace all**: makes the bot's knowledge exactly your file. Rules that are
+     not in your file are **archived** (kept in storage, not deleted, and can be
+     brought back). To confirm, you must type **REPLACE**.
+3. Check the preview — **nothing changes yet.** It shows how many rules will be
+   updated, added and (for Replace all) archived, and how many rules the bot will
+   be able to use afterwards. If that number would be 0, a red warning appears.
+4. Click the button at the bottom to apply. Everything is applied together in one
+   step: the bot never sees a half-updated knowledge base.
 
-Use this when you have a complete new sheet and want the bot to use **only** what
-is in it. There is no "delete everything" button on purpose: if the bot had no
-rules, it could not answer anyone.
+### If some rows are skipped
 
-1. Open **Knowledge** and click **Bulk actions → Replace all from CSV…**, then pick your file.
-2. A preview appears first — **nothing is changed yet.** It shows:
-   - rules that will change, and **new rules** that will be added
-     (rows with an empty Rule ID; give each one a **Topic** that already exists);
-   - rules that are **not in your file** — these will be **archived**;
-   - how many rules the bot will be able to use afterwards.
-     If that number is 0, you will see a red warning: the bot would pass every
-     question to staff.
-3. To go ahead, type **REPLACE** in the box and click **Replace all**.
+Rows with a problem are listed in the preview and skipped; the good rows still
+go through. Each message says what to fix, for example:
 
-**Archived does not mean deleted.** Archived rules are kept and can come back at
-any time. To see them, set the **Status** filter on the Knowledge page to
-**Archived**.
+| Message starts with | What to do |
+|---|---|
+| "This row has no Rule ID" | Add an ID such as DR016. |
+| "… is not in the expected format" | Use 2 letters + 3 numbers, e.g. DR001. |
+| "… is not a topic code" | Use one of the codes in the table above. |
+| "… appears more than once" | Keep one row per Rule ID (dr001 and DR001 count as the same). |
+| "This new rule has no Topic" | Fill in the Topic column. |
+| "… still contains an unfilled placeholder / a spreadsheet formula" | Replace it with the final text. |
+
+### Undo
+
+Right after applying, click **Undo** in the message at the bottom of the screen.
+Later, use **Bulk actions → Backups…** (a full copy is saved before every upload).
+
+### Downloading the current knowledge
+
+**Download CSV** (what you are looking at) or **Download all** gives you a file in
+the same format. The first data row is an EXAMPLE row and is ignored on upload.
+Japanese, Vietnamese and Nepali text open correctly in Excel.
 
 ## Turning off a group of rules
 
@@ -82,7 +90,7 @@ any time. To see them, set the **Status** filter on the Knowledge page to
 
 ## Getting things back (Backups)
 
-Before every **Replace all** or **Disable all**, a full copy of the knowledge base
+Before every **CSV upload** and every **Disable all**, a full copy of the knowledge base
 is saved automatically. The latest 5 copies are kept.
 
 - Right after the change, click **Undo** in the message at the bottom of the screen.

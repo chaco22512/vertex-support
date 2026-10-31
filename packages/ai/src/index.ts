@@ -3,6 +3,7 @@ export { maskPii, type MaskResult } from './pii';
 export {
   resolveKbCategories,
   resolveTopicLabel,
+  resolveIdPrefixes,
   GENERAL_CATEGORY,
   type MenuCategory,
   type MenuCategories,

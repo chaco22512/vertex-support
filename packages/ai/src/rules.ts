@@ -20,24 +20,41 @@ const PAGE_SIZE = 1000;
  *
  * @param categories result of resolveKbCategories: a category allow-list, or
  *   null to include all active customer rules.
+ * @param idPrefixes ★v1.8: Rule ID topic codes (resolveIdPrefixes) — rules
+ *   whose id starts with one of them are included too (CS-managed rules are
+ *   scoped by their ID). Ignored when `categories` is null (already all).
  */
 export async function fetchScopedRules(
   client: SupabaseClient,
   categories: string[] | null,
+  idPrefixes: string[] = [],
 ): Promise<KbRule[]> {
+  const byCategory = await fetchPaged(client, (q) => (categories === null ? q : q.in('category', categories)));
+  if (categories === null || idPrefixes.length === 0) return byCategory;
+
+  // PostgREST or-filter on id prefixes; codes are validated 2-letter A–Z.
+  const byPrefix = await fetchPaged(client, (q) =>
+    q.or(idPrefixes.map((p) => `id.ilike.${p}%`).join(',')),
+  );
+  const merged = new Map<string, KbRule>();
+  for (const r of [...byCategory, ...byPrefix]) merged.set(r.id, r);
+  return [...merged.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
+
+type RuleQuery = ReturnType<ReturnType<SupabaseClient['from']>['select']>;
+
+/** Page through eligible rules (Hard rule 3 filter always applied) with an extra filter. */
+async function fetchPaged(client: SupabaseClient, filter: (q: RuleQuery) => RuleQuery): Promise<KbRule[]> {
   const all: KbRule[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    let query = client
-      .from('kb_rules')
-      .select('*')
-      .eq('status', 'active')
-      .eq('audience', 'customer')
-      .eq('ai_can_answer', true)
-      .order('id', { ascending: true });
-
-    if (categories !== null) {
-      query = query.in('category', categories);
-    }
+    const query = filter(
+      client
+        .from('kb_rules')
+        .select('*')
+        .eq('status', 'active')
+        .eq('audience', 'customer')
+        .eq('ai_can_answer', true),
+    ).order('id', { ascending: true });
 
     const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(`fetchScopedRules failed: ${error.message}`);

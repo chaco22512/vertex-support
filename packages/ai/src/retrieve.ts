@@ -55,17 +55,19 @@ export interface RankedRule {
 /**
  * Rank `rules` against `query` terms (BM25) and return the top `topK` with a
  * positive score, best first (ties broken by id for stable output). Rules in
- * `boostCategories` (the guessed topic's scope) get a mild multiplier.
+ * `boostCategories` / `boostIdPrefixes` (the guessed topic's scope) get a
+ * mild multiplier.
  */
 export function rankRules(
   rules: KbRule[],
   query: string[],
-  opts: { topK?: number; boostCategories?: string[] | null } = {},
+  opts: { topK?: number; boostCategories?: string[] | null; boostIdPrefixes?: string[] } = {},
 ): RankedRule[] {
   const topK = opts.topK ?? FALLBACK_TOP_K;
   if (query.length === 0 || rules.length === 0) return [];
   const terms = new Set(query);
   const boost = new Set(opts.boostCategories ?? []);
+  const boostPrefixes = opts.boostIdPrefixes ?? [];
 
   const docs = rules.map((rule) => {
     const tokens = tokenize(`${rule.category} ${rule.subcategory ?? ''} ${rule.rule_text}`);
@@ -90,7 +92,7 @@ export function rankRules(
       score += (idf(t) * f * (K1 + 1)) / (f + K1 * (1 - B + (B * d.len) / avgLen));
     }
     if (score <= 0) continue;
-    if (boost.has(d.rule.category)) score *= TOPIC_BOOST;
+    if (boost.has(d.rule.category) || boostPrefixes.some((p) => d.rule.id.startsWith(p))) score *= TOPIC_BOOST;
     ranked.push({ rule: d.rule, score: Math.round(score * 1000) / 1000 });
   }
   ranked.sort((a, b) => b.score - a.score || a.rule.id.localeCompare(b.rule.id));

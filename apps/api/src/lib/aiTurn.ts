@@ -4,6 +4,7 @@ import {
   fetchScopedRules,
   GeminiError,
   rankRules,
+  resolveIdPrefixes,
   resolveKbCategories,
   resolveTopicLabel,
   runAiReply,
@@ -137,7 +138,10 @@ export async function generateAiReply(
   let result: AiReplyResult;
   let scopedRules: KbRule[];
   try {
-    [scopedRules, published] = await Promise.all([fetchScopedRules(deps.db, categories), behaviourPromise]);
+    [scopedRules, published] = await Promise.all([
+      fetchScopedRules(deps.db, categories, resolveIdPrefixes(currentTopic, menu)),
+      behaviourPromise,
+    ]);
   } catch {
     diag.error = 'rule_fetch_failed';
     return finish(cannedEscalation(deps, conversation));
@@ -195,7 +199,10 @@ export async function generateAiReply(
   }
   diag.keywords = buildRetrievalQuery(lastCustomer, result.searchKeywords);
   const guessScope = diag.topic_guess ? resolveKbCategories(diag.topic_guess, menu) : null;
-  const ranked = rankRules(allRules, diag.keywords, { boostCategories: guessScope });
+  const ranked = rankRules(allRules, diag.keywords, {
+    boostCategories: guessScope,
+    boostIdPrefixes: diag.topic_guess ? resolveIdPrefixes(diag.topic_guess, menu) : [],
+  });
   diag.timings.retrieve_ms = Date.now() - tRetrieve;
   diag.candidate_count = ranked.length;
   diag.candidate_ids = ranked.map((r) => r.rule.id);

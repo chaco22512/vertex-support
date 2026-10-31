@@ -17,7 +17,7 @@ export const REPLACE_WORD = 'REPLACE';
 export function ImportPreviewDialog({
   csv,
   fileName,
-  mode = 'update',
+  mode: initialMode = 'update',
   onClose,
   onApplied,
 }: {
@@ -31,10 +31,15 @@ export function ImportPreviewDialog({
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typed, setTyped] = useState('');
+  // ★v1.8: the admin picks the mode in the dialog; switching re-runs the preview.
+  const [mode, setMode] = useState<ImportMode>(initialMode);
   const replace = mode === 'replace';
 
   useEffect(() => {
     let cancelled = false;
+    setPhase('previewing');
+    setPreview(null);
+    setTyped('');
     api
       .importPreview(csv, mode)
       .then((p) => {
@@ -80,9 +85,19 @@ export function ImportPreviewDialog({
         </div>
       ) : (
         <>
+          <div className="row wrap" role="radiogroup" aria-label="Import mode" style={{ gap: 16, marginBottom: 'var(--sp-3)' }}>
+            <label>
+              <input type="radio" name="import-mode" checked={!replace} onChange={() => setMode('update')} /> Add / update
+              only <span className="muted">(rules not in the file stay as they are)</span>
+            </label>
+            <label>
+              <input type="radio" name="import-mode" checked={replace} onChange={() => setMode('replace')} /> Replace all{' '}
+              <span className="muted">(rules not in the file are archived)</span>
+            </label>
+          </div>
           <div className="row wrap" style={{ gap: 12 }}>
             <strong>{s!.changed} to change</strong>
-            {replace ? <strong>· {added} new</strong> : null}
+            <strong>· {added} new</strong>
             {replace ? <strong>· {archived} to archive</strong> : null}
             <span className="muted">· {s!.unchanged} unchanged</span>
             <span className="muted">· {s!.ignored} ignored</span>
@@ -112,19 +127,20 @@ export function ImportPreviewDialog({
                   </p>
                 </details>
               ) : null}
-              {added > 0 ? (
-                <details style={{ marginTop: 'var(--sp-2)' }}>
-                  <summary>{added} new rule(s) will be added</summary>
-                  <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18 }}>
-                    {preview!.new_rules!.slice(0, 50).map((n) => (
-                      <li key={n.line}>
-                        Line {n.line} · {n.id || 'new id'} · {n.category}: {n.text}
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              ) : null}
             </>
+          ) : null}
+
+          {added > 0 ? (
+            <details style={{ marginTop: 'var(--sp-2)' }} open={s!.changed === 0}>
+              <summary>{added} new rule(s) will be added</summary>
+              <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18 }}>
+                {preview!.new_rules!.slice(0, 50).map((n) => (
+                  <li key={n.line}>
+                    {n.id} · {n.category}: {n.text}
+                  </li>
+                ))}
+              </ul>
+            </details>
           ) : null}
 
           {preview!.changes.length > 0 ? (
@@ -161,7 +177,7 @@ export function ImportPreviewDialog({
                 </tbody>
               </table>
             </div>
-          ) : !replace ? (
+          ) : total === 0 ? (
             <p className="muted" style={{ marginTop: 'var(--sp-3)' }}>
               No changes to apply.
             </p>
@@ -204,7 +220,7 @@ export function ImportPreviewDialog({
                 ? 'Applying…'
                 : replace
                   ? `Replace all (${total})`
-                  : `Apply changes (${s!.changed})`}
+                  : `Apply changes (${total})`}
             </button>
           </div>
         </>

@@ -8,6 +8,7 @@ import { defaultDeps } from './lib/deps';
 import { createConversation } from './routes/conversations';
 import { postTopic } from './routes/topic';
 import { listAiDiagnostics } from './routes/admin/aiDiagnostics';
+import { getKbHealth } from './routes/admin/kbHealth';
 import {
   getAiBehaviour,
   getVersion,
@@ -104,6 +105,7 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.delete('/staff/:id', adminOnly, deleteStaff);
   admin.get('/changelog', adminOnly, listChangelog);
   admin.get('/ai-diagnostics', adminOnly, listAiDiagnostics);
+  admin.get('/kb-health', getKbHealth);
   admin.get('/ai-behaviour', adminOnly, getAiBehaviour);
   admin.get('/ai-behaviour/versions/:id', adminOnly, getVersion);
   admin.post('/ai-behaviour/versions', adminOnly, saveVersion);

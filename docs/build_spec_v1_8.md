@@ -6,6 +6,7 @@ v1.7→v1.8 の変更（CS要望3件＋取得上限の調査。指示書 `docs/c
 - **Phase 2（AI behaviour タブ）**: プロンプトを ①安全ルール(固定)／②共通の振る舞い(編集可)／③トピック別の指示(編集可) の3層に分け、下書き→セーフティテスト→Publish、版管理・ロールバック、Try it（§4.2.1, §7.8）。
 - **Phase 3（ナレッジ一括操作の安全版）**: CSV「Replace all」モード（対象外は archived、物理削除なし）、「Disable all in this view」、自動スナップショット3世代＋復元、アクティブ0件時は全質問をエスカレ（§3, §4.1.0, §7.4.2）。
 - 受け入れ基準 52–64 を追加（§10）。
+- **CS管理CSVによるナレッジ運用（2026-10-31）**: CS が作る CSV を唯一の正とし、更新のたびに取り込む。旧 2,886 件（R/P/F/C）は 10/30 の Replace all で archived のまま保持（復元しない）。Rule ID 規約（§3.1）、ID 記号によるトピック範囲（§4.1）、両モードで新規追加・1トランザクション適用（§7.4.1）、Dashboard の空ナレッジ警告（§7.1）。受け入れ基準 65–70。
 
 # SIM Customer Support Bot — 構築仕様書 v1.7（以下は履歴）
 
@@ -181,6 +182,27 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 ```
 ※ 詳細スキーマは各Phaseの計画で確定し、マイグレーションとして追加する（既存データの削除・型変更を伴わない追加のみ）。
 
+### 3.1 Rule ID 規約（★v1.8、CS管理CSV）
+- 形式: **トピック記号2文字＋連番3桁**（例 `DR001`）。英数字のみ。大文字小文字を区別しない（保存は大文字）。1つの CSV 内で重複不可。
+- **同じルールには常に同じ ID を使う**（変更履歴 kb_change_log が Rule ID で繋がり、誰がいつ何を変えたか追えるため）。番号の付け直し・再利用はしない。
+- **ID の記号が AI のトピック範囲を決める**（§4.1。Topic 列は表示・分類用の自由記述）。記号表（`packages/shared/src/ruleId.ts` と `data/menu_categories.json` の `id_prefixes`）:
+
+| 記号 | 意味 | この記号のルールを使うチャットのタイル |
+|---|---|---|
+| IN | Internet / APN | Internet |
+| PY | Payment & monthly bill | Payment |
+| LS | Lost SIM or device | Lost |
+| CN | Cancellation | Cancellation, Deposit refund |
+| RT | Returning SIM / device | Returning |
+| RP | Replacement / change plan | Replacement |
+| RI | Signal stopped / re-issue | Re-issue, Lost |
+| RF | Refund / deposit / cashback | Refund, Deposit refund |
+| DR | Deposit refund | Deposit refund, Refund |
+| PL | Plans & prices | （Plans タイルは AI を使わない。Others と全マニュアル検索でのみ参照） |
+| GN | General（全トピック共通） | 全タイル |
+| OT | Other | Others と全マニュアル検索のみ |
+- 旧 ID（R/P/F/C…、archived）は規約チェックの対象外（更新は可能）。
+
 ### 初期データ投入
 - 第1マニュアル `kb_rules_import.json`（同梱、Rシリーズ 695件）をインポート
   - `needs_review = true` の42件は `status = 'pending_review'`（AIプロンプトに含めない）、それ以外は `status = 'active'`
@@ -212,6 +234,7 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 #### 4.1.0 全件取得の不変条件（★v1.8 Phase 0）
 - PostgREST は1リクエスト最大1,000行。**kb_rules を一覧・集計・AIに渡す全経路は `.range()` によるページングで全件取得する**（`limit(1000)` の単発取得禁止）。対象: AIルール取得（fetchScopedRules）、admin ナレッジ一覧／カテゴリ件数、CSVエクスポート／インポート。
 - AIターンごとに「トピック・スコープ内ルール件数」をログ出力する（Workers ログ）。
+- **トピック範囲 ＝ menu の kb_categories（旧ルール用）＋ id_prefixes（Rule ID 記号、§3.1）**。`fetchScopedRules(categories, idPrefixes)` は両方に一致する active/customer/ai_can_answer ルールを取得し重複を除く（Hard rule 3 の条件は不変）。全マニュアル検索の「推定トピック優先」も記号で効く。
 - **アクティブな顧客向けルールが0件の場合、AIはLLMを呼ばず全ての質問をエスカレーションする**（知識なしで推測回答しない。★v1.8 Phase 3）。
 
 #### 4.1.1 トピック切替とエスカレーション判定（★v1.8 Phase 1、実装確定）
@@ -396,6 +419,7 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 
 ### 7.1 ダッシュボード（トップ）
 メトリクスカード4枚: Today's inquiries / Solved by AI（件数と%）/ Waiting for staff / Due within 4h（赤表示）。カードクリックで該当フィルタのInboxへ。
+- **空ナレッジ警告（★v1.8）**: AI が使えるルール（active+customer+ai_can_answer）が0件なら赤いバナー「The knowledge base has no active rules — the bot is passing every question to staff.」（admin には Knowledge へのリンク）。`GET /api/admin/kb-health`（件数のみ、staff も可）。
 
 ### 7.2 Inbox（デフォルトは「要対応」ビュー）
 - デフォルトフィルタ: status=escalated、期限昇順（**開いた瞬間に「今やるべきもの」が最上部**にある状態を正とする）
@@ -432,6 +456,14 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
   - (d) 行単位バリデーション: 不明 Rule ID / 不正な Status・Yes/No・非数値の金額 / 未記入プレースホルダ / スプレッドシート数式 → 該当行のみエラー提示しスキップ（全体は継続）。
   - (e) 適用前の対象行スナップショットを `kb_import_snapshots` に保存し **「Undo import」** で直前を取消可能（最低1世代）。
   - 想定最大2,781行。サーバはチャンク（100/50件）で処理。
+
+#### 7.4.1b CSV取り込みの変更（★v1.8、CS管理CSV運用）
+- 「Upload CSV」→ プレビュー画面で **Add / update only（既定）** と **Replace all** を切り替え（切替で再プレビュー）。Bulk actions の「Replace all from CSV…」は Replace all を選んだ状態で同じ画面を開く近道。
+- **両モードで、未登録の Rule ID の行は New rule として追加**（§3.1 の規約に合う ID のみ。Topic と Answer text が必須）。空のナレッジからの初回取り込みもこれで成立。Rule ID 空欄の行は自動採番せずエラー。
+- プレビュー: 更新 n・新規 n・アーカイブ n（Replace all のみ）・スキップ（エラー）n、AI が使えるルール数 before→after（0 は赤警告）。Replace all は `REPLACE` の入力が必須（サーバでも強制）。
+- **適用は Postgres 関数 `kb_import_apply` 1回＝1トランザクション**: バックアップ → 更新 → 追加 → アーカイブ → 変更履歴。どこかで失敗すれば何も変わらず、空や入れ替え途中の状態は外から見えない。両モードともバックアップを取るので Undo は Backups から（旧 v1.7 の `/import/undo` は過去分専用）。
+- エラー文言は「何が悪いか＋次にどうするか」（例: `Rule ID "DR01" is not in the expected format. Use 2 letters for the topic + 3 numbers, e.g. DR001.` / `Rule ID "DR003" appears more than once (lines 5 and 9). Keep one row per Rule ID.` / `Rule ID "XX001" starts with "XX", which is not a topic code. Use one of: …` / `This row has no Rule ID. Give it an ID … e.g. DR016.`）。
+- CS の正本ファイルはリポジトリ `data/kb/` にも保存（初回: `Deposit_Refund_formatted_for_KB.csv`）。
 
 #### 7.4.2 一括操作（★v1.8 Phase 3。「all clear」要望の安全版、実装確定）
 CSの目的は「新しいシートでまるごと入れ替える」ことであり、空にすることではない。**物理削除する一括機能は作らない**。Knowledge 右上「Bulk actions ▾」に3項目。adminのみ。
@@ -639,6 +671,14 @@ AI behaviour（★v1.8 Phase 2）:
 62. Replace all / Disable all が物理削除を行わず（archived / disabled）、Undo で復元できる
 63. Replace all は REPLACE の入力なしに実行できない。実行前スナップショットが3世代以上保持され画面から復元できる
 64. アクティブなルールが0件のとき、AIは全ての質問をエスカレーションする
+
+CS管理CSVによるナレッジ運用（★v1.8 2026-10-31）:
+65. 空のナレッジに `Deposit_Refund_formatted_for_KB.csv`（DR001〜DR015）を Add/update only で取り込むと、新規15件が active になり、Deposit refund タイルの AI 範囲に入る
+66. 1行編集して再取り込みすると更新1件のみで、kb_change_log の同じ Rule ID に「追加→更新」が繋がる
+67. Replace all で CSV から外した行は archived になり（削除されない）、Undo で復元できる。REPLACE の入力なしでは実行できない
+68. 適用が途中で失敗しても何も変わらない（1トランザクション）
+69. Rule ID の規約違反・未知の記号・CSV 内の重複（大文字小文字違い含む）・ID 空欄は、次にすべきことが分かるエラーとしてその行だけスキップされる
+70. AI が使えるルールが0件のとき、AI はモデルを呼ばず全件エスカレし、Dashboard に警告が出る
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

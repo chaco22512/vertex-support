@@ -2,7 +2,9 @@ import type { Context } from 'hono';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import {
   computeRuleChanges,
+  normalizeRuleId,
   parseImportCsv,
+  ruleIdProblem,
   type EditableValues,
   type FieldChange,
   type KbRule,
@@ -11,7 +13,6 @@ import {
 import type { AppEnv, Deps } from '../../types';
 import { disableViewSchema } from '../../dto';
 import { fetchAllRules } from '../../lib/kbRules';
-import { nextRuleId } from './rules';
 
 /**
  * Safe bulk knowledge operations (spec v1.8 §7.4.2) — the safe version of the
@@ -32,9 +33,11 @@ async function notifyBulk(deps: Deps, text: string): Promise<void> {
   await deps.sendSlack(`🗂 Knowledge bulk change — ${text}\n▶ Knowledge: ${link}`);
 }
 
-// --- Replace all (CSV) ------------------------------------------------------
+// --- CSV import: Add/Update only + Replace all (★v1.8 CS-managed knowledge) --
 
-export interface ReplaceChange {
+export type ImportMode = 'update' | 'replace';
+
+export interface ImportChange {
   id: string;
   category: string;
   decision: ParsedImportRow['decision'];
@@ -44,17 +47,18 @@ export interface ReplaceChange {
 
 export interface NewRuleRow {
   line: number;
-  /** Given in the sheet, or '' → assigned M### on apply. */
   id: string;
   category: string;
   subcategory: string;
   values: Required<Pick<EditableValues, 'rule_text'>> & EditableValues;
 }
 
-export interface ReplaceDiff {
+export interface ImportDiff {
   headerError?: string;
-  changes: ReplaceChange[];
+  mode: ImportMode;
+  changes: ImportChange[];
   newRules: NewRuleRow[];
+  /** Replace all only: rules missing from the sheet (→ archived). */
   toArchive: { id: string; category: string; status: string }[];
   errors: { line: number; id: string; reason: string }[];
   ignored: number;
@@ -64,25 +68,26 @@ export interface ReplaceDiff {
 }
 
 /**
- * Diff a full replacement sheet against ALL current rules: changed rows, new
- * rows (blank or unknown Rule ID, Topic must be an existing category), and the
- * rules missing from the sheet (→ archived). Shared by preview and apply so
- * apply never trusts a stale preview.
+ * Diff a CS sheet against ALL current rules (spec v1.8 §7.4.1). Rule IDs are
+ * case-insensitive (stored upper-case). A known ID is an update; an unknown ID
+ * is a NEW rule and must follow the Rule ID convention (§3.1, e.g. DR001).
+ * In Replace all mode, every non-archived rule missing from the sheet is set
+ * aside (archived). Shared by preview and apply so apply never trusts a stale
+ * preview.
  */
-export async function diffReplace(db: SupabaseClient, csv: string): Promise<ReplaceDiff> {
-  const empty = { changes: [], newRules: [], toArchive: [], errors: [], ignored: 0, unchanged: 0 };
+export async function diffImport(db: SupabaseClient, csv: string, mode: ImportMode): Promise<ImportDiff> {
   const { headerError, rows } = parseImportCsv(csv, { allowNew: true });
   const all = await fetchAllRules(db, {});
   const activeBefore = all.filter(aiUsable).length;
-  if (headerError) return { headerError, ...empty, activeBefore, activeAfter: activeBefore };
+  const base = { mode, changes: [], newRules: [], toArchive: [], errors: [], ignored: 0, unchanged: 0, activeBefore };
+  if (headerError) return { headerError, ...base, activeAfter: activeBefore };
 
-  const byId = new Map(all.map((r) => [r.id, r]));
-  const categories = new Set(all.map((r) => r.category));
+  const byId = new Map(all.map((r) => [normalizeRuleId(r.id), r]));
   const inSheet = new Set<string>();
-  const seen = new Set<string>();
-  const changes: ReplaceChange[] = [];
+  const firstLine = new Map<string, number>();
+  const changes: ImportChange[] = [];
   const newRules: NewRuleRow[] = [];
-  const errors: ReplaceDiff['errors'] = [];
+  const errors: ImportDiff['errors'] = [];
   let ignored = 0;
   let unchanged = 0;
   let newUsable = 0;
@@ -93,40 +98,46 @@ export async function diffReplace(db: SupabaseClient, csv: string): Promise<Repl
       ignored += 1;
       continue;
     }
-    // A listed id is never archived, even if the row has an error (a typo must
+    const id = normalizeRuleId(row.id);
+    // A listed id is never archived, even if its row has an error (a typo must
     // not take a rule out of service).
-    if (row.id) inSheet.add(row.id);
-    if (row.id && seen.has(row.id)) {
-      errors.push({ line: row.line, id: row.id, reason: `Rule ID "${row.id}" appears more than once.` });
+    if (id) inSheet.add(id);
+    if (id && firstLine.has(id)) {
+      errors.push({
+        line: row.line,
+        id,
+        reason: `Rule ID "${id}" appears more than once (lines ${firstLine.get(id)} and ${row.line}). Keep one row per Rule ID.`,
+      });
       continue;
     }
-    if (row.id) seen.add(row.id);
+    if (id) firstLine.set(id, row.line);
     if (row.errors.length > 0) {
-      errors.push({ line: row.line, id: row.id, reason: row.errors.join(' ') });
+      errors.push({ line: row.line, id, reason: row.errors.join(' ') });
       continue;
     }
 
-    const current = row.id ? byId.get(row.id) : undefined;
+    const current = id ? byId.get(id) : undefined;
     if (!current) {
-      // New rule (blank or unknown id).
-      if (!row.topic) {
-        errors.push({ line: row.line, id: row.id, reason: 'A new rule needs a Topic.' });
+      // New rule: the ID must follow the convention, and it needs a Topic.
+      const problem = ruleIdProblem(id);
+      if (problem) {
+        errors.push({ line: row.line, id, reason: problem });
         continue;
       }
-      if (!categories.has(row.topic)) {
+      if (!row.topic) {
         errors.push({
           line: row.line,
-          id: row.id,
-          reason: `Topic "${row.topic}" does not exist yet. Use an existing Topic so the bot can find the rule.`,
+          id,
+          reason: 'This new rule has no Topic. Fill in the Topic column (for example "Deposit refund").',
         });
         continue;
       }
       if (!row.values.rule_text) {
-        errors.push({ line: row.line, id: row.id, reason: 'A new rule needs an Answer text.' });
+        errors.push({ line: row.line, id, reason: 'This new rule has no Answer text. Add the text the bot should use.' });
         continue;
       }
       const values = { ...row.values, rule_text: row.values.rule_text };
-      newRules.push({ line: row.line, id: row.id, category: row.topic, subcategory: row.subtopic, values });
+      newRules.push({ line: row.line, id, category: row.topic, subcategory: row.subtopic, values });
       const usable = aiUsable({
         status: values.status ?? 'active',
         audience: values.audience ?? 'customer',
@@ -147,23 +158,26 @@ export async function diffReplace(db: SupabaseClient, csv: string): Promise<Repl
       unchanged += 1;
       continue;
     }
-    changes.push({ id: row.id, category: current.category, decision: row.decision, changes: fieldChanges, patch });
-    after.set(row.id, { ...current, ...(patch as Partial<KbRule>) });
+    changes.push({ id: current.id, category: current.category, decision: row.decision, changes: fieldChanges, patch });
+    after.set(current.id, { ...current, ...(patch as Partial<KbRule>) });
   }
 
-  const toArchive = all
-    .filter((r) => r.status !== 'archived' && !inSheet.has(r.id))
-    .map((r) => ({ id: r.id, category: r.category, status: r.status }));
+  const toArchive =
+    mode === 'replace'
+      ? all
+          .filter((r) => r.status !== 'archived' && !inSheet.has(normalizeRuleId(r.id)))
+          .map((r) => ({ id: r.id, category: r.category, status: r.status }))
+      : [];
   for (const r of toArchive) after.set(r.id, { ...after.get(r.id)!, status: 'archived' });
 
   const activeAfter = [...after.values()].filter(aiUsable).length + newUsable;
-  return { changes, newRules, toArchive, errors, ignored, unchanged, activeBefore, activeAfter };
+  return { mode, changes, newRules, toArchive, errors, ignored, unchanged, activeBefore, activeAfter };
 }
 
-/** Preview payload for Replace all (no writes). */
-export function replacePreviewBody(d: ReplaceDiff) {
+/** Preview payload (no writes). */
+export function importPreviewBody(d: ImportDiff) {
   return {
-    mode: 'replace' as const,
+    mode: d.mode,
     summary: {
       changed: d.changes.length,
       unchanged: d.unchanged,
@@ -186,62 +200,40 @@ export function replacePreviewBody(d: ReplaceDiff) {
   };
 }
 
-/** Assign M### ids to new rows without one (sequential after the last M id). */
-async function assignIds(db: SupabaseClient, rows: NewRuleRow[]): Promise<string[]> {
-  const first = await nextRuleId(db);
-  let n = Number(first.slice(1));
-  return rows.map((r) => {
-    if (r.id) return r.id;
-    const id = `M${String(n).padStart(3, '0')}`;
-    n += 1;
-    return id;
-  });
-}
-
 /**
- * Apply Replace all: snapshot → patch changed rules → insert new rules →
- * archive rules missing from the sheet → Slack. Requires confirm === 'REPLACE'.
+ * Apply an import in ONE Postgres call (kb_import_apply = one transaction):
+ * snapshot → update → add → archive (Replace all) → change log. Either all of
+ * it happens or none of it — the knowledge base is never seen empty or half
+ * replaced. Replace all requires confirm === 'REPLACE'.
  */
-export async function applyReplace(c: Context<AppEnv>, csv: string, confirm: string | undefined): Promise<Response> {
+export async function applyImportDiff(
+  c: Context<AppEnv>,
+  csv: string,
+  mode: ImportMode,
+  confirm: string | undefined,
+): Promise<Response> {
   const deps = c.get('deps');
   const { db } = deps;
   const staff = c.get('staff');
-  if (confirm !== 'REPLACE') {
+  if (mode === 'replace' && confirm !== 'REPLACE') {
     return c.json({ error: 'confirm_required', message: 'Type REPLACE to confirm replacing all rules.' }, 400);
   }
 
-  const d = await diffReplace(db, csv);
+  const d = await diffImport(db, csv, mode);
   if (d.headerError) return c.json({ error: 'invalid_csv', message: d.headerError }, 400);
   if (d.changes.length + d.newRules.length + d.toArchive.length === 0) {
     return c.json({ applied: 0, added: 0, archived: 0, skipped: d.errors.length, snapshot_id: null, errors: d.errors });
   }
 
-  const newIds = await assignIds(db, d.newRules);
-  const affected = [...d.changes.map((x) => x.id), ...newIds, ...d.toArchive.map((x) => x.id)];
-  const { data: snapId, error: snapErr } = await db.rpc('kb_take_snapshot', {
-    p_kind: 'replace_all',
-    p_staff: staff.userId,
-    p_affected: affected,
-    p_note: `Replace all: ${d.changes.length} changed, ${d.newRules.length} added, ${d.toArchive.length} archived`,
-  });
-  if (snapErr || !snapId) return c.json({ error: 'server_error', message: 'Could not save a backup; nothing changed.' }, 500);
-
-  let applied = 0;
-  if (d.changes.length > 0) {
-    const { data, error } = await db.rpc('kb_apply_patches', {
-      p_patches: d.changes.map((x) => ({ id: x.id, patch: x.patch })),
-      p_staff: staff.userId,
-      p_source: 'replace_all',
-    });
-    if (error) return c.json({ error: 'server_error', snapshot_id: snapId }, 500);
-    applied = Number(data ?? 0);
-  }
-
-  let added = 0;
-  if (d.newRules.length > 0) {
-    const now = new Date().toISOString();
-    const inserts = d.newRules.map((n, i) => ({
-      id: newIds[i],
+  const note =
+    mode === 'replace'
+      ? `Replace all: ${d.changes.length} updated, ${d.newRules.length} added, ${d.toArchive.length} archived`
+      : `CSV import: ${d.changes.length} updated, ${d.newRules.length} added`;
+  const { data, error } = await db.rpc('kb_import_apply', {
+    p_mode: mode,
+    p_patches: d.changes.map((x) => ({ id: x.id, patch: x.patch })),
+    p_new: d.newRules.map((n) => ({
+      id: n.id,
       category: n.category,
       subcategory: n.subcategory,
       rule_text: n.values.rule_text,
@@ -251,43 +243,28 @@ export async function applyReplace(c: Context<AppEnv>, csv: string, confirm: str
       audience: n.values.audience ?? 'customer',
       ai_can_answer: n.values.ai_can_answer ?? true,
       status: n.values.status ?? 'active',
-      updated_by: staff.userId,
-      updated_at: now,
-    }));
-    const { data: created, error } = await db.from('kb_rules').insert(inserts).select();
-    if (error) return c.json({ error: 'server_error', snapshot_id: snapId }, 500);
-    const rows = (created ?? []) as Record<string, unknown>[];
-    added = rows.length;
-    if (rows.length > 0) {
-      await db.from('kb_change_log').insert(
-        rows.map((r) => ({ rule_id: r.id, changed_by: staff.userId, before: {}, after: r, source: 'replace_all' })),
-      );
-    }
+    })),
+    p_archive: d.toArchive.map((x) => x.id),
+    p_staff: staff.userId,
+    p_note: note,
+  });
+  if (error || !data) {
+    return c.json({ error: 'server_error', message: 'Nothing was changed. Please try again.' }, 500);
   }
-
-  let archived = 0;
-  if (d.toArchive.length > 0) {
-    const { data, error } = await db.rpc('kb_bulk_set_status', {
-      p_ids: d.toArchive.map((x) => x.id),
-      p_status: 'archived',
-      p_staff: staff.userId,
-      p_source: 'replace_all',
-    });
-    if (error) return c.json({ error: 'server_error', snapshot_id: snapId }, 500);
-    archived = Number(data ?? 0);
-  }
+  const r = data as { snapshot_id: string; applied: number; added: number; archived: number };
 
   await notifyBulk(
     deps,
-    `Replace all by ${staff.name}: ${applied} updated, ${added} added, ${archived} archived (not deleted). ` +
+    `${mode === 'replace' ? 'Replace all' : 'CSV import'} by ${staff.name}: ${r.applied} updated, ${r.added} added` +
+      `${mode === 'replace' ? `, ${r.archived} archived (not deleted)` : ''}. ` +
       `Rules the bot can use: ${d.activeBefore} → ${d.activeAfter}. A backup was saved; it can be undone.`,
   );
   return c.json({
-    applied,
-    added,
-    archived,
+    applied: r.applied,
+    added: r.added,
+    archived: r.archived,
     skipped: d.errors.length,
-    snapshot_id: snapId,
+    snapshot_id: r.snapshot_id,
     active_after: d.activeAfter,
     errors: d.errors,
   });

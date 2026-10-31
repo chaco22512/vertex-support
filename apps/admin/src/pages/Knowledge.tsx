@@ -158,31 +158,14 @@ export function Knowledge() {
   }
 
   function onApplied(result: ImportApplyResult) {
-    const mode = importCsv?.mode ?? 'update';
     setImportCsv(null);
     void fetchRules();
-    if (mode === 'replace') {
-      showBulkUndo(
-        `Replaced: ${result.applied} updated, ${result.added ?? 0} added, ${result.archived ?? 0} archived (kept, not deleted).`,
-        result.snapshot_id,
-      );
-      return;
-    }
-    toast.show(
-      {
-        message: `Imported ${result.applied} change(s)${result.skipped ? `, ${result.skipped} skipped` : ''}.`,
-        actionLabel: 'Undo import',
-        onAction: async () => {
-          try {
-            const u = await api.importUndo();
-            toast.show({ message: `Reverted ${u.restored} rule(s).` });
-            void fetchRules();
-          } catch {
-            toast.show({ message: 'Undo failed.' });
-          }
-        },
-      },
-      30_000,
+    // ★v1.8: both modes are backed up, so both undo from the backup.
+    const archived = result.archived ? `, ${result.archived} archived (kept, not deleted)` : '';
+    const skipped = result.skipped ? `, ${result.skipped} row(s) skipped` : '';
+    showBulkUndo(
+      `Imported: ${result.applied} updated, ${result.added ?? 0} added${archived}${skipped}.`,
+      result.snapshot_id,
     );
   }
 
@@ -200,7 +183,7 @@ export function Knowledge() {
           {isAdmin ? (
             <>
               <button className="btn btn-sm" onClick={() => fileRef.current?.click()}>
-                Upload reviewed CSV
+                Upload CSV
               </button>
               <input
                 ref={fileRef}
