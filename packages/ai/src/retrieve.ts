@@ -1,4 +1,5 @@
 import type { KbRule } from '@vertex/shared';
+import { idHasCode } from './categories';
 
 /**
  * Keyword retrieval for the pre-escalation fallback (spec v1.8 §4.1.1).
@@ -92,7 +93,7 @@ export function rankRules(
       score += (idf(t) * f * (K1 + 1)) / (f + K1 * (1 - B + (B * d.len) / avgLen));
     }
     if (score <= 0) continue;
-    if (boost.has(d.rule.category) || boostPrefixes.some((p) => d.rule.id.startsWith(p))) score *= TOPIC_BOOST;
+    if (boost.has(d.rule.category) || boostPrefixes.some((p) => idHasCode(d.rule.id, p))) score *= TOPIC_BOOST;
     ranked.push({ rule: d.rule, score: Math.round(score * 1000) / 1000 });
   }
   ranked.sort((a, b) => b.score - a.score || a.rule.id.localeCompare(b.rule.id));

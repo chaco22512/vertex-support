@@ -164,3 +164,26 @@ describe('CS-managed knowledge lifecycle (Deposit refund sheet)', () => {
     expect(res.body.active_rules).toBe(0);
   });
 });
+
+describe('CS APN sheet (3-letter code APN, "Waiting" status)', () => {
+  const APN = readFileSync(resolve(__dirname, '../../../../../data/kb/KB_APN_formatted_for_KB.csv'), 'utf8');
+
+  it('imports all 35 rows; the Internet tile uses only the customer-usable ones', async () => {
+    const s = setup();
+    const preview = await s.post<Preview>('/api/admin/rules/import/preview', { csv: APN });
+    expect(preview.body.errors).toEqual([]);
+    expect(preview.body.summary).toMatchObject({ added: 35 });
+
+    await s.post('/api/admin/rules/import/apply', { csv: APN });
+    expect(rule(s.db, 'APN005')).toMatchObject({ status: 'pending_review', audience: 'internal' }); // "Waiting"
+    const internet = await fetchScopedRules(
+      s.db.asClient(),
+      resolveKbCategories('internet', menu),
+      resolveIdPrefixes('internet', menu),
+    );
+    // 35 rows − 5 internal / waiting / bot-may-not-use rows = 30 the bot may use.
+    expect(internet).toHaveLength(30);
+    expect(internet.every((r) => r.id.startsWith('APN'))).toBe(true);
+    expect(internet.map((r) => r.id)).not.toContain('APN029'); // Internal
+  });
+});

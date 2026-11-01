@@ -10,7 +10,7 @@ your sheets (the old manuals are kept in storage as *Archived* and are not used)
 
 ### Rule IDs — please read this first
 
-Every row needs a **Rule ID**: a 2-letter topic code + a 3-digit number, for
+Every row needs a **Rule ID**: a topic code (2–4 letters) + a 3-digit number, for
 example **DR001**. Letters and numbers only. Capital or small letters don't
 matter (dr001 is the same as DR001). Each ID can appear only once in a file.
 
@@ -20,6 +20,7 @@ the code that matches the topic:
 | Code | Topic | Used on these chat topics |
 |---|---|---|
 | IN | Internet / APN | Internet |
+| APN | APN setup | Internet |
 | PY | Payment & monthly bill | Payment |
 | LS | Lost SIM or device | Lost |
 | CN | Cancellation | Cancellation, Deposit refund |
@@ -63,7 +64,7 @@ go through. Each message says what to fix, for example:
 | Message starts with | What to do |
 |---|---|
 | "This row has no Rule ID" | Add an ID such as DR016. |
-| "… is not in the expected format" | Use 2 letters + 3 numbers, e.g. DR001. |
+| "… is not in the expected format" | Use the topic code (2–4 letters) + 3 numbers, e.g. DR001 or APN001. |
 | "… is not a topic code" | Use one of the codes in the table above. |
 | "… appears more than once" | Keep one row per Rule ID (dr001 and DR001 count as the same). |
 | "This new rule has no Topic" | Fill in the Topic column. |

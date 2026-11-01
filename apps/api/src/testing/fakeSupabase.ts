@@ -374,7 +374,11 @@ class FakeQuery implements PromiseLike<Result> {
       if (v === null || v === undefined) return false;
     }
     const like = (v: unknown, pattern: string) =>
-      new RegExp('^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*') + '$', 'i').test(
+      new RegExp(
+        // LIKE semantics: % = any run, _ = exactly one character.
+        '^' + pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*').replace(/_/g, '.') + '$',
+        'i',
+      ).test(
         String(v ?? ''),
       );
     for (const [c, pattern] of this.ilikes) if (!like(row[c], pattern)) return false;

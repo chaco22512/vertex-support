@@ -51,6 +51,9 @@ const LABEL_TO_STATUS: Record<string, RuleStatus> = {
   active: 'active',
   'waiting for review': 'pending_review',
   'pending review': 'pending_review',
+  // Short forms CS sheets use.
+  waiting: 'pending_review',
+  pending: 'pending_review',
   disabled: 'disabled',
   archived: 'archived',
 };

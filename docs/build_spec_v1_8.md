@@ -183,13 +183,14 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 ※ 詳細スキーマは各Phaseの計画で確定し、マイグレーションとして追加する（既存データの削除・型変更を伴わない追加のみ）。
 
 ### 3.1 Rule ID 規約（★v1.8、CS管理CSV）
-- 形式: **トピック記号2文字＋連番3桁**（例 `DR001`）。英数字のみ。大文字小文字を区別しない（保存は大文字）。1つの CSV 内で重複不可。
+- 形式: **トピック記号2〜4文字＋連番3桁**（例 `DR001`, `APN001`）。英数字のみ。大文字小文字を区別しない（保存は大文字）。1つの CSV 内で重複不可。トピック範囲は「記号＋ちょうど3桁」で照合（`IN` が `INT001` に一致しない）。Status 列は `Waiting` / `Pending` も「Waiting for review」として受け付ける（2026-11-01、CS の APN シート対応）。
 - **同じルールには常に同じ ID を使う**（変更履歴 kb_change_log が Rule ID で繋がり、誰がいつ何を変えたか追えるため）。番号の付け直し・再利用はしない。
 - **ID の記号が AI のトピック範囲を決める**（§4.1。Topic 列は表示・分類用の自由記述）。記号表（`packages/shared/src/ruleId.ts` と `data/menu_categories.json` の `id_prefixes`）:
 
 | 記号 | 意味 | この記号のルールを使うチャットのタイル |
 |---|---|---|
 | IN | Internet / APN | Internet |
+| APN | APN setup | Internet |
 | PY | Payment & monthly bill | Payment |
 | LS | Lost SIM or device | Lost |
 | CN | Cancellation | Cancellation, Deposit refund |

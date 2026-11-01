@@ -32,9 +32,10 @@ export async function fetchScopedRules(
   const byCategory = await fetchPaged(client, (q) => (categories === null ? q : q.in('category', categories)));
   if (categories === null || idPrefixes.length === 0) return byCategory;
 
-  // PostgREST or-filter on id prefixes; codes are validated 2-letter A–Z.
+  // PostgREST or-filter: the code + exactly 3 characters (`_` = one character),
+  // so "IN" never picks up "INT001". Codes are validated A–Z, 2–4 letters.
   const byPrefix = await fetchPaged(client, (q) =>
-    q.or(idPrefixes.map((p) => `id.ilike.${p}%`).join(',')),
+    q.or(idPrefixes.map((p) => `id.ilike.${p}___`).join(',')),
   );
   const merged = new Map<string, KbRule>();
   for (const r of [...byCategory, ...byPrefix]) merged.set(r.id, r);

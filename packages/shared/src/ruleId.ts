@@ -1,6 +1,6 @@
 /**
- * Rule ID convention for CS-managed knowledge (spec v1.8 §3.1): a 2-letter
- * topic code + a 3-digit number, e.g. DR001. Letters and digits only, case-
+ * Rule ID convention for CS-managed knowledge (spec v1.8 §3.1): a 2–4 letter
+ * topic code + a 3-digit number, e.g. DR001 or APN001. Letters and digits only, case-
  * insensitive (stored upper-case), unique within a sheet. The code also decides
  * which chat topic(s) the AI uses the rule for (data/menu_categories.json
  * `id_prefixes`), so CS can word the Topic column however they like.
@@ -9,6 +9,7 @@
 /** Topic codes CS may use, with the plain-English topic each one stands for. */
 export const RULE_ID_CODES: Record<string, string> = {
   IN: 'Internet / APN',
+  APN: 'APN setup (Internet / APN)',
   PY: 'Payment & monthly bill',
   LS: 'Lost SIM or device',
   CN: 'Cancellation',
@@ -22,7 +23,7 @@ export const RULE_ID_CODES: Record<string, string> = {
   OT: 'Other',
 };
 
-const NEW_ID = /^([A-Z]{2})(\d{3})$/;
+const NEW_ID = /^([A-Z]{2,4})(\d{3})$/;
 
 /** Upper-case + trim, so "dr001 " and "DR001" are the same rule. */
 export function normalizeRuleId(raw: string): string {
@@ -42,7 +43,7 @@ export function ruleIdProblem(id: string): string | null {
   }
   const m = id.match(NEW_ID);
   if (!m) {
-    return `Rule ID "${id}" is not in the expected format. Use 2 letters for the topic + 3 numbers, e.g. DR001.`;
+    return `Rule ID "${id}" is not in the expected format. Use the topic code (2–4 letters) + 3 numbers, e.g. DR001 or APN001.`;
   }
   if (!RULE_ID_CODES[m[1]!]) {
     const codes = Object.entries(RULE_ID_CODES)

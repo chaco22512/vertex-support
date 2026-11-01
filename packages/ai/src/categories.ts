@@ -58,5 +58,10 @@ export function resolveKbCategories(
  */
 export function resolveIdPrefixes(topicCategory: string, menu: MenuCategories): string[] {
   const category = menu.categories.find((c) => c.id === topicCategory);
-  return (category?.id_prefixes ?? []).filter((p) => /^[A-Z]{2}$/.test(p));
+  return (category?.id_prefixes ?? []).filter((p) => /^[A-Z]{2,4}$/.test(p));
+}
+
+/** True when `id` is `code` + exactly 3 digits, so "IN" never matches "INT001". */
+export function idHasCode(id: string, code: string): boolean {
+  return id.length === code.length + 3 && id.startsWith(code) && /^\d{3}$/.test(id.slice(code.length));
 }

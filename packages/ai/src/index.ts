@@ -4,6 +4,7 @@ export {
   resolveKbCategories,
   resolveTopicLabel,
   resolveIdPrefixes,
+  idHasCode,
   GENERAL_CATEGORY,
   type MenuCategory,
   type MenuCategories,

@@ -148,7 +148,7 @@ describe('Replace all (CSV mode=replace)', () => {
     const s = setup();
     for (const [id, hint] of [
       ['XX001', 'not a topic code'],
-      ['DR01', '2 letters for the topic + 3 numbers'],
+      ['DR01', 'topic code (2–4 letters) + 3 numbers'],
       ['', 'no Rule ID'],
     ] as const) {
       const res = await s.post('/api/admin/rules/import/preview', { csv: replacementSheet(s.db, id), mode: 'replace' });
