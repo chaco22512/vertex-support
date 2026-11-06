@@ -50,14 +50,13 @@ export const en: Messages = {
     thinking: 'Assistant is typing',
   },
   categories: {
-    internet: 'Internet not working / APN setup',
+    internet: 'Set up APN or mobile internet',
+    connection: 'Report a signal or connection issue',
     payment: 'Pay my monthly bill',
     lost: 'Replace a lost or damaged SIM card/device',
     cancel: 'Cancel my SIM card or Wi-Fi plan',
     return: 'Return my SIM card or Wi-Fi device',
     replace: 'Change or replace my plan',
-    reissue: 'Signal stopped / re-issue',
-    refund: 'Refund / deposit / cashback',
     deposit: 'Deposit refund or cashback inquiry',
     plans: 'View plans and requirements',
     others: 'Something else',
@@ -65,8 +64,14 @@ export const en: Messages = {
   subQuestions: {
     internet: [
       'How do I set up APN on my phone?',
-      'My SIM has no signal',
-      "Pocket wifi won't connect to my device",
+      'Which setup video is for my plan?',
+      'I put my SIM in a new phone',
+    ],
+    connection: [
+      'My internet is not working',
+      'My internet is slow',
+      'I have no signal',
+      "My pocket Wi-Fi won't connect",
     ],
     payment: [
       'How do I pay my monthly bill?',
@@ -74,7 +79,12 @@ export const en: Messages = {
       'My signal stopped — is it because of payment?',
       'Can I pay by bank transfer?',
     ],
-    lost: ['I lost my SIM card', 'I lost my pocket wifi', 'How much is the lost fee?'],
+    lost: [
+      'I lost my SIM card',
+      'I lost my pocket wifi',
+      'My SIM card is damaged',
+      'How much is the re-issue fee?',
+    ],
     cancel: [
       'How do I cancel my plan?',
       'Is there a cancellation fee?',
@@ -85,16 +95,21 @@ export const en: Messages = {
       'How do I return at a convenience store?',
       'What do I need to send back?',
     ],
-    replace: ['My SIM/device is broken', 'I want to change my plan', 'Is replacement free?'],
-    reissue: [
-      'My signal was stopped, how do I restore it?',
-      'What is the re-issue (termination) fee?',
+    replace: [
+      'My SIM/device is broken',
+      'I want to change my plan',
+      'Is replacement free?',
     ],
-    refund: ['When will I get my cashback?', 'How do I get my deposit back?'],
     deposit: [
       'How do I get my SIM deposit back?',
       'When is my deposit refunded?',
+      'When will I get my cashback?',
       'Is the deposit paid back to my bank account?',
+    ],
+    plans: [
+      'What plans are available?',
+      'What do I need to apply?',
+      'Which plans include calls?',
     ],
   },
 };

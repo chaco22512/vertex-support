@@ -10,15 +10,34 @@ export interface MenuCategory {
   kb_categories?: string[];
   /** ★v1.8: Rule ID topic codes used for this tile (e.g. DR001 → "DR"). */
   id_prefixes?: string[];
+  /**
+   * ★2026-11-06: use another tile's knowledge range (e.g. "connection" →
+   * "internet"): the tiles differ only in their sample questions.
+   */
+  scope_of?: string;
   behavior?: string;
 }
 
 export interface MenuCategories {
   categories: MenuCategory[];
+  /** ★2026-11-06: retired topic id → the tile it was merged into (old conversations). */
+  aliases?: Record<string, string>;
 }
 
 /** Always included as shared context (menu_categories.json note). */
 export const GENERAL_CATEGORY = 'GENERAL RULES';
+
+/** A retired topic id (merged tile) → its current tile id; others unchanged. */
+export function canonicalTopic(topicCategory: string, menu: MenuCategories): string {
+  return menu.aliases?.[topicCategory] ?? topicCategory;
+}
+
+/** The tile whose knowledge range a topic uses (after aliases and scope_of). */
+function scopeTile(topicCategory: string, menu: MenuCategories): MenuCategory | undefined {
+  const own = menu.categories.find((c) => c.id === canonicalTopic(topicCategory, menu));
+  if (!own?.scope_of) return own;
+  return menu.categories.find((c) => c.id === own.scope_of) ?? own;
+}
 
 /**
  * The customer-facing English label for a topic id, used to inject topic
@@ -26,7 +45,8 @@ export const GENERAL_CATEGORY = 'GENERAL RULES';
  */
 export function resolveTopicLabel(topicCategory: string, menu: MenuCategories): string | null {
   if (!topicCategory) return null;
-  return menu.categories.find((c) => c.id === topicCategory)?.label_en ?? null;
+  const id = canonicalTopic(topicCategory, menu);
+  return menu.categories.find((c) => c.id === id)?.label_en ?? null;
 }
 
 /**
@@ -39,8 +59,8 @@ export function resolveKbCategories(
 ): string[] | null {
   if (!topicCategory || topicCategory === 'others') return null;
 
-  const category = menu.categories.find((c) => c.id === topicCategory);
-  if (!category) return null;
+  const category = scopeTile(topicCategory, menu);
+  if (!category || category.id === 'others') return null;
 
   const kb = category.kb_categories ?? [];
   if (kb.length === 0 || kb.includes('*')) return null;
@@ -57,7 +77,7 @@ export function resolveKbCategories(
  * Returns [] for unknown topics; callers pass null categories for "all".
  */
 export function resolveIdPrefixes(topicCategory: string, menu: MenuCategories): string[] {
-  const category = menu.categories.find((c) => c.id === topicCategory);
+  const category = scopeTile(topicCategory, menu);
   return (category?.id_prefixes ?? []).filter((p) => /^[A-Z]{2,4}$/.test(p));
 }
 

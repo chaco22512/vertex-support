@@ -82,7 +82,7 @@ describe('topic switch on a new question (§4.1.1)', () => {
     expect(body.topic_category).toBe('internet');
     expect(body.escalated).toBe(false);
     expect(s.db.tables.conversations[0]!.topic_category).toBe('internet');
-    expect(markers(s)).toEqual(['Topic: Cancel my SIM card or Wi-Fi plan', 'Topic: Internet not working / APN setup']);
+    expect(markers(s)).toEqual(['Topic: Cancel my SIM card or Wi-Fi plan', 'Topic: Set up APN or mobile internet']);
   });
 });
 
@@ -161,14 +161,13 @@ describe('POST /api/conversations/:token/topic (§6.1-7)', () => {
     expect((await post(s, `/api/conversations/${token}/topic`, { topic_category: 'nope' })).status).toBe(400);
   });
 
-  it('Plans & prices with contact on file hands straight to staff (price_question)', async () => {
+  it('Plans is answered by the AI since 2026-11-06: switching to it does not hand off to staff', async () => {
     const s = setup();
     const token = await start(s);
     Object.assign(s.db.tables.conversations[0]!, { status: 'staff_replied', contact_email: 'a@b.com' });
     const res = await post(s, `/api/conversations/${token}/topic`, { topic_category: 'plans' });
-    expect(((await res.json()) as { followup_escalated: boolean }).followup_escalated).toBe(true);
-    expect(s.db.tables.conversations[0]!.status).toBe('escalated');
-    expect(s.slack.calls[0]).toContain('AI reason: price_question');
+    expect(((await res.json()) as { followup_escalated: boolean }).followup_escalated).toBe(false);
+    expect(s.slack.calls).toHaveLength(0);
   });
 
   it('Plans & prices without contact just switches (client shows the contact cards)', async () => {

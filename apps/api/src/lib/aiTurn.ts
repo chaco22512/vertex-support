@@ -29,9 +29,9 @@ export const FALLBACK_START_LIMIT_MS = 7_500;
 /** @deprecated v1.8 — kept for callers that still reference the old name. */
 export const AI_TIMEOUT_MS = AI_BUDGET_MS;
 
-/** Topics the model may assign a question to (★v1.8). 'plans' is handled client-side. */
+/** Topics the model may assign a question to (★v1.8; Plans answered by the AI since 2026-11-06). */
 const TOPICS = menu.categories
-  .filter((c) => c.id !== 'plans')
+  .filter((c) => c.id !== 'others')
   .map((c) => ({ id: c.id, label: c.label_en ?? c.id }));
 const TOPIC_IDS = new Set(TOPICS.map((t) => t.id));
 

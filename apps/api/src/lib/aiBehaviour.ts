@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { PromptBehaviour } from '@vertex/ai';
+import { canonicalTopic, type PromptBehaviour } from '@vertex/ai';
 import { menu } from './menu';
 
 /**
@@ -8,9 +8,8 @@ import { menu } from './menu';
  * are fixed in code (packages/ai prompt.ts) and never stored here.
  */
 
-/** Topics that get their own ③ tab — every menu topic the AI answers ('plans' never reaches the AI). */
+/** Topics that get their own ③ tab — every menu topic the AI answers. */
 export const BEHAVIOUR_TOPICS = menu.categories
-  .filter((c) => c.id !== 'plans')
   .map((c) => ({ id: c.id, label: c.label_en ?? c.id }));
 
 /** Size guidance shown in the editor; `max` is enforced on save. */
@@ -44,6 +43,21 @@ export function behaviourFor(content: BehaviourContent | null, topicId: string |
   if (!content) return undefined;
   return {
     common: content.common_behaviour ?? '',
-    topic: (topicId && content.topic_instructions?.[topicId]) || '',
+    topic: topicGuidance(content, topicId),
   };
 }
+
+/**
+ * ③ for a topic: its own text; for a tile sharing another's range (scope_of,
+ * e.g. connection → internet) with no text of its own, the shared tile's text;
+ * retired ids (aliases) use the tile they were merged into.
+ */
+function topicGuidance(content: BehaviourContent, topicId: string | null): string {
+  if (!topicId) return '';
+  const id = canonicalTopic(topicId, menu);
+  const own = content.topic_instructions?.[id];
+  if (own) return own;
+  const parent = menu.categories.find((c) => c.id === id)?.scope_of;
+  return (parent && content.topic_instructions?.[parent]) || '';
+}
+

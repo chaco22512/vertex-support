@@ -52,14 +52,19 @@ describe('App guided flow', () => {
     expect(await screen.findByText('Here is the lost-SIM procedure.')).toBeTruthy();
   });
 
-  it('Plans & prices goes to the intake card (then contact) without AI', async () => {
+  it('Plans is a normal AI tile since 2026-11-06: shows its sample questions, no contact card', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'English' }));
     fireEvent.click(screen.getByRole('button', { name: en.categories.plans }));
-    // §6.2 v1.6: the situation (intake) card shows first, before the contact card.
-    expect(await screen.findByText(en.ui.intakeTitle)).toBeTruthy();
-    // Skipping the intake advances to the contact card.
-    fireEvent.click(screen.getByRole('button', { name: en.ui.intakeSkip }));
-    expect(await screen.findByText(en.ui.escalationTitle)).toBeTruthy();
+    expect(await screen.findByRole('button', { name: en.subQuestions.plans![0] })).toBeTruthy();
+    expect(screen.queryByText(en.ui.intakeTitle)).toBeNull();
+  });
+
+  it('shows 10 tiles: two Internet tiles, no Re-issue / Refund tiles', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'English' }));
+    expect(await screen.findByRole('button', { name: en.categories.connection })).toBeTruthy();
+    expect(screen.getByRole('button', { name: en.categories.internet })).toBeTruthy();
+    expect(document.querySelectorAll('.tile')).toHaveLength(10);
   });
 });

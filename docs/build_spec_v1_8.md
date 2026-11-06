@@ -6,6 +6,7 @@ v1.7→v1.8 の変更（CS要望3件＋取得上限の調査。指示書 `docs/c
 - **Phase 2（AI behaviour タブ）**: プロンプトを ①安全ルール(固定)／②共通の振る舞い(編集可)／③トピック別の指示(編集可) の3層に分け、下書き→セーフティテスト→Publish、版管理・ロールバック、Try it（§4.2.1, §7.8）。
 - **Phase 3（ナレッジ一括操作の安全版）**: CSV「Replace all」モード（対象外は archived、物理削除なし）、「Disable all in this view」、自動スナップショット3世代＋復元、アクティブ0件時は全質問をエスカレ（§3, §4.1.0, §7.4.2）。
 - 受け入れ基準 52–64 を追加（§10）。
+- **2026-11-06 タイル再編（11→10）**: (a) Internet を「Set up APN or mobile internet」(`internet`) と「Report a signal or connection issue」(`connection`, `scope_of: internet`＝同じナレッジ範囲。違いは定型質問のみ。将来 scope_of を外せば分離可) に表示分割。(c) Signal stopped / re-issue を Lost/damaged に、Refund/deposit/cashback を Deposit refund に統合（範囲の付け替えで、ルールは無効化しない。旧 topic id は menu の `aliases` で統合先の範囲・ラベルに読み替え）。Plans は AI 回答タイルに変更（PL ルールを範囲に。月額・割引・COD は安全ルールで引き続き price_question）。(b) Holiday Plans／Discounts and Promo はナレッジ待ちで保留（docs/pending-cs-assets.md）。遅延による電波停止の説明は CS に GN001 として追加依頼（現状 PY007）。受け入れ基準 74–77。
 - **CS管理CSVによるナレッジ運用（2026-10-31）**: CS が作る CSV を唯一の正とし、更新のたびに取り込む。旧 2,886 件（R/P/F/C）は 10/30 の Replace all で archived のまま保持（復元しない）。Rule ID 規約（§3.1）、ID 記号によるトピック範囲（§4.1）、両モードで新規追加・1トランザクション適用（§7.4.1）、Dashboard の空ナレッジ警告（§7.1）。受け入れ基準 65–70。
 - **2026-11-06 CS 改定**: メニューの見出し・タイル文言を CS 案に変更（5言語、トピック・範囲・会話フローは不変。見出し "How can we help you today?"、Cancel my SIM card or Wi-Fi plan／Return my SIM card or Wi-Fi device／Deposit refund or cashback inquiry／Change or replace my plan／Replace a lost or damaged SIM card/device／Pay my monthly bill／View plans and requirements／Something else）。AI 使用回数の表示を「会社全体で共有する Google の無料枠」「リセットは日本時間 17:00（夏は16:00）、today/tomorrow 付き」と明記。顧客チャットで 1分10回の送信制限に当たった場合は「少し待ってから再送」の専用メッセージ（5言語）。
 
@@ -197,10 +198,10 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 | CN | Cancellation | Cancellation, Deposit refund |
 | RT | Returning SIM / device | Returning |
 | RP | Replacement / change plan | Replacement |
-| RI | Signal stopped / re-issue | Re-issue, Lost |
-| RF | Refund / deposit / cashback | Refund, Deposit refund |
-| DR | Deposit refund | Deposit refund, Refund |
-| PL | Plans & prices | （Plans タイルは AI を使わない。Others と全マニュアル検索でのみ参照） |
+| RI | Re-issue | Lost / damaged SIM（2026-11-06 Re-issue タイルを統合） |
+| RF | Refund / cashback | Deposit refund（2026-11-06 Refund タイルを統合） |
+| DR | Deposit refund | Deposit refund |
+| PL | Plans & requirements | Plans（2026-11-06 から AI が回答。月額・割引・COD 価格は引き続き回答しない） |
 | GN | General（全トピック共通） | 全タイル |
 | OT | Other | Others と全マニュアル検索のみ |
 - 旧 ID（R/P/F/C…、archived）は規約チェックの対象外（更新は可能）。
@@ -690,6 +691,12 @@ Archive all／完全削除（★v1.8 オーナー判断 2026-10-31）:
 71. Archive all は ARCHIVE の入力と件数一致が必要で、全ルールが archived になり（削除されない）、Undo で戻る
 72. Delete archived rules permanently は DELETE の入力と件数一致が必要で、archived のルールだけが消え、AI が使うルールは残る
 73. 削除後も変更履歴は残り（削除の記録付き）、Backups の Undo／Restore everything で削除したルールが再作成される
+
+タイル再編（★2026-11-06）:
+74. タイルは10個（Set up APN or mobile internet／Report a signal or connection issue／Pay my monthly bill／Replace a lost or damaged SIM card/device／Cancel…／Return…／Change or replace my plan／Deposit refund or cashback inquiry／View plans and requirements／Something else）、5言語
+75. 2つの Internet タイルは同じナレッジ範囲を使い、表示する定型質問だけが異なる
+76. 旧 Re-issue／Refund タイルの会話は統合先（Lost／Deposit）の範囲とラベルで続行できる
+77. Plans タイルは AI が PL ルールで回答し、月額・割引・COD を聞かれたら金額を出さずスタッフへ回す
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

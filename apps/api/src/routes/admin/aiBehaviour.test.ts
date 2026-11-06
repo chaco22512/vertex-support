@@ -85,7 +85,7 @@ async function saveDraft(s: ReturnType<typeof setup>, body: unknown = draft): Pr
 }
 
 describe('AI behaviour — read', () => {
-  it('returns the fixed safety rules read-only, 10 topics (no Plans) and limits', async () => {
+  it('returns the fixed safety rules read-only, one ③ tab per tile and limits', async () => {
     const s = setup();
     const body = (await (await s.get('/api/admin/ai-behaviour')).json()) as {
       fixed: { safety_rules: string };
@@ -95,7 +95,7 @@ describe('AI behaviour — read', () => {
     };
     expect(body.fixed.safety_rules).toContain('override EVERY other instruction');
     expect(body.topics).toHaveLength(10);
-    expect(body.topics.map((t) => t.id)).not.toContain('plans');
+    expect(body.topics.map((t) => t.id)).toEqual(expect.arrayContaining(['plans', 'connection']));
     expect(body.limits.max).toBe(12_000);
     expect(body.latest).toBeNull();
   });
@@ -121,7 +121,7 @@ describe('AI behaviour — drafts', () => {
     const s = setup();
     expect((await s.post('/api/admin/ai-behaviour/versions', { ...draft, common_behaviour: 'x'.repeat(12_001) })).status).toBe(400);
     expect(
-      (await s.post('/api/admin/ai-behaviour/versions', { ...draft, topic_instructions: { plans: 'x' } })).status,
+      (await s.post('/api/admin/ai-behaviour/versions', { ...draft, topic_instructions: { reissue: 'x' } })).status,
     ).toBe(400);
   });
 });

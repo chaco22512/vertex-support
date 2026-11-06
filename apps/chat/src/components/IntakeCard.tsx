@@ -4,8 +4,9 @@ import type { IntakeInfo } from '@vertex/shared';
 import type { UiStrings } from '../i18n';
 
 const COMMON: (keyof IntakeInfo)[] = ['customer_number', 'smartpit', 'registered_phone'];
-const TROUBLE = new Set(['internet', 'reissue', 'lost', 'replace']);
-const BILLING = new Set(['cancel', 'payment', 'refund', 'return']);
+// 'reissue' / 'refund' kept for conversations started before the 2026-11-06 merge.
+const TROUBLE = new Set(['internet', 'connection', 'reissue', 'lost', 'replace']);
+const BILLING = new Set(['cancel', 'payment', 'refund', 'deposit', 'return']);
 
 /** Topic-appropriate intake fields (spec §6.2 v1.6). Common fields always shown. */
 export function intakeFieldsFor(topic: string | null): (keyof IntakeInfo)[] {

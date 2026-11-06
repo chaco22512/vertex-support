@@ -51,23 +51,28 @@ export const vi: Messages = {
     thinking: 'Trợ lý đang nhập',
   },
   categories: {
-    internet: 'Internet không hoạt động / cài đặt APN',
+    internet: 'Cài đặt APN hoặc Internet di động',
+    connection: 'Báo sự cố sóng hoặc kết nối',
     payment: 'Thanh toán hóa đơn hàng tháng',
     lost: 'Thay thẻ SIM/thiết bị bị mất hoặc hư hỏng',
     cancel: 'Hủy thẻ SIM hoặc gói Wi-Fi của tôi',
     return: 'Trả lại thẻ SIM hoặc thiết bị Wi-Fi của tôi',
     replace: 'Đổi hoặc thay gói cước của tôi',
-    reissue: 'Mất tín hiệu / cấp lại',
-    refund: 'Hoàn tiền / tiền cọc / hoàn tiền mặt',
     deposit: 'Hỏi về hoàn tiền cọc hoặc cashback',
     plans: 'Xem các gói cước và yêu cầu',
     others: 'Vấn đề khác',
   },
   subQuestions: {
     internet: [
-      'Làm thế nào để cài đặt APN trên điện thoại của tôi?',
-      'SIM của tôi không có tín hiệu',
-      'Pocket wifi không kết nối với thiết bị của tôi',
+      'Cách cài đặt APN trên điện thoại?',
+      'Video hướng dẫn nào dành cho gói của tôi?',
+      'Tôi đã lắp SIM vào điện thoại mới',
+    ],
+    connection: [
+      'Internet của tôi không hoạt động',
+      'Internet của tôi chậm',
+      'Tôi không có sóng',
+      'Pocket Wi-Fi của tôi không kết nối được',
     ],
     payment: [
       'Làm thế nào để thanh toán hóa đơn hàng tháng?',
@@ -75,7 +80,12 @@ export const vi: Messages = {
       'Tín hiệu của tôi bị ngừng — có phải do thanh toán không?',
       'Tôi có thể thanh toán bằng chuyển khoản ngân hàng không?',
     ],
-    lost: ['Tôi bị mất thẻ SIM', 'Tôi bị mất pocket wifi', 'Phí mất là bao nhiêu?'],
+    lost: [
+      'Tôi bị mất thẻ SIM',
+      'Tôi bị mất pocket wifi',
+      'Thẻ SIM của tôi bị hỏng',
+      'Phí cấp lại là bao nhiêu?',
+    ],
     cancel: [
       'Làm thế nào để hủy gói của tôi?',
       'Có phí hủy không?',
@@ -86,16 +96,21 @@ export const vi: Messages = {
       'Làm thế nào để trả lại tại cửa hàng tiện lợi?',
       'Tôi cần gửi lại những gì?',
     ],
-    replace: ['SIM/thiết bị của tôi bị hỏng', 'Tôi muốn đổi gói', 'Thay thế có miễn phí không?'],
-    reissue: [
-      'Tín hiệu của tôi đã bị ngừng, làm thế nào để khôi phục?',
-      'Phí cấp lại (chấm dứt) là bao nhiêu?',
+    replace: [
+      'SIM/thiết bị của tôi bị hỏng',
+      'Tôi muốn đổi gói',
+      'Thay thế có miễn phí không?',
     ],
-    refund: ['Khi nào tôi nhận được tiền hoàn lại?', 'Làm thế nào để lấy lại tiền cọc?'],
     deposit: [
       'Làm thế nào để lấy lại tiền cọc SIM của tôi?',
       'Khi nào tiền cọc của tôi được hoàn lại?',
+      'Khi nào tôi nhận được tiền hoàn lại?',
       'Tiền cọc có được hoàn vào tài khoản ngân hàng của tôi không?',
+    ],
+    plans: [
+      'Có những gói cước nào?',
+      'Tôi cần gì để đăng ký?',
+      'Gói nào có gọi điện?',
     ],
   },
 };

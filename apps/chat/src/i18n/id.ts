@@ -51,14 +51,13 @@ export const id: Messages = {
     thinking: 'Asisten sedang mengetik',
   },
   categories: {
-    internet: 'Internet tidak berfungsi / setelan APN',
+    internet: 'Atur APN atau internet seluler',
+    connection: 'Laporkan masalah sinyal atau koneksi',
     payment: 'Bayar tagihan bulanan saya',
     lost: 'Ganti kartu SIM/perangkat yang hilang atau rusak',
     cancel: 'Batalkan kartu SIM atau paket Wi-Fi saya',
     return: 'Kembalikan kartu SIM atau perangkat Wi-Fi saya',
     replace: 'Ganti atau ubah paket saya',
-    reissue: 'Sinyal terhenti / penerbitan ulang',
-    refund: 'Pengembalian dana / deposit / cashback',
     deposit: 'Pertanyaan pengembalian deposit atau cashback',
     plans: 'Lihat paket dan persyaratan',
     others: 'Hal lain',
@@ -66,8 +65,14 @@ export const id: Messages = {
   subQuestions: {
     internet: [
       'Bagaimana cara mengatur APN di ponsel saya?',
-      'SIM saya tidak ada sinyal',
-      'Pocket wifi tidak terhubung ke perangkat saya',
+      'Video pengaturan mana yang untuk paket saya?',
+      'Saya memasang SIM saya di ponsel baru',
+    ],
+    connection: [
+      'Internet saya tidak berfungsi',
+      'Internet saya lambat',
+      'Tidak ada sinyal',
+      'Pocket Wi-Fi saya tidak bisa terhubung',
     ],
     payment: [
       'Bagaimana cara membayar tagihan bulanan saya?',
@@ -75,7 +80,12 @@ export const id: Messages = {
       'Sinyal saya terhenti — apakah karena pembayaran?',
       'Bisakah saya membayar lewat transfer bank?',
     ],
-    lost: ['Saya kehilangan kartu SIM saya', 'Saya kehilangan pocket wifi saya', 'Berapa biaya kehilangan?'],
+    lost: [
+      'Saya kehilangan kartu SIM saya',
+      'Saya kehilangan pocket wifi saya',
+      'Kartu SIM saya rusak',
+      'Berapa biaya penerbitan ulang?',
+    ],
     cancel: [
       'Bagaimana cara membatalkan paket saya?',
       'Apakah ada biaya pembatalan?',
@@ -86,16 +96,21 @@ export const id: Messages = {
       'Bagaimana cara mengembalikan di minimarket?',
       'Apa yang harus saya kirim kembali?',
     ],
-    replace: ['SIM/perangkat saya rusak', 'Saya ingin ganti paket', 'Apakah penggantian gratis?'],
-    reissue: [
-      'Sinyal saya dihentikan, bagaimana cara memulihkannya?',
-      'Berapa biaya penerbitan ulang (penghentian)?',
+    replace: [
+      'SIM/perangkat saya rusak',
+      'Saya ingin ganti paket',
+      'Apakah penggantian gratis?',
     ],
-    refund: ['Kapan saya menerima cashback saya?', 'Bagaimana cara mendapatkan deposit saya kembali?'],
     deposit: [
       'Bagaimana cara mendapatkan deposit SIM saya kembali?',
       'Kapan deposit saya dikembalikan?',
+      'Kapan saya menerima cashback saya?',
       'Apakah deposit dikembalikan ke rekening bank saya?',
+    ],
+    plans: [
+      'Paket apa saja yang tersedia?',
+      'Apa yang saya perlukan untuk mendaftar?',
+      'Paket mana yang termasuk panggilan?',
     ],
   },
 };

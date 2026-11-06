@@ -51,23 +51,28 @@ export const tl: Messages = {
     thinking: 'Nagta-type ang assistant',
   },
   categories: {
-    internet: 'Hindi gumagana ang internet / APN setup',
+    internet: 'I-set up ang APN o mobile internet',
+    connection: 'I-report ang problema sa signal o koneksyon',
     payment: 'Bayaran ang aking buwanang bill',
     lost: 'Palitan ang nawala o nasirang SIM card/device',
     cancel: 'Kanselahin ang aking SIM card o Wi-Fi plan',
     return: 'Ibalik ang aking SIM card o Wi-Fi device',
     replace: 'Baguhin o palitan ang aking plan',
-    reissue: 'Huminto ang signal / re-issue',
-    refund: 'Refund / deposito / cashback',
     deposit: 'Tanong tungkol sa refund ng deposito o cashback',
     plans: 'Tingnan ang mga plan at kinakailangan',
     others: 'Iba pa',
   },
   subQuestions: {
     internet: [
-      'Paano i-set up ang APN sa aking telepono?',
-      'Walang signal ang aking SIM',
-      'Hindi kumokonekta ang pocket wifi sa aking device',
+      'Paano i-set up ang APN sa aking phone?',
+      'Aling setup video ang para sa aking plan?',
+      'Inilagay ko ang SIM ko sa bagong phone',
+    ],
+    connection: [
+      'Hindi gumagana ang internet ko',
+      'Mabagal ang internet ko',
+      'Wala akong signal',
+      'Hindi kumokonekta ang pocket Wi-Fi ko',
     ],
     payment: [
       'Paano magbayad ng aking buwanang bill?',
@@ -75,7 +80,12 @@ export const tl: Messages = {
       'Huminto ang aking signal — dahil ba ito sa bayad?',
       'Pwede ba akong magbayad sa pamamagitan ng bank transfer?',
     ],
-    lost: ['Nawala ang aking SIM card', 'Nawala ang aking pocket wifi', 'Magkano ang bayad sa pagkawala?'],
+    lost: [
+      'Nawala ang aking SIM card',
+      'Nawala ang aking pocket wifi',
+      'Sira ang aking SIM card',
+      'Magkano ang bayad sa muling pag-isyu?',
+    ],
     cancel: [
       'Paano kanselahin ang aking plan?',
       'May bayad ba sa pagkansela?',
@@ -86,16 +96,21 @@ export const tl: Messages = {
       'Paano magbalik sa convenience store?',
       'Ano ang kailangan kong ibalik?',
     ],
-    replace: ['Sira ang aking SIM/device', 'Gusto kong baguhin ang aking plan', 'Libre ba ang palit?'],
-    reissue: [
-      'Huminto ang aking signal, paano ko ito maibabalik?',
-      'Magkano ang bayad sa re-issue (pagtatapos)?',
+    replace: [
+      'Sira ang aking SIM/device',
+      'Gusto kong baguhin ang aking plan',
+      'Libre ba ang palit?',
     ],
-    refund: ['Kailan ko makukuha ang aking cashback?', 'Paano ko makukuha ang aking deposito?'],
     deposit: [
       'Paano ko makukuha ang aking SIM deposito?',
       'Kailan isinasauli ang aking deposito?',
+      'Kailan ko makukuha ang aking cashback?',
       'Isinasauli ba ang deposito sa aking bank account?',
+    ],
+    plans: [
+      'Anong mga plan ang available?',
+      'Ano ang kailangan ko para mag-apply?',
+      'Aling mga plan ang may kasamang tawag?',
     ],
   },
 };

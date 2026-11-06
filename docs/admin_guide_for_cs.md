@@ -19,17 +19,17 @@ the code that matches the topic:
 
 | Code | Topic | Used on these chat topics |
 |---|---|---|
-| IN | Internet / APN | Internet |
-| APN | APN setup | Internet |
+| IN | Internet / connection | Both Internet tiles |
+| APN | APN setup | Both Internet tiles |
 | PY | Payment & monthly bill | Payment |
-| LS | Lost SIM or device | Lost |
+| LS | Lost SIM or device | Lost / damaged |
 | CN | Cancellation | Cancellation, Deposit refund |
 | RT | Returning SIM / device | Returning |
 | RP | Replacement / change plan | Replacement |
-| RI | Signal stopped / re-issue | Re-issue, Lost |
-| RF | Refund / deposit / cashback | Refund, Deposit refund |
-| DR | Deposit refund | Deposit refund, Refund |
-| PL | Plans & prices | Only when a customer asks under "Others" |
+| RI | Re-issue | Lost / damaged |
+| RF | Refund / cashback | Deposit refund |
+| DR | Deposit refund | Deposit refund |
+| PL | Plans & requirements | Plans (the bot never gives monthly prices or discount amounts) |
 | GN | General — used on every topic | All topics |
 | OT | Other | Only when a customer asks under "Others" |
 

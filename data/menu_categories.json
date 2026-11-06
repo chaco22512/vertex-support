@@ -1,11 +1,11 @@
 {
  "version": "1.5",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet. v1.5 (spec v1.7 CS docs Phase 4): added a dedicated 'deposit' tile (Deposit refund) split out of refund — deposit needs contract-group (2024/12/11) judgment; scope = AI_Deposit Refund + AI_Cancellation (notice-period dependency) + REFUNDDEPOSIT CASHBACK + GENERAL. Now 11 tiles (Others still last). CS proposals to split Signal/APN/Internet and Plans were NOT adopted (kept 1 tile each + diagnostic ask / always_escalate); Lost and Replacement kept separate. ★v1.8: id_prefixes = Rule ID topic codes (e.g. DR001 → DR) the AI uses for this tile, in addition to kb_categories (legacy rules). Codes: docs/build_spec_v1_8.md §3.1. 2026-11-06: CS label revision (labels only; topics, scopes and flow unchanged).",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet. v1.5 (spec v1.7 CS docs Phase 4): added a dedicated 'deposit' tile (Deposit refund) split out of refund — deposit needs contract-group (2024/12/11) judgment; scope = AI_Deposit Refund + AI_Cancellation (notice-period dependency) + REFUNDDEPOSIT CASHBACK + GENERAL. Now 11 tiles (Others still last). CS proposals to split Signal/APN/Internet and Plans were NOT adopted (kept 1 tile each + diagnostic ask / always_escalate); Lost and Replacement kept separate. ★v1.8: id_prefixes = Rule ID topic codes (e.g. DR001 → DR) the AI uses for this tile, in addition to kb_categories (legacy rules). Codes: docs/build_spec_v1_8.md §3.1. 2026-11-06: CS label revision (labels only; topics, scopes and flow unchanged). 2026-11-06: tiles 11→10 — internet split into \"Set up APN or mobile internet\" + \"Report a signal or connection issue\" (same range via scope_of); reissue merged into lost, refund into deposit (aliases keep old conversations scoped); plans answered by AI.",
  "categories": [
   {
    "id": "internet",
    "icon": "ti-wifi",
-   "label_en": "Internet not working / APN setup",
+   "label_en": "Set up APN or mobile internet",
    "kb_categories": [
     "APN SETTINGS",
     "GENERAL RULES",
@@ -19,9 +19,22 @@
    ],
    "sub_questions": [
     "How do I set up APN on my phone?",
-    "My SIM has no signal",
-    "Pocket wifi won't connect to my device"
+    "Which setup video is for my plan?",
+    "I put my SIM in a new phone"
    ]
+  },
+  {
+   "id": "connection",
+   "icon": "ti-alert-triangle",
+   "label_en": "Report a signal or connection issue",
+   "scope_of": "internet",
+   "sub_questions": [
+    "My internet is not working",
+    "My internet is slow",
+    "I have no signal",
+    "My pocket Wi-Fi won't connect"
+   ],
+   "note": "Same knowledge range as \"internet\" (scope_of) — the two tiles differ only in their sample questions. Remove scope_of and give it kb_categories / id_prefixes to split the range later."
   },
   {
    "id": "payment",
@@ -53,7 +66,13 @@
     "LOST ITEM RULES",
     "DEVICE LOSTREPLACEMENTRENTAL FE",
     "RE-ISSUE  RULE",
-    "CS FEEDBACK: Lost SIM or device"
+    "CS FEEDBACK: Lost SIM or device",
+    "KINTONE STATUS",
+    "GENERAL RULES",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Signal stopped / re-issue"
    ],
    "id_prefixes": [
     "LS",
@@ -63,7 +82,8 @@
    "sub_questions": [
     "I lost my SIM card",
     "I lost my pocket wifi",
-    "How much is the lost fee?"
+    "My SIM card is damaged",
+    "How much is the re-issue fee?"
    ]
   },
   {
@@ -139,51 +159,6 @@
    ]
   },
   {
-   "id": "reissue",
-   "icon": "ti-alert-triangle",
-   "label_en": "Signal stopped / re-issue",
-   "kb_categories": [
-    "RE-ISSUE  RULE",
-    "KINTONE STATUS",
-    "GENERAL RULES",
-    "PLAN FILE: General Rules (Physical SIMWi-F",
-    "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)",
-    "CS FEEDBACK: Signal stopped / re-issue"
-   ],
-   "id_prefixes": [
-    "RI",
-    "GN"
-   ],
-   "sub_questions": [
-    "My signal was stopped, how do I restore it?",
-    "What is the re-issue (termination) fee?"
-   ]
-  },
-  {
-   "id": "refund",
-   "icon": "ti-receipt",
-   "label_en": "Refund / deposit / cashback",
-   "kb_categories": [
-    "REFUNDDEPOSIT CASHBACK",
-    "GENERAL RULES",
-    "PLAN FILE: General Rules (Physical SIMWi-F",
-    "PLAN FILE: General Rules (eKYC)",
-    "PLAN FILE: General Rules (eSIM)",
-    "CS FEEDBACK: Refund / deposit / cashback",
-    "CS AI DOC: AI_Deposit Refund"
-   ],
-   "id_prefixes": [
-    "RF",
-    "DR",
-    "GN"
-   ],
-   "sub_questions": [
-    "When will I get my cashback?",
-    "How do I get my deposit back?"
-   ]
-  },
-  {
    "id": "deposit",
    "icon": "ti-coin",
    "label_en": "Deposit refund or cashback inquiry",
@@ -191,7 +166,11 @@
     "CS AI DOC: AI_Deposit Refund",
     "CS AI DOC: AI_Cancellation",
     "REFUNDDEPOSIT CASHBACK",
-    "GENERAL RULES"
+    "GENERAL RULES",
+    "PLAN FILE: General Rules (Physical SIMWi-F",
+    "PLAN FILE: General Rules (eKYC)",
+    "PLAN FILE: General Rules (eSIM)",
+    "CS FEEDBACK: Refund / deposit / cashback"
    ],
    "id_prefixes": [
     "DR",
@@ -202,6 +181,7 @@
    "sub_questions": [
     "How do I get my SIM deposit back?",
     "When is my deposit refunded?",
+    "When will I get my cashback?",
     "Is the deposit paid back to my bank account?"
    ]
   },
@@ -213,10 +193,15 @@
     "CS FEEDBACK: Plans & prices"
    ],
    "id_prefixes": [
-    "PL"
+    "PL",
+    "GN"
    ],
-   "behavior": "always_escalate",
-   "note": "Monthly prices are never answered by AI. Selecting this shows a short message and goes straight to the escalation contact card. The CS FEEDBACK: Plans & prices rules (needs_review) are staged for Phase 5's staged price unlock; behavior stays always_escalate here."
+   "note": "Answered by the AI from the Plans & Requirements rules (PL) since 2026-11-06. Monthly / unlimited / COD prices and discount amounts are still never stated (fixed safety rules → price_question escalation); per-call rates and plan specs may be answered.",
+   "sub_questions": [
+    "What plans are available?",
+    "What do I need to apply?",
+    "Which plans include calls?"
+   ]
   },
   {
    "id": "others",
@@ -231,5 +216,9 @@
    "behavior": "free_text",
    "note": "Opens the free-text input: 'Please tell us your question.' AI uses ALL active customer rules."
   }
- ]
+ ],
+ "aliases": {
+  "reissue": "lost",
+  "refund": "deposit"
+ }
 }
