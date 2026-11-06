@@ -100,7 +100,7 @@ export function Chat(props: { state: State; t: Messages; handlers: ChatHandlers 
 
         {state.error && (
           <div class="error-note" role="alert">
-            {t.ui.errorGeneric}
+            {state.error === 'rate' ? t.ui.errorTooFast : t.ui.errorGeneric}
             <button class="btn btn--ghost" onClick={handlers.retry}>
               {t.ui.retry}
             </button>

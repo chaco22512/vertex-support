@@ -211,8 +211,8 @@ export function AiBehaviour() {
           role="status"
         >
           {usage.daily_limit_hit
-            ? `The AI's daily allowance is used up — Publish and Try it will not work until ${jstTime(usage.resets_at)} (JST).`
-            : `AI requests left today: ${usage.remaining} of ${usage.limit} (Publish uses 4, Try it uses 1) · resets ${jstTime(usage.resets_at)} (JST).`}
+            ? `Google's daily AI limit (whole company) is used up — Publish and Try it will not work until ${jstTime(usage.resets_at)}. Customer questions are being passed to staff meanwhile.`
+            : `AI requests left today for the whole company: ${usage.remaining} of ${usage.limit} (Publish uses 4, Try it uses 1; customer chats use the same allowance) · resets ${jstTime(usage.resets_at)}.`}
         </p>
       ) : null}
 

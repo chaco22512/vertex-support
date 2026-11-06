@@ -83,7 +83,7 @@ export type Action =
       /** ★v1.8: the question moved the conversation to another topic. */
       topic?: TopicChange;
     }
-  | { type: 'AI_ERROR' }
+  | { type: 'AI_ERROR'; /** ★v1.8: 'rate' = this session sent too many messages in a minute. */ kind?: 'rate' }
   | { type: 'OPEN_COMPOSER' }
   | { type: 'CHANGE_TOPIC' }
   | { type: 'BACK_TO_CHAT' }
@@ -271,7 +271,7 @@ export function reducer(state: State, action: Action): State {
       };
 
     case 'AI_ERROR':
-      return { ...state, awaitingAi: false, error: 'error', showComposer: true };
+      return { ...state, awaitingAi: false, error: action.kind === 'rate' ? 'rate' : 'error', showComposer: true };
 
     case 'OPEN_COMPOSER':
       // "Something else": free-text becomes the active affordance. Clear the

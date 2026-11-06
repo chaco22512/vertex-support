@@ -46,6 +46,8 @@ export interface UiStrings {
   offline: string;
   teamReplied: string;
   errorGeneric: string;
+  /** ★v1.8: shown when this chat sent too many messages in a minute. */
+  errorTooFast: string;
   retry: string;
   statusAi: string;
   statusWaitingStaff: string;

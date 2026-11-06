@@ -149,3 +149,10 @@ describe('v1.8 server-side topic switch (§4.1.1)', () => {
     expect(s.messages).toHaveLength(n + 2);
   });
 });
+
+describe('v1.8 per-session rate limit message', () => {
+  it('AI_ERROR with kind "rate" is shown as the "too fast" error', () => {
+    expect(reducer(initialState('en', 't'), { type: 'AI_ERROR', kind: 'rate' }).error).toBe('rate');
+    expect(reducer(initialState('en', 't'), { type: 'AI_ERROR' }).error).toBe('error');
+  });
+});

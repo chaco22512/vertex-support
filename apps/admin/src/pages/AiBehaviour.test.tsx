@@ -16,7 +16,7 @@ vi.mock('../lib/api', () => ({
     publishAiBehaviour: (...a: unknown[]) => publishAiBehaviour(...a),
     aiUsage: async () => ({ used_today: 18, limit: 20, remaining: 2, resets_at: '2026-11-01T07:00:00.000Z', daily_limit_hit: false }),
   },
-  jstTime: () => '16:00',
+  jstTime: () => 'today 17:00 (JST)',
 }));
 vi.mock('../components/Toast', () => ({ useToast: () => ({ show: vi.fn() }) }));
 

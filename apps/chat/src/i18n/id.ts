@@ -4,7 +4,7 @@ import type { Messages } from './messages';
 export const id: Messages = {
   ui: {
     languagePrompt: 'Pilih bahasa Anda',
-    categoryPrompt: 'Pertanyaan Anda tentang apa?',
+    categoryPrompt: 'Apa yang bisa kami bantu hari ini?',
     somethingElse: 'Hal lain',
     changeTopic: 'Ganti topik',
     askAnother: 'Ajukan pertanyaan lain',
@@ -44,6 +44,7 @@ export const id: Messages = {
     offline: 'Anda sedang offline. Kami akan menyambung kembali secara otomatis.',
     teamReplied: 'Tim kami telah membalas',
     errorGeneric: 'Terjadi kesalahan. Silakan coba lagi.',
+    errorTooFast: 'Anda mengirim pesan terlalu cepat. Silakan tunggu satu menit, lalu coba lagi.',
     retry: 'Coba lagi',
     statusAi: 'Asisten AI',
     statusWaitingStaff: 'Tim kami akan membalas dalam 24 jam',
@@ -51,16 +52,16 @@ export const id: Messages = {
   },
   categories: {
     internet: 'Internet tidak berfungsi / setelan APN',
-    payment: 'Pembayaran & tagihan bulanan',
-    lost: 'SIM atau perangkat hilang',
-    cancel: 'Pembatalan',
-    return: 'Mengembalikan SIM / perangkat',
-    replace: 'Penggantian / ganti paket',
+    payment: 'Bayar tagihan bulanan saya',
+    lost: 'Ganti kartu SIM/perangkat yang hilang atau rusak',
+    cancel: 'Batalkan kartu SIM atau paket Wi-Fi saya',
+    return: 'Kembalikan kartu SIM atau perangkat Wi-Fi saya',
+    replace: 'Ganti atau ubah paket saya',
     reissue: 'Sinyal terhenti / penerbitan ulang',
     refund: 'Pengembalian dana / deposit / cashback',
-    deposit: 'Pengembalian deposit',
-    plans: 'Paket & harga',
-    others: 'Lainnya',
+    deposit: 'Pertanyaan pengembalian deposit atau cashback',
+    plans: 'Lihat paket dan persyaratan',
+    others: 'Hal lain',
   },
   subQuestions: {
     internet: [

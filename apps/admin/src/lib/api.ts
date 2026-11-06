@@ -246,11 +246,21 @@ export interface AiUsage {
   daily_limit_hit: boolean;
 }
 
-/** "17:00" — a reset time shown in Japan time for the CS team. */
-export function jstTime(iso: string): string {
-  return new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit' }).format(
-    new Date(iso),
-  );
+/**
+ * "today 17:00 (JST)" / "tomorrow 17:00 (JST)" — the AI quota reset in Japan
+ * time. Google's day runs from midnight Pacific, i.e. 17:00 JST in winter and
+ * 16:00 JST in summer, so "today/tomorrow" avoids the "it didn't reset at
+ * midnight" confusion.
+ */
+export function jstTime(iso: string, now: Date = new Date()): string {
+  const fmt = (d: Date, opts: Intl.DateTimeFormatOptions) =>
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Tokyo', ...opts }).format(d);
+  const at = new Date(iso);
+  const time = fmt(at, { hour: '2-digit', minute: '2-digit' });
+  const day = (d: Date) => fmt(d, { year: 'numeric', month: '2-digit', day: '2-digit' });
+  const tomorrow = new Date(now.getTime() + 86_400_000);
+  const when = day(at) === day(now) ? 'today' : day(at) === day(tomorrow) ? 'tomorrow' : day(at);
+  return `${when} ${time} (JST)`;
 }
 
 /** A kept knowledge backup (★v1.8 §7.4.2). */

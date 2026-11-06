@@ -6,11 +6,11 @@ import { languageName, topicLabel } from './categories';
 // whole admin bundle at import time (categories.map is not a function).
 describe('categories', () => {
   it('loads the nested categories array and maps topic ids to labels', () => {
-    expect(topicLabel('lost')).toBe('Lost SIM or device');
+    expect(topicLabel('lost')).toBe('Replace a lost or damaged SIM card/device');
   });
 
   it('has the dedicated Deposit refund tile (v1.7 CS docs Phase 4)', () => {
-    expect(topicLabel('deposit')).toBe('Deposit refund');
+    expect(topicLabel('deposit')).toBe('Deposit refund or cashback inquiry');
   });
 
   it('falls back to the raw id for unknown topics', () => {

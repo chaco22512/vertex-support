@@ -225,14 +225,16 @@ export function useChat() {
           followUpNote: res.followup_escalated ? t.ui.addedToOpenRequest : undefined,
           topic: topic ? { id: topic.id, behavior: topic.behavior, label: `Topic: ${topic.label}` } : undefined,
         });
-      } catch {
+      } catch (err) {
         clearTimeout(timer);
         if (controller.signal.aborted) {
           // 15s timeout → auto-escalation (§6.3, criterion 10).
           dispatch({ type: 'AI_REPLY', body: t.ui.escalationTitle, action: 'escalate', options: [], messageId: 0, at: new Date().toISOString() });
         } else {
           lastFailedBody.current = trimmed;
-          dispatch({ type: 'AI_ERROR' });
+          // 429 from our API = per-session limit (10 messages a minute, §2).
+          const rate = err instanceof Error && err.message === 'request_failed_429';
+          dispatch({ type: 'AI_ERROR', kind: rate ? 'rate' : undefined });
         }
       }
     },

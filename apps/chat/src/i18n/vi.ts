@@ -4,7 +4,7 @@ import type { Messages } from './messages';
 export const vi: Messages = {
   ui: {
     languagePrompt: 'Chọn ngôn ngữ của bạn',
-    categoryPrompt: 'Bạn cần hỏi về vấn đề gì?',
+    categoryPrompt: 'Hôm nay chúng tôi có thể giúp gì cho bạn?',
     somethingElse: 'Vấn đề khác',
     changeTopic: 'Đổi chủ đề',
     askAnother: 'Hỏi câu hỏi khác',
@@ -44,6 +44,7 @@ export const vi: Messages = {
     offline: 'Bạn đang ngoại tuyến. Chúng tôi sẽ tự động kết nối lại.',
     teamReplied: 'Đội ngũ của chúng tôi đã trả lời',
     errorGeneric: 'Đã xảy ra lỗi. Vui lòng thử lại.',
+    errorTooFast: 'Bạn đang gửi tin nhắn quá nhanh. Vui lòng đợi một phút rồi thử lại.',
     retry: 'Thử lại',
     statusAi: 'Trợ lý AI',
     statusWaitingStaff: 'Nhóm của chúng tôi sẽ trả lời trong vòng 24 giờ',
@@ -51,16 +52,16 @@ export const vi: Messages = {
   },
   categories: {
     internet: 'Internet không hoạt động / cài đặt APN',
-    payment: 'Thanh toán & hóa đơn hàng tháng',
-    lost: 'Mất SIM hoặc thiết bị',
-    cancel: 'Hủy dịch vụ',
-    return: 'Trả lại SIM / thiết bị',
-    replace: 'Thay thế / đổi gói',
+    payment: 'Thanh toán hóa đơn hàng tháng',
+    lost: 'Thay thẻ SIM/thiết bị bị mất hoặc hư hỏng',
+    cancel: 'Hủy thẻ SIM hoặc gói Wi-Fi của tôi',
+    return: 'Trả lại thẻ SIM hoặc thiết bị Wi-Fi của tôi',
+    replace: 'Đổi hoặc thay gói cước của tôi',
     reissue: 'Mất tín hiệu / cấp lại',
     refund: 'Hoàn tiền / tiền cọc / hoàn tiền mặt',
-    deposit: 'Hoàn tiền cọc',
-    plans: 'Gói cước & giá',
-    others: 'Khác',
+    deposit: 'Hỏi về hoàn tiền cọc hoặc cashback',
+    plans: 'Xem các gói cước và yêu cầu',
+    others: 'Vấn đề khác',
   },
   subQuestions: {
     internet: [

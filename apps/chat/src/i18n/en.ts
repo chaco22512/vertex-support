@@ -3,7 +3,7 @@ import type { Messages } from './messages';
 export const en: Messages = {
   ui: {
     languagePrompt: 'Choose your language',
-    categoryPrompt: 'What is your question about?',
+    categoryPrompt: 'How can we help you today?',
     somethingElse: 'Something else',
     changeTopic: 'Change topic',
     askAnother: 'Ask another question',
@@ -43,6 +43,7 @@ export const en: Messages = {
     offline: "You're offline. We'll reconnect automatically.",
     teamReplied: 'Our team replied',
     errorGeneric: 'Something went wrong. Please try again.',
+    errorTooFast: "You're sending messages very quickly. Please wait a minute, then try again.",
     retry: 'Try again',
     statusAi: 'AI assistant',
     statusWaitingStaff: 'Our team will reply within 24 hours',
@@ -50,16 +51,16 @@ export const en: Messages = {
   },
   categories: {
     internet: 'Internet not working / APN setup',
-    payment: 'Payment & monthly bill',
-    lost: 'Lost SIM or device',
-    cancel: 'Cancellation',
-    return: 'Returning SIM / device',
-    replace: 'Replacement / change plan',
+    payment: 'Pay my monthly bill',
+    lost: 'Replace a lost or damaged SIM card/device',
+    cancel: 'Cancel my SIM card or Wi-Fi plan',
+    return: 'Return my SIM card or Wi-Fi device',
+    replace: 'Change or replace my plan',
     reissue: 'Signal stopped / re-issue',
     refund: 'Refund / deposit / cashback',
-    deposit: 'Deposit refund',
-    plans: 'Plans & prices',
-    others: 'Others',
+    deposit: 'Deposit refund or cashback inquiry',
+    plans: 'View plans and requirements',
+    others: 'Something else',
   },
   subQuestions: {
     internet: [

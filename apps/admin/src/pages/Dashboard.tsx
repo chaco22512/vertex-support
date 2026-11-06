@@ -82,13 +82,13 @@ export function Dashboard() {
         ...(usage
           ? [
               {
-                label: 'AI requests today',
+                label: 'AI requests (whole company)',
                 value: usage.limit > 0 ? `${usage.used_today} / ${usage.limit}` : String(usage.used_today),
                 sub: usage.daily_limit_hit
-                  ? `Daily limit reached · resets ${jstTime(usage.resets_at)} (JST)`
+                  ? `Google's daily limit reached · resets ${jstTime(usage.resets_at)}`
                   : usage.remaining !== null
-                    ? `${usage.remaining} left · resets ${jstTime(usage.resets_at)} (JST)`
-                    : `No daily cap · counter resets ${jstTime(usage.resets_at)} (JST)`,
+                    ? `${usage.remaining} left · resets ${jstTime(usage.resets_at)}`
+                    : `No daily cap · counter resets ${jstTime(usage.resets_at)}`,
                 danger: usage.daily_limit_hit || (usage.remaining !== null && usage.remaining <= 3),
                 to: staff?.role === 'admin' ? '/ai-diagnostics' : '/',
               },
@@ -110,8 +110,9 @@ export function Dashboard() {
       ) : null}
       {usage?.daily_limit_hit ? (
         <div className="state error" role="alert" style={{ padding: 'var(--sp-3) 0' }}>
-          <strong>The AI has used up today's allowance</strong> — the bot is passing every question to staff until{' '}
-          {jstTime(usage.resets_at)} (JST).
+          <strong>Google&apos;s daily AI limit is used up</strong> (free plan: {usage.limit || 20} requests a day, shared by
+          every customer chat and every staff test). Until {jstTime(usage.resets_at)}, customers who ask a question get
+          “Our support staff will reply within 24 hours” and are passed to staff with their contact details.
         </div>
       ) : null}
       {error ? (
@@ -136,7 +137,10 @@ export function Dashboard() {
       )}
       {usage ? (
         <p className="muted" style={{ fontSize: 12 }}>
-          AI requests: an estimate from this bot's own calls. Google AI Studio has the official numbers.
+          AI requests: Google&apos;s free plan allows {usage.limit || 20} a day for the whole company — every customer
+          chat, Try it and safety test counts, and one question can use 1–3 requests. Google&apos;s day runs from 17:00
+          to 17:00 Japan time (16:00 in summer), not midnight. This number is an estimate from the bot&apos;s own calls;
+          Google AI Studio has the official figure.
         </p>
       ) : null}
     </>

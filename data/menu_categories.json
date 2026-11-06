@@ -1,6 +1,6 @@
 {
  "version": "1.5",
- "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet. v1.5 (spec v1.7 CS docs Phase 4): added a dedicated 'deposit' tile (Deposit refund) split out of refund — deposit needs contract-group (2024/12/11) judgment; scope = AI_Deposit Refund + AI_Cancellation (notice-period dependency) + REFUNDDEPOSIT CASHBACK + GENERAL. Now 11 tiles (Others still last). CS proposals to split Signal/APN/Internet and Plans were NOT adopted (kept 1 tile each + diagnostic ask / always_escalate); Lost and Replacement kept separate. ★v1.8: id_prefixes = Rule ID topic codes (e.g. DR001 → DR) the AI uses for this tile, in addition to kb_categories (legacy rules). Codes: docs/build_spec_v1_8.md §3.1.",
+ "note": "Customer-facing category menu. kb_categories maps each menu item to kb_rules.category values used to scope the AI prompt. GENERAL RULES is always included as shared context. Labels are English master; translate via locales files. v1.1 (spec v1.5): added the per-plan manual (Pxxx); 'PLAN FILE: General Rules …' shared for payment/cancel/replace/reissue/refund/return; per-plan sheets only via Others('*') until a plan-selection step (backlog). v1.2 (spec v1.6): added the CS-feedback manual ('CS FEEDBACK: …', Fxxx) to each matching topic. v1.3 (spec v1.6 Phase 5): removed the Nenkin/Gensen tile per CS — its 'PLAN FILE: Nenkin …' rules remain in the DB, reachable only via Others('*'). v1.4 (spec v1.7 CS docs): added the CS AI docs manual ('CS AI DOC: …', Cxxx, section-granularity) via topic_hint — cancel/return/refund/replace/internet. v1.5 (spec v1.7 CS docs Phase 4): added a dedicated 'deposit' tile (Deposit refund) split out of refund — deposit needs contract-group (2024/12/11) judgment; scope = AI_Deposit Refund + AI_Cancellation (notice-period dependency) + REFUNDDEPOSIT CASHBACK + GENERAL. Now 11 tiles (Others still last). CS proposals to split Signal/APN/Internet and Plans were NOT adopted (kept 1 tile each + diagnostic ask / always_escalate); Lost and Replacement kept separate. ★v1.8: id_prefixes = Rule ID topic codes (e.g. DR001 → DR) the AI uses for this tile, in addition to kb_categories (legacy rules). Codes: docs/build_spec_v1_8.md §3.1. 2026-11-06: CS label revision (labels only; topics, scopes and flow unchanged).",
  "categories": [
   {
    "id": "internet",
@@ -26,7 +26,7 @@
   {
    "id": "payment",
    "icon": "ti-credit-card",
-   "label_en": "Payment & monthly bill",
+   "label_en": "Pay my monthly bill",
    "kb_categories": [
     "GENERAL RULES",
     "PLAN FILE: General Rules (Physical SIMWi-F",
@@ -48,7 +48,7 @@
   {
    "id": "lost",
    "icon": "ti-search",
-   "label_en": "Lost SIM or device",
+   "label_en": "Replace a lost or damaged SIM card/device",
    "kb_categories": [
     "LOST ITEM RULES",
     "DEVICE LOSTREPLACEMENTRENTAL FE",
@@ -69,7 +69,7 @@
   {
    "id": "cancel",
    "icon": "ti-circle-x",
-   "label_en": "Cancellation",
+   "label_en": "Cancel my SIM card or Wi-Fi plan",
    "kb_categories": [
     "GENERAL RULES",
     "New Plan C and Plan SK",
@@ -93,7 +93,7 @@
   {
    "id": "return",
    "icon": "ti-package",
-   "label_en": "Returning SIM / device",
+   "label_en": "Return my SIM card or Wi-Fi device",
    "kb_categories": [
     "GENERAL RULES",
     "PLAN FILE: General Rules (Physical SIMWi-F",
@@ -115,7 +115,7 @@
   {
    "id": "replace",
    "icon": "ti-refresh",
-   "label_en": "Replacement / change plan",
+   "label_en": "Change or replace my plan",
    "kb_categories": [
     "REPLACEMENT AND CHANGE PLAN RUL",
     "Replacement_Plan change Product",
@@ -186,7 +186,7 @@
   {
    "id": "deposit",
    "icon": "ti-coin",
-   "label_en": "Deposit refund",
+   "label_en": "Deposit refund or cashback inquiry",
    "kb_categories": [
     "CS AI DOC: AI_Deposit Refund",
     "CS AI DOC: AI_Cancellation",
@@ -208,7 +208,7 @@
   {
    "id": "plans",
    "icon": "ti-file-description",
-   "label_en": "Plans & prices",
+   "label_en": "View plans and requirements",
    "kb_categories": [
     "CS FEEDBACK: Plans & prices"
    ],
@@ -221,7 +221,7 @@
   {
    "id": "others",
    "icon": "ti-message-circle",
-   "label_en": "Others",
+   "label_en": "Something else",
    "kb_categories": [
     "*"
    ],

@@ -21,7 +21,7 @@ vi.mock('../lib/api', () => ({
     kbHealth: () => kbHealth(),
     aiUsage: () => aiUsage(),
   },
-  jstTime: () => '16:00',
+  jstTime: () => 'today 17:00 (JST)',
 }));
 vi.mock('../lib/auth', () => ({ useAuth: () => ({ staff: { role: 'admin' } }) }));
 
@@ -68,9 +68,9 @@ describe('Dashboard AI requests card (v1.8 §7.1)', () => {
   it('shows used / limit and how many are left', async () => {
     kbHealth.mockResolvedValue({ active_rules: 15 });
     await mount();
-    expect(container!.textContent).toContain('AI requests today');
+    expect(container!.textContent).toContain('AI requests (whole company)');
     expect(container!.textContent).toContain('3 / 20');
-    expect(container!.textContent).toContain('17 left · resets 16:00 (JST)');
+    expect(container!.textContent).toContain('17 left · resets today 17:00 (JST)');
   });
 
   it('warns when the daily allowance is used up', async () => {
@@ -83,6 +83,7 @@ describe('Dashboard AI requests card (v1.8 §7.1)', () => {
       daily_limit_hit: true,
     });
     await mount();
-    expect(container!.textContent).toContain("The AI has used up today's allowance");
+    expect(container!.textContent).toContain("Google's daily AI limit is used up");
+    expect(container!.textContent).toContain('passed to staff');
   });
 });

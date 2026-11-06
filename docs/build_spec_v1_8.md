@@ -7,6 +7,7 @@ v1.7→v1.8 の変更（CS要望3件＋取得上限の調査。指示書 `docs/c
 - **Phase 3（ナレッジ一括操作の安全版）**: CSV「Replace all」モード（対象外は archived、物理削除なし）、「Disable all in this view」、自動スナップショット3世代＋復元、アクティブ0件時は全質問をエスカレ（§3, §4.1.0, §7.4.2）。
 - 受け入れ基準 52–64 を追加（§10）。
 - **CS管理CSVによるナレッジ運用（2026-10-31）**: CS が作る CSV を唯一の正とし、更新のたびに取り込む。旧 2,886 件（R/P/F/C）は 10/30 の Replace all で archived のまま保持（復元しない）。Rule ID 規約（§3.1）、ID 記号によるトピック範囲（§4.1）、両モードで新規追加・1トランザクション適用（§7.4.1）、Dashboard の空ナレッジ警告（§7.1）。受け入れ基準 65–70。
+- **2026-11-06 CS 改定**: メニューの見出し・タイル文言を CS 案に変更（5言語、トピック・範囲・会話フローは不変。見出し "How can we help you today?"、Cancel my SIM card or Wi-Fi plan／Return my SIM card or Wi-Fi device／Deposit refund or cashback inquiry／Change or replace my plan／Replace a lost or damaged SIM card/device／Pay my monthly bill／View plans and requirements／Something else）。AI 使用回数の表示を「会社全体で共有する Google の無料枠」「リセットは日本時間 17:00（夏は16:00）、today/tomorrow 付き」と明記。顧客チャットで 1分10回の送信制限に当たった場合は「少し待ってから再送」の専用メッセージ（5言語）。
 
 # SIM Customer Support Bot — 構築仕様書 v1.7（以下は履歴）
 

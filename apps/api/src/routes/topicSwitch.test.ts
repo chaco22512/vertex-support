@@ -82,7 +82,7 @@ describe('topic switch on a new question (§4.1.1)', () => {
     expect(body.topic_category).toBe('internet');
     expect(body.escalated).toBe(false);
     expect(s.db.tables.conversations[0]!.topic_category).toBe('internet');
-    expect(markers(s)).toEqual(['Topic: Cancellation', 'Topic: Internet not working / APN setup']);
+    expect(markers(s)).toEqual(['Topic: Cancel my SIM card or Wi-Fi plan', 'Topic: Internet not working / APN setup']);
   });
 });
 
@@ -151,7 +151,7 @@ describe('POST /api/conversations/:token/topic (§6.1-7)', () => {
     expect(((await res.json()) as { topic_category: string }).topic_category).toBe('lost');
     expect(s.db.tables.conversations).toHaveLength(1);
     expect(s.db.tables.conversations[0]!.topic_category).toBe('lost');
-    expect(markers(s).at(-1)).toBe('Topic: Lost SIM or device');
+    expect(markers(s).at(-1)).toBe('Topic: Replace a lost or damaged SIM card/device');
     expect(s.db.tables.messages.some((m) => m.body === 'Cancel?')).toBe(true);
   });
 
