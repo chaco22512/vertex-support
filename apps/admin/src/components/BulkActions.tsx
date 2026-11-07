@@ -40,10 +40,12 @@ export function DisableViewDialog({
   return (
     <Dialog title="Disable all in this view" onClose={onClose}>
       <p>
-        This turns off <strong>{ids.length} rule(s)</strong> shown in this view ({description || 'current view'}).
+        This turns off <strong>{ids.length} rule(s)</strong> shown in this view (
+        {description || 'current view'}).
       </p>
       <p className="muted">
-        They are not deleted. A backup is saved first, and you can undo this right after or later from Backups.
+        They are not deleted. A backup is saved first, and you can undo this right after or later
+        from Backups.
       </p>
       {usableAfter === 0 ? (
         <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
@@ -61,7 +63,11 @@ export function DisableViewDialog({
         <button className="btn" onClick={onClose} disabled={busy}>
           Cancel
         </button>
-        <button className="btn btn-primary" onClick={() => void run()} disabled={busy || ids.length === 0}>
+        <button
+          className="btn btn-primary"
+          onClick={() => void run()}
+          disabled={busy || ids.length === 0}
+        >
           {busy ? 'Disabling…' : `Disable ${ids.length} rule(s)`}
         </button>
       </div>
@@ -78,7 +84,13 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 /** Backups: the latest kept snapshots, each undoable / restorable. */
-export function BackupsDialog({ onClose, onChanged }: { onClose: () => void; onChanged: (message: string) => void }) {
+export function BackupsDialog({
+  onClose,
+  onChanged,
+}: {
+  onClose: () => void;
+  onChanged: (message: string) => void;
+}) {
   const [snapshots, setSnapshots] = useState<KbSnapshot[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
@@ -101,7 +113,11 @@ export function BackupsDialog({ onClose, onChanged }: { onClose: () => void; onC
     setError(null);
     try {
       const r = kind === 'undo' ? await api.undoSnapshot(s.id) : await api.restoreSnapshot(s.id);
-      onChanged(kind === 'undo' ? `Undone — ${r.restored} rule(s) put back.` : `Restored — ${r.restored} rule(s) changed.`);
+      onChanged(
+        kind === 'undo'
+          ? `Undone — ${r.restored} rule(s) put back.`
+          : `Restored — ${r.restored} rule(s) changed.`,
+      );
       setConfirmRestore(null);
       await load();
     } catch {
@@ -124,7 +140,9 @@ export function BackupsDialog({ onClose, onChanged }: { onClose: () => void; onC
       {snapshots === null ? (
         <p className="muted">Loading…</p>
       ) : snapshots.length === 0 ? (
-        <p className="muted">No backups yet. One is saved automatically before every bulk change.</p>
+        <p className="muted">
+          No backups yet. One is saved automatically before every bulk change.
+        </p>
       ) : (
         <div className="table-wrap" style={{ maxHeight: 360, overflow: 'auto' }}>
           <table className="data">
@@ -177,11 +195,16 @@ export function BackupsDialog({ onClose, onChanged }: { onClose: () => void; onC
       {confirmRestore ? (
         <div className="state error" role="alert" style={{ padding: 'var(--sp-3) 0 0' }}>
           <p style={{ margin: 0 }}>
-            Put <strong>every</strong> rule back to how it was on {formatTime(confirmRestore.created_at)}? Changes made
-            after that time will be undone. The current state is backed up first.
+            Put <strong>every</strong> rule back to how it was on{' '}
+            {formatTime(confirmRestore.created_at)}? Changes made after that time will be undone.
+            The current state is backed up first.
           </p>
           <div className="dialog-actions">
-            <button className="btn" onClick={() => setConfirmRestore(null)} disabled={busy !== null}>
+            <button
+              className="btn"
+              onClick={() => setConfirmRestore(null)}
+              disabled={busy !== null}
+            >
               Cancel
             </button>
             <button
@@ -244,32 +267,42 @@ export function ConfirmAllDialog({
   }
 
   return (
-    <Dialog title={kind === 'archive' ? 'Archive all rules' : 'Delete archived rules permanently'} onClose={onClose}>
+    <Dialog
+      title={kind === 'archive' ? 'Archive all rules' : 'Delete archived rules permanently'}
+      onClose={onClose}
+    >
       {kind === 'archive' ? (
         <>
           <p>
-            This archives <strong>all {count} rule(s)</strong> that are not archived yet. They are kept and can be
-            brought back (Undo / Backups).
+            This archives <strong>all {count} rule(s)</strong> that are not archived yet. They are
+            kept and can be brought back (Undo / Backups).
           </p>
           <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
-            Afterwards the bot has no rules and passes every question to staff, until you upload a new sheet.
+            Afterwards the bot has no rules and passes every question to staff, until you upload a
+            new sheet.
           </div>
         </>
       ) : (
         <>
           <p>
-            This <strong>permanently deletes {count} archived rule(s)</strong>. Rules the bot is using are not touched,
-            and the change history is kept.
+            This <strong>permanently deletes {count} archived rule(s)</strong>. Rules the bot is
+            using are not touched, and the change history is kept.
           </p>
           <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
-            A backup is saved first, but only the latest 5 backups are kept — after 5 more bulk changes these rules
-            cannot be brought back. You will normally not need this.
+            A backup is saved first, but only the latest 5 backups are kept — after 5 more bulk
+            changes these rules cannot be brought back. You will normally not need this.
           </div>
         </>
       )}
       <div className="field" style={{ marginTop: 'var(--sp-3)' }}>
         <label htmlFor="confirm-all">Type {word} to confirm.</label>
-        <input id="confirm-all" type="text" autoComplete="off" value={typed} onChange={(e) => setTyped(e.target.value)} />
+        <input
+          id="confirm-all"
+          type="text"
+          autoComplete="off"
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+        />
       </div>
       {error ? (
         <div className="state error" role="alert" style={{ padding: 0 }}>
@@ -285,7 +318,11 @@ export function ConfirmAllDialog({
           onClick={() => void run()}
           disabled={busy || typed.trim() !== word || count === 0}
         >
-          {busy ? 'Working…' : kind === 'archive' ? `Archive ${count} rule(s)` : `Delete ${count} rule(s) permanently`}
+          {busy
+            ? 'Working…'
+            : kind === 'archive'
+              ? `Archive ${count} rule(s)`
+              : `Delete ${count} rule(s) permanently`}
         </button>
       </div>
     </Dialog>

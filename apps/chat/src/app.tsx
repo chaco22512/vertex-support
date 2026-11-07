@@ -11,8 +11,7 @@ export function App(): JSX.Element {
   const { state, t } = chat;
   const lang = state.language ?? detectLanguage(navigator.language);
 
-  const statusText =
-    state.escalated || state.resolved ? t.ui.statusWaitingStaff : t.ui.statusAi;
+  const statusText = state.escalated || state.resolved ? t.ui.statusWaitingStaff : t.ui.statusAi;
 
   return (
     <div class="app">

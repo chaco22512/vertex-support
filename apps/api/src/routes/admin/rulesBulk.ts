@@ -75,11 +75,24 @@ export interface ImportDiff {
  * aside (archived). Shared by preview and apply so apply never trusts a stale
  * preview.
  */
-export async function diffImport(db: SupabaseClient, csv: string, mode: ImportMode): Promise<ImportDiff> {
+export async function diffImport(
+  db: SupabaseClient,
+  csv: string,
+  mode: ImportMode,
+): Promise<ImportDiff> {
   const { headerError, rows } = parseImportCsv(csv, { allowNew: true });
   const all = await fetchAllRules(db, {});
   const activeBefore = all.filter(aiUsable).length;
-  const base = { mode, changes: [], newRules: [], toArchive: [], errors: [], ignored: 0, unchanged: 0, activeBefore };
+  const base = {
+    mode,
+    changes: [],
+    newRules: [],
+    toArchive: [],
+    errors: [],
+    ignored: 0,
+    unchanged: 0,
+    activeBefore,
+  };
   if (headerError) return { headerError, ...base, activeAfter: activeBefore };
 
   const byId = new Map(all.map((r) => [normalizeRuleId(r.id), r]));
@@ -128,12 +141,17 @@ export async function diffImport(db: SupabaseClient, csv: string, mode: ImportMo
         errors.push({
           line: row.line,
           id,
-          reason: 'This new rule has no Topic. Fill in the Topic column (for example "Deposit refund").',
+          reason:
+            'This new rule has no Topic. Fill in the Topic column (for example "Deposit refund").',
         });
         continue;
       }
       if (!row.values.rule_text) {
-        errors.push({ line: row.line, id, reason: 'This new rule has no Answer text. Add the text the bot should use.' });
+        errors.push({
+          line: row.line,
+          id,
+          reason: 'This new rule has no Answer text. Add the text the bot should use.',
+        });
         continue;
       }
       const values = { ...row.values, rule_text: row.values.rule_text };
@@ -158,7 +176,13 @@ export async function diffImport(db: SupabaseClient, csv: string, mode: ImportMo
       unchanged += 1;
       continue;
     }
-    changes.push({ id: current.id, category: current.category, decision: row.decision, changes: fieldChanges, patch });
+    changes.push({
+      id: current.id,
+      category: current.category,
+      decision: row.decision,
+      changes: fieldChanges,
+      patch,
+    });
     after.set(current.id, { ...current, ...(patch as Partial<KbRule>) });
   }
 
@@ -171,7 +195,17 @@ export async function diffImport(db: SupabaseClient, csv: string, mode: ImportMo
   for (const r of toArchive) after.set(r.id, { ...after.get(r.id)!, status: 'archived' });
 
   const activeAfter = [...after.values()].filter(aiUsable).length + newUsable;
-  return { mode, changes, newRules, toArchive, errors, ignored, unchanged, activeBefore, activeAfter };
+  return {
+    mode,
+    changes,
+    newRules,
+    toArchive,
+    errors,
+    ignored,
+    unchanged,
+    activeBefore,
+    activeAfter,
+  };
 }
 
 /** Preview payload (no writes). */
@@ -216,13 +250,23 @@ export async function applyImportDiff(
   const { db } = deps;
   const staff = c.get('staff');
   if (mode === 'replace' && confirm !== 'REPLACE') {
-    return c.json({ error: 'confirm_required', message: 'Type REPLACE to confirm replacing all rules.' }, 400);
+    return c.json(
+      { error: 'confirm_required', message: 'Type REPLACE to confirm replacing all rules.' },
+      400,
+    );
   }
 
   const d = await diffImport(db, csv, mode);
   if (d.headerError) return c.json({ error: 'invalid_csv', message: d.headerError }, 400);
   if (d.changes.length + d.newRules.length + d.toArchive.length === 0) {
-    return c.json({ applied: 0, added: 0, archived: 0, skipped: d.errors.length, snapshot_id: null, errors: d.errors });
+    return c.json({
+      applied: 0,
+      added: 0,
+      archived: 0,
+      skipped: d.errors.length,
+      snapshot_id: null,
+      errors: d.errors,
+    });
   }
 
   const note =
@@ -249,7 +293,10 @@ export async function applyImportDiff(
     p_note: note,
   });
   if (error || !data) {
-    return c.json({ error: 'server_error', message: 'Nothing was changed. Please try again.' }, 500);
+    return c.json(
+      { error: 'server_error', message: 'Nothing was changed. Please try again.' },
+      500,
+    );
   }
   const r = data as { snapshot_id: string; applied: number; added: number; archived: number };
 
@@ -281,11 +328,17 @@ export async function archiveAll(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
   const staff = c.get('staff');
   const parsed = archiveAllSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'confirm_required', message: 'Type ARCHIVE to confirm.' }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'confirm_required', message: 'Type ARCHIVE to confirm.' }, 400);
 
-  const ids = (await fetchAllRules(deps.db, {})).filter((r) => r.status !== 'archived').map((r) => r.id);
+  const ids = (await fetchAllRules(deps.db, {}))
+    .filter((r) => r.status !== 'archived')
+    .map((r) => r.id);
   if (ids.length !== parsed.data.confirm_count) {
-    return c.json({ error: 'count_changed', message: 'The rules changed meanwhile. Reload and try again.' }, 409);
+    return c.json(
+      { error: 'count_changed', message: 'The rules changed meanwhile. Reload and try again.' },
+      409,
+    );
   }
   if (ids.length === 0) return c.json({ archived: 0, snapshot_id: null });
 
@@ -297,7 +350,11 @@ export async function archiveAll(c: Context<AppEnv>): Promise<Response> {
     p_staff: staff.userId,
     p_note: `Archive all: ${ids.length} archived`,
   });
-  if (error || !data) return c.json({ error: 'server_error', message: 'Nothing was changed. Please try again.' }, 500);
+  if (error || !data)
+    return c.json(
+      { error: 'server_error', message: 'Nothing was changed. Please try again.' },
+      500,
+    );
   const r = data as { snapshot_id: string; archived: number };
   await notifyBulk(
     deps,
@@ -317,7 +374,8 @@ export async function deleteArchived(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
   const staff = c.get('staff');
   const parsed = deleteArchivedSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'confirm_required', message: 'Type DELETE to confirm.' }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'confirm_required', message: 'Type DELETE to confirm.' }, 400);
 
   const { data, error } = await deps.db.rpc('kb_delete_archived', {
     p_staff: staff.userId,
@@ -325,7 +383,13 @@ export async function deleteArchived(c: Context<AppEnv>): Promise<Response> {
   });
   if (error) {
     return error.message.includes('count_mismatch')
-      ? c.json({ error: 'count_changed', message: 'The archived rules changed meanwhile. Reload and try again.' }, 409)
+      ? c.json(
+          {
+            error: 'count_changed',
+            message: 'The archived rules changed meanwhile. Reload and try again.',
+          },
+          409,
+        )
       : c.json({ error: 'server_error', message: 'Nothing was deleted. Please try again.' }, 500);
   }
   const r = data as { snapshot_id: string | null; deleted: number };
@@ -351,7 +415,9 @@ export async function disableView(c: Context<AppEnv>): Promise<Response> {
   const wanted = new Set(parsed.data.ids);
   const unknown = parsed.data.ids.filter((id) => !all.some((r) => r.id === id));
   if (unknown.length > 0) return c.json({ error: 'unknown_ids', ids: unknown.slice(0, 20) }, 409);
-  const targets = all.filter((r) => wanted.has(r.id) && r.status !== 'disabled' && r.status !== 'archived');
+  const targets = all.filter(
+    (r) => wanted.has(r.id) && r.status !== 'disabled' && r.status !== 'archived',
+  );
   if (targets.length === 0) return c.json({ disabled: 0, snapshot_id: null });
 
   const activeAfter = all.filter((r) => aiUsable(r) && !wanted.has(r.id)).length;
@@ -362,7 +428,11 @@ export async function disableView(c: Context<AppEnv>): Promise<Response> {
     p_affected: ids,
     p_note: `Disable all in view: ${parsed.data.description || 'custom view'}`,
   });
-  if (snapErr || !snapId) return c.json({ error: 'server_error', message: 'Could not save a backup; nothing changed.' }, 500);
+  if (snapErr || !snapId)
+    return c.json(
+      { error: 'server_error', message: 'Could not save a backup; nothing changed.' },
+      500,
+    );
 
   const { data, error } = await db.rpc('kb_bulk_set_status', {
     p_ids: ids,
@@ -405,7 +475,9 @@ export async function listSnapshots(c: Context<AppEnv>): Promise<Response> {
   if (error) return c.json({ error: 'server_error' }, 500);
   const rows = (data ?? []) as SnapshotRow[];
   const { data: staffRows } = await db.from('staff').select('id,name');
-  const names = new Map(((staffRows ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]));
+  const names = new Map(
+    ((staffRows ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]),
+  );
   return c.json({
     snapshots: rows.map((s) => ({
       id: s.id,
@@ -436,7 +508,11 @@ export async function undoSnapshot(c: Context<AppEnv>): Promise<Response> {
   const snap = await loadSnapshot(deps.db, c.req.param('id') ?? '');
   if (!snap) return c.json({ error: 'not_found' }, 404);
   if (snap.undone) return c.json({ error: 'already_undone' }, 409);
-  if (snap.kind === 'restore') return c.json({ error: 'use_restore', message: 'Use "Restore everything" for this backup.' }, 409);
+  if (snap.kind === 'restore')
+    return c.json(
+      { error: 'use_restore', message: 'Use "Restore everything" for this backup.' },
+      409,
+    );
 
   const { data, error } = await deps.db.rpc('kb_restore_snapshot', {
     p_snapshot: snap.id,
@@ -445,7 +521,10 @@ export async function undoSnapshot(c: Context<AppEnv>): Promise<Response> {
   });
   if (error) return c.json({ error: 'server_error' }, 500);
   const restored = Number(data ?? 0);
-  await notifyBulk(deps, `Undo by ${staff.name}: "${snap.note}" was undone (${restored} rule(s) put back).`);
+  await notifyBulk(
+    deps,
+    `Undo by ${staff.name}: "${snap.note}" was undone (${restored} rule(s) put back).`,
+  );
   return c.json({ restored, snapshot_id: snap.id });
 }
 
@@ -464,7 +543,11 @@ export async function restoreSnapshot(c: Context<AppEnv>): Promise<Response> {
     p_affected: current.map((r) => r.id),
     p_note: `Before restoring the backup from ${snap.created_at.slice(0, 16).replace('T', ' ')} UTC`,
   });
-  if (snapErr) return c.json({ error: 'server_error', message: 'Could not save a backup; nothing changed.' }, 500);
+  if (snapErr)
+    return c.json(
+      { error: 'server_error', message: 'Could not save a backup; nothing changed.' },
+      500,
+    );
 
   const { data, error } = await deps.db.rpc('kb_restore_snapshot', {
     p_snapshot: snap.id,

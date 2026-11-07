@@ -93,7 +93,8 @@ export async function generateAiReply(
   const currentTopic = conversation.topic_category ?? '';
   const categories = resolveKbCategories(currentTopic, menu);
   const topic = resolveTopicLabel(currentTopic, menu);
-  const pendingCase = conversation.status === 'escalated' || conversation.status === 'staff_replied';
+  const pendingCase =
+    conversation.status === 'escalated' || conversation.status === 'staff_replied';
   const lastCustomer = [...history].reverse().find((m) => m.sender === 'customer')?.body ?? '';
 
   const diag: AiDiag = {
@@ -114,14 +115,17 @@ export async function generateAiReply(
   // Whole-manual fetch for the fallback starts now, overlapping the primary
   // LLM call, so a fallback does not pay the ~0.5–2s fetch on the critical path.
   const allRulesPromise: Promise<KbRule[] | null> | null =
-    categories === null
-      ? null
-      : fetchScopedRules(deps.db, null).catch(() => null);
+    categories === null ? null : fetchScopedRules(deps.db, null).catch(() => null);
   // ★v1.8 Phase 2: the CS-published behaviour (②/③), read alongside the rules.
   const behaviourPromise = loadPublishedBehaviour(deps.db);
   let published: BehaviourContent | null = null;
 
-  const run = (rules: KbRule[], label: string | null, topicId: string | null, signal: AbortSignal) =>
+  const run = (
+    rules: KbRule[],
+    label: string | null,
+    topicId: string | null,
+    signal: AbortSignal,
+  ) =>
     runAiReply({
       rules,
       history,
@@ -183,7 +187,9 @@ export async function generateAiReply(
   diag.topic_guess = validTopic(result.aiMeta.topic);
 
   const needsFallback =
-    !result.fellBack && result.aiMeta.action === 'escalate' && result.aiMeta.reason === 'not_in_manual';
+    !result.fellBack &&
+    result.aiMeta.action === 'escalate' &&
+    result.aiMeta.reason === 'not_in_manual';
   if (!needsFallback) return finish(result);
 
   // --- 2. retrieval fallback before a not_in_manual escalation -------------
@@ -238,7 +244,8 @@ export async function generateAiReply(
     if (fallbackResult) diag.fallback_result = fallbackResult;
     diag.timings.total_ms = elapsed();
     const escalated = r.aiMeta.action === 'escalate';
-    const aiMeta = escalated || diag.fallback_tried || diag.error ? { ...r.aiMeta, diag } : r.aiMeta;
+    const aiMeta =
+      escalated || diag.fallback_tried || diag.error ? { ...r.aiMeta, diag } : r.aiMeta;
     if (escalated || diag.fallback_tried) {
       console.info(
         `[ai] diag conversation=${conversation.id} action=${r.aiMeta.action} reason=${r.aiMeta.reason} ` +

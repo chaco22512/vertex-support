@@ -8,10 +8,12 @@ export const id: Messages = {
     somethingElse: 'Hal lain',
     changeTopic: 'Ganti topik',
     askAnother: 'Ajukan pertanyaan lain',
-    addedToOpenRequest: 'Pesan Anda telah ditambahkan ke permintaan Anda yang sedang diproses. Staf kami akan membalas.',
+    addedToOpenRequest:
+      'Pesan Anda telah ditambahkan ke permintaan Anda yang sedang diproses. Staf kami akan membalas.',
     backToChat: 'Kembali ke obrolan',
     othersPrompt: 'Silakan sampaikan pertanyaan Anda.',
-    plansMessage: 'Staf kami akan membantu soal harga paket. Silakan tinggalkan kontak Anda di bawah.',
+    plansMessage:
+      'Staf kami akan membantu soal harga paket. Silakan tinggalkan kontak Anda di bawah.',
     inputPlaceholder: 'Ketik pesan Anda',
     send: 'Kirim',
     solved: 'Selesai',
@@ -24,7 +26,8 @@ export const id: Messages = {
     whatsappPlaceholder: 'Nomor WhatsApp',
     contactSend: 'Kirim',
     contactValidation: 'Masukkan email atau nomor WhatsApp.',
-    intakeTitle: 'Beberapa detail opsional membantu tim kami menyelesaikan lebih cepat. Anda boleh melewati semuanya.',
+    intakeTitle:
+      'Beberapa detail opsional membantu tim kami menyelesaikan lebih cepat. Anda boleh melewati semuanya.',
     intakeSkip: 'Lewati',
     intakeContinue: 'Lanjut',
     fieldCustomerNumber: 'Nomor pelanggan',
@@ -96,11 +99,7 @@ export const id: Messages = {
       'Bagaimana cara mengembalikan di minimarket?',
       'Apa yang harus saya kirim kembali?',
     ],
-    replace: [
-      'SIM/perangkat saya rusak',
-      'Saya ingin ganti paket',
-      'Apakah penggantian gratis?',
-    ],
+    replace: ['SIM/perangkat saya rusak', 'Saya ingin ganti paket', 'Apakah penggantian gratis?'],
     deposit: [
       'Bagaimana cara mendapatkan deposit SIM saya kembali?',
       'Kapan deposit saya dikembalikan?',

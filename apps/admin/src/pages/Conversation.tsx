@@ -74,7 +74,9 @@ export function Conversation() {
     const next = !translateOn;
     setTranslateOn(next);
     if (!next || !detail) return;
-    const pending = detail.messages.filter((m) => m.sender === 'customer' && !(m.id in translations));
+    const pending = detail.messages.filter(
+      (m) => m.sender === 'customer' && !(m.id in translations),
+    );
     const results = await Promise.all(
       pending.map(async (m) => {
         try {
@@ -239,7 +241,10 @@ export function Conversation() {
                 Templates
               </button>
               {showTemplates ? (
-                <div className="table-wrap" style={{ position: 'absolute', zIndex: 10, marginTop: 4, minWidth: 180 }}>
+                <div
+                  className="table-wrap"
+                  style={{ position: 'absolute', zIndex: 10, marginTop: 4, minWidth: 180 }}
+                >
                   {templatesFor(conversation.language).map((t) => (
                     <button
                       key={t.label}
@@ -265,7 +270,11 @@ export function Conversation() {
           <div className="autosave-note">Draft saves automatically every few seconds.</div>
 
           <div className="composer-actions">
-            <button className="btn btn-primary" onClick={() => void send()} disabled={sending || !reply.trim()}>
+            <button
+              className="btn btn-primary"
+              onClick={() => void send()}
+              disabled={sending || !reply.trim()}
+            >
               {sending ? 'Sending…' : 'Send'}
             </button>
           </div>
@@ -351,7 +360,13 @@ function Message({
   onRule: (ruleId: string) => void;
 }) {
   const senderLabel =
-    m.sender === 'ai' ? 'AI' : m.sender === 'staff' ? 'Staff' : m.sender === 'system' ? '' : 'Customer';
+    m.sender === 'ai'
+      ? 'AI'
+      : m.sender === 'staff'
+        ? 'Staff'
+        : m.sender === 'system'
+          ? ''
+          : 'Customer';
   const ruleIds = m.ai_meta?.rule_ids ?? [];
   return (
     <div className={`msg ${m.sender}`}>
@@ -369,7 +384,9 @@ function Message({
           {translation || 'Translating…'}
         </div>
       ) : null}
-      {m.sender === 'ai' && m.ai_meta?.diag ? <AiDiagPanel diag={m.ai_meta.diag} reason={m.ai_meta.reason} /> : null}
+      {m.sender === 'ai' && m.ai_meta?.diag ? (
+        <AiDiagPanel diag={m.ai_meta.diag} reason={m.ai_meta.reason} />
+      ) : null}
       {ruleIds.length ? (
         <div className="rule-chips">
           {ruleIds.map((rid) =>
@@ -378,7 +395,11 @@ function Message({
                 {rid}
               </button>
             ) : (
-              <span key={rid} className="chip" style={{ cursor: 'default', color: 'var(--ink-muted)' }}>
+              <span
+                key={rid}
+                className="chip"
+                style={{ cursor: 'default', color: 'var(--ink-muted)' }}
+              >
                 {rid}
               </span>
             ),
@@ -429,7 +450,11 @@ function ReassignControl({
         </select>
       ) : (
         <div className="row">
-          <button className="btn btn-sm" onClick={() => void assign(currentStaffId ?? '')} disabled={!currentStaffId}>
+          <button
+            className="btn btn-sm"
+            onClick={() => void assign(currentStaffId ?? '')}
+            disabled={!currentStaffId}
+          >
             Assign to me
           </button>
           {assigned ? (

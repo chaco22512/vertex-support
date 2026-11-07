@@ -5,7 +5,8 @@ export type AiCallOutcome = 'ok' | 'error' | 'rate_limited' | 'daily_limit';
 
 /** Classify a failed model call for the usage log. */
 export function outcomeOf(err: unknown): AiCallOutcome {
-  if (err instanceof GeminiError && err.status === 429) return err.isDailyLimit ? 'daily_limit' : 'rate_limited';
+  if (err instanceof GeminiError && err.status === 429)
+    return err.isDailyLimit ? 'daily_limit' : 'rate_limited';
   return 'error';
 }
 

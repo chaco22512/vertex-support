@@ -49,7 +49,11 @@ export function Layout() {
           <div className="muted" style={{ textTransform: 'capitalize' }}>
             {staff?.role}
           </div>
-          <button className="btn btn-sm btn-ghost" style={{ marginTop: 8 }} onClick={() => void signOut()}>
+          <button
+            className="btn btn-sm btn-ghost"
+            style={{ marginTop: 8 }}
+            onClick={() => void signOut()}
+          >
             Sign out
           </button>
         </div>

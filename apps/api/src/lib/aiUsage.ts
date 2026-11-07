@@ -52,11 +52,7 @@ export interface AiUsage {
 }
 
 /** Summarise ai_call_log rows since the last Pacific midnight. */
-export function summarizeUsage(
-  rows: { outcome: string }[],
-  limit: number,
-  now: Date,
-): AiUsage {
+export function summarizeUsage(rows: { outcome: string }[], limit: number, now: Date): AiUsage {
   const used = rows.filter((r) => r.outcome === 'ok' || r.outcome === 'error').length;
   const hit = rows.some((r) => r.outcome === 'daily_limit');
   return {
@@ -69,7 +65,11 @@ export function summarizeUsage(
 }
 
 /** Read today's calls (Pacific day) and summarise them. */
-export async function loadUsage(db: SupabaseClient, limit: number, now = new Date()): Promise<AiUsage> {
+export async function loadUsage(
+  db: SupabaseClient,
+  limit: number,
+  now = new Date(),
+): Promise<AiUsage> {
   const rows: { outcome: string }[] = [];
   const since = pacificDayStart(now).toISOString();
   for (let from = 0; ; from += 1000) {

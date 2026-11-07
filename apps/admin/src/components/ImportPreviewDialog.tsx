@@ -63,7 +63,9 @@ export function ImportPreviewDialog({
       const result = await api.importApply(csv, mode, replace ? typed : undefined);
       onApplied(result);
     } catch {
-      setError('Could not apply the changes. Nothing was changed if a backup could not be saved. Please try again.');
+      setError(
+        'Could not apply the changes. Nothing was changed if a backup could not be saved. Please try again.',
+      );
       setPhase('error');
     }
   }
@@ -72,8 +74,7 @@ export function ImportPreviewDialog({
   const added = s?.added ?? 0;
   const archived = s?.archived ?? 0;
   const total = (s?.changed ?? 0) + added + archived;
-  const canApply =
-    phase === 'ready' && total > 0 && (!replace || typed.trim() === REPLACE_WORD);
+  const canApply = phase === 'ready' && total > 0 && (!replace || typed.trim() === REPLACE_WORD);
 
   return (
     <Dialog title={`${replace ? 'Replace all' : 'Review import'} — ${fileName}`} onClose={onClose}>
@@ -85,14 +86,30 @@ export function ImportPreviewDialog({
         </div>
       ) : (
         <>
-          <div className="row wrap" role="radiogroup" aria-label="Import mode" style={{ gap: 16, marginBottom: 'var(--sp-3)' }}>
+          <div
+            className="row wrap"
+            role="radiogroup"
+            aria-label="Import mode"
+            style={{ gap: 16, marginBottom: 'var(--sp-3)' }}
+          >
             <label>
-              <input type="radio" name="import-mode" checked={!replace} onChange={() => setMode('update')} /> Add / update
-              only <span className="muted">(rules not in the file stay as they are)</span>
+              <input
+                type="radio"
+                name="import-mode"
+                checked={!replace}
+                onChange={() => setMode('update')}
+              />{' '}
+              Add / update only{' '}
+              <span className="muted">(rules not in the file stay as they are)</span>
             </label>
             <label>
-              <input type="radio" name="import-mode" checked={replace} onChange={() => setMode('replace')} /> Replace all{' '}
-              <span className="muted">(rules not in the file are archived)</span>
+              <input
+                type="radio"
+                name="import-mode"
+                checked={replace}
+                onChange={() => setMode('replace')}
+              />{' '}
+              Replace all <span className="muted">(rules not in the file are archived)</span>
             </label>
           </div>
           <div className="row wrap" style={{ gap: 12 }}>
@@ -101,21 +118,25 @@ export function ImportPreviewDialog({
             {replace ? <strong>· {archived} to archive</strong> : null}
             <span className="muted">· {s!.unchanged} unchanged</span>
             <span className="muted">· {s!.ignored} ignored</span>
-            {s!.errors > 0 ? <span style={{ color: 'var(--danger)' }}>· {s!.errors} with errors (skipped)</span> : null}
+            {s!.errors > 0 ? (
+              <span style={{ color: 'var(--danger)' }}>· {s!.errors} with errors (skipped)</span>
+            ) : null}
           </div>
 
           {replace ? (
             <>
               <p style={{ marginBottom: 0 }}>
-                Rules that are not in this file will be <strong>archived</strong> — kept and restorable, not deleted.
-                A backup of every rule is saved first.
+                Rules that are not in this file will be <strong>archived</strong> — kept and
+                restorable, not deleted. A backup of every rule is saved first.
               </p>
               <p className="muted" style={{ marginTop: 'var(--sp-1)' }}>
-                Rules the bot can use: {preview!.active_before} → <strong>{preview!.active_after}</strong>
+                Rules the bot can use: {preview!.active_before} →{' '}
+                <strong>{preview!.active_after}</strong>
               </p>
               {preview!.active_after === 0 ? (
                 <div className="state error" role="alert" style={{ padding: 'var(--sp-2) 0' }}>
-                  After this the bot will have no rules to use and will pass every question to staff.
+                  After this the bot will have no rules to use and will pass every question to
+                  staff.
                 </div>
               ) : null}
               {archived > 0 ? (
@@ -144,7 +165,10 @@ export function ImportPreviewDialog({
           ) : null}
 
           {preview!.changes.length > 0 ? (
-            <div className="table-wrap" style={{ maxHeight: 300, overflow: 'auto', marginTop: 'var(--sp-3)' }}>
+            <div
+              className="table-wrap"
+              style={{ maxHeight: 300, overflow: 'auto', marginTop: 'var(--sp-3)' }}
+            >
               <table className="data">
                 <thead>
                   <tr>
@@ -185,7 +209,9 @@ export function ImportPreviewDialog({
 
           {preview!.errors.length > 0 ? (
             <details style={{ marginTop: 'var(--sp-3)' }}>
-              <summary style={{ color: 'var(--danger)' }}>{preview!.errors.length} row(s) will be skipped</summary>
+              <summary style={{ color: 'var(--danger)' }}>
+                {preview!.errors.length} row(s) will be skipped
+              </summary>
               <ul className="muted" style={{ margin: '4px 0 0', paddingLeft: 18 }}>
                 {preview!.errors.slice(0, 50).map((e) => (
                   <li key={`${e.line}-${e.id}`}>

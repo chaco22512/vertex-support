@@ -16,7 +16,9 @@ function compute(rows: InboxRow[], nowMs: number): Metrics {
   const startOfDay = new Date(nowMs);
   startOfDay.setHours(0, 0, 0, 0);
   const todayRows = rows.filter((r) => new Date(r.created_at).getTime() >= startOfDay.getTime());
-  const solvedByAi = todayRows.filter((r) => r.status === 'resolved' && r.answered_by === 'AI').length;
+  const solvedByAi = todayRows.filter(
+    (r) => r.status === 'resolved' && r.answered_by === 'AI',
+  ).length;
   const waiting = rows.filter((r) => r.status === 'escalated').length;
   const dueSoon = rows.filter(
     (r) =>
@@ -72,7 +74,11 @@ export function Dashboard() {
           sub: `${metrics.solvedPct}% of today`,
           to: '/inbox?status=resolved',
         },
-        { label: 'Waiting for staff', value: String(metrics.waiting), to: '/inbox?status=escalated' },
+        {
+          label: 'Waiting for staff',
+          value: String(metrics.waiting),
+          to: '/inbox?status=escalated',
+        },
         {
           label: 'Due within 4h',
           value: String(metrics.dueSoon),
@@ -83,7 +89,10 @@ export function Dashboard() {
           ? [
               {
                 label: 'AI requests (whole company)',
-                value: usage.limit > 0 ? `${usage.used_today} / ${usage.limit}` : String(usage.used_today),
+                value:
+                  usage.limit > 0
+                    ? `${usage.used_today} / ${usage.limit}`
+                    : String(usage.used_today),
                 sub: usage.daily_limit_hit
                   ? `Google's daily limit reached · resets ${jstTime(usage.resets_at)}`
                   : usage.remaining !== null
@@ -104,15 +113,21 @@ export function Dashboard() {
       </div>
       {activeRules === 0 ? (
         <div className="state error" role="alert" style={{ padding: 'var(--sp-3) 0' }}>
-          <strong>The knowledge base has no active rules</strong> — the bot is passing every question to staff.{' '}
-          {staff?.role === 'admin' ? <Link to="/knowledge">Upload the CS sheet in Knowledge</Link> : 'Please tell an admin.'}
+          <strong>The knowledge base has no active rules</strong> — the bot is passing every
+          question to staff.{' '}
+          {staff?.role === 'admin' ? (
+            <Link to="/knowledge">Upload the CS sheet in Knowledge</Link>
+          ) : (
+            'Please tell an admin.'
+          )}
         </div>
       ) : null}
       {usage?.daily_limit_hit ? (
         <div className="state error" role="alert" style={{ padding: 'var(--sp-3) 0' }}>
-          <strong>Google&apos;s daily AI limit is used up</strong> (free plan: {usage.limit || 20} requests a day, shared by
-          every customer chat and every staff test). Until {jstTime(usage.resets_at)}, customers who ask a question get
-          “Our support staff will reply within 24 hours” and are passed to staff with their contact details.
+          <strong>Google&apos;s daily AI limit is used up</strong> (free plan: {usage.limit || 20}{' '}
+          requests a day, shared by every customer chat and every staff test). Until{' '}
+          {jstTime(usage.resets_at)}, customers who ask a question get “Our support staff will reply
+          within 24 hours” and are passed to staff with their contact details.
         </div>
       ) : null}
       {error ? (
@@ -137,10 +152,11 @@ export function Dashboard() {
       )}
       {usage ? (
         <p className="muted" style={{ fontSize: 12 }}>
-          AI requests: Google&apos;s free plan allows {usage.limit || 20} a day for the whole company — every customer
-          chat, Try it and safety test counts, and one question can use 1–3 requests. Google&apos;s day runs from 17:00
-          to 17:00 Japan time (16:00 in summer), not midnight. This number is an estimate from the bot&apos;s own calls;
-          Google AI Studio has the official figure.
+          AI requests: Google&apos;s free plan allows {usage.limit || 20} a day for the whole
+          company — every customer chat, Try it and safety test counts, and one question can use 1–3
+          requests. Google&apos;s day runs from 17:00 to 17:00 Japan time (16:00 in summer), not
+          midnight. This number is an estimate from the bot&apos;s own calls; Google AI Studio has
+          the official figure.
         </p>
       ) : null}
     </>

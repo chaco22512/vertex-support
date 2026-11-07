@@ -29,7 +29,9 @@ export async function fetchScopedRules(
   categories: string[] | null,
   idPrefixes: string[] = [],
 ): Promise<KbRule[]> {
-  const byCategory = await fetchPaged(client, (q) => (categories === null ? q : q.in('category', categories)));
+  const byCategory = await fetchPaged(client, (q) =>
+    categories === null ? q : q.in('category', categories),
+  );
   if (categories === null || idPrefixes.length === 0) return byCategory;
 
   // PostgREST or-filter: the code + exactly 3 characters (`_` = one character),
@@ -45,7 +47,10 @@ export async function fetchScopedRules(
 type RuleQuery = ReturnType<ReturnType<SupabaseClient['from']>['select']>;
 
 /** Page through eligible rules (Hard rule 3 filter always applied) with an extra filter. */
-async function fetchPaged(client: SupabaseClient, filter: (q: RuleQuery) => RuleQuery): Promise<KbRule[]> {
+async function fetchPaged(
+  client: SupabaseClient,
+  filter: (q: RuleQuery) => RuleQuery,
+): Promise<KbRule[]> {
   const all: KbRule[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
     const query = filter(

@@ -107,7 +107,10 @@ export function kbCsvExampleRow(): string[] {
 }
 
 /** Full export CSV: BOM + header + example row + one row per rule. */
-export function buildKbCsv(rules: KbRule[], updatedByNames: Map<string, string> = new Map()): string {
+export function buildKbCsv(
+  rules: KbRule[],
+  updatedByNames: Map<string, string> = new Map(),
+): string {
   const rows = [
     [...KB_CSV_HEADERS],
     kbCsvExampleRow(),
@@ -178,7 +181,9 @@ function parseDecision(raw: string, errors: string[]): CsDecision {
   if (v === 'keep internal' || v === 'internal') return 'keep_internal';
   if (v === 'disable' || v === 'disabled') return 'disable';
   if (v === 'no change' || v === 'none') return '';
-  errors.push(`CS decision must be Approve, Keep internal, Disable, or blank (got "${raw.trim()}")`);
+  errors.push(
+    `CS decision must be Approve, Keep internal, Disable, or blank (got "${raw.trim()}")`,
+  );
   return '';
 }
 
@@ -222,7 +227,17 @@ export function parseImportCsv(
     const subtopic = at(c.subtopic).trim();
     const isNew = !id && Boolean(opts.allowNew) && at(c.text).trim() !== '';
     if ((!id && !isNew) || id.toUpperCase() === 'EXAMPLE') {
-      rows.push({ line, id, values: {}, decision: '', errors: [], skip: true, topic, subtopic, isNew: false });
+      rows.push({
+        line,
+        id,
+        values: {},
+        decision: '',
+        errors: [],
+        skip: true,
+        topic,
+        subtopic,
+        isNew: false,
+      });
       continue;
     }
     const errors: string[] = [];
@@ -231,8 +246,10 @@ export function parseImportCsv(
     if (c.text >= 0) {
       const t = at(c.text);
       if (t.trim() === '') errors.push('Answer text cannot be empty.');
-      else if (hasUnfilledPlaceholder(t)) errors.push('Answer text still contains an unfilled placeholder.');
-      else if (hasSpreadsheetFormula(t)) errors.push('Answer text still contains a spreadsheet formula.');
+      else if (hasUnfilledPlaceholder(t))
+        errors.push('Answer text still contains an unfilled placeholder.');
+      else if (hasSpreadsheetFormula(t))
+        errors.push('Answer text still contains a spreadsheet formula.');
       else values.rule_text = t;
     }
     if (c.fees >= 0) {
@@ -324,7 +341,13 @@ const FIELD_LABEL: Record<keyof EditableValues, string> = {
 export function computeRuleChanges(
   current: Pick<
     KbRule,
-    'rule_text' | 'fee_amounts_jpy' | 'fee_is_fixed' | 'links' | 'audience' | 'ai_can_answer' | 'status'
+    | 'rule_text'
+    | 'fee_amounts_jpy'
+    | 'fee_is_fixed'
+    | 'links'
+    | 'audience'
+    | 'ai_can_answer'
+    | 'status'
   >,
   row: ParsedImportRow,
 ): { changes: FieldChange[]; patch: EditableValues } {

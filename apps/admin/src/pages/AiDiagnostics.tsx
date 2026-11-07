@@ -12,7 +12,8 @@ type Load = 'loading' | 'ready' | 'error';
 const TOP_K = 150;
 
 function summaryLabel(key: string): string {
-  if (key.startsWith('error:')) return ERROR_LABELS[key.slice(6) as keyof typeof ERROR_LABELS] ?? key;
+  if (key.startsWith('error:'))
+    return ERROR_LABELS[key.slice(6) as keyof typeof ERROR_LABELS] ?? key;
   if (key === 'no_fallback') return 'No search (policy escalation)';
   return FALLBACK_LABELS[key as FallbackResult] ?? key;
 }
@@ -54,8 +55,8 @@ export function AiDiagnostics() {
         <h1>AI diagnostics</h1>
       </div>
       <p className="muted" style={{ marginTop: 0 }}>
-        AI replies that were passed to staff or needed a search of the full manual (latest {windowSize}).
-        Open a row to see which rules the search found.
+        AI replies that were passed to staff or needed a search of the full manual (latest{' '}
+        {windowSize}). Open a row to see which rules the search found.
       </p>
 
       <div className="summary-chips">
@@ -114,7 +115,15 @@ export function AiDiagnostics() {
   );
 }
 
-function DiagRow({ row, open, onToggle }: { row: DiagnosticRow; open: boolean; onToggle: () => void }) {
+function DiagRow({
+  row,
+  open,
+  onToggle,
+}: {
+  row: DiagnosticRow;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const d = row.diag;
   return (
     <>
@@ -147,7 +156,8 @@ function DiagRow({ row, open, onToggle }: { row: DiagnosticRow; open: boolean; o
             {d.candidate_ids.length ? (
               <>
                 <div className="muted" style={{ marginTop: 'var(--sp-2)' }}>
-                  Search results ({d.candidate_ids.length}, best first): {d.candidate_ids.slice(0, 20).join(', ')}
+                  Search results ({d.candidate_ids.length}, best first):{' '}
+                  {d.candidate_ids.slice(0, 20).join(', ')}
                   {d.candidate_ids.length > 20 ? ', …' : ''}
                 </div>
                 <RankCheck candidates={d.candidate_ids} />
@@ -178,7 +188,11 @@ function RankCheck({ candidates }: { candidates: string[] }) {
         onClick={(e) => e.stopPropagation()}
       />
       {id ? (
-        <span>{rank > 0 ? `found at rank ${rank} of ${candidates.length}` : `not in the top ${TOP_K} search results`}</span>
+        <span>
+          {rank > 0
+            ? `found at rank ${rank} of ${candidates.length}`
+            : `not in the top ${TOP_K} search results`}
+        </span>
       ) : null}
     </div>
   );

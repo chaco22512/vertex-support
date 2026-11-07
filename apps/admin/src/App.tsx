@@ -23,7 +23,9 @@ function RequireAuth({ children }: { children: ReactNode }) {
   if (staffError || !staff || !staff.isActive) {
     return (
       <div className="state error" role="alert">
-        <div>{staffError ?? 'Your account is not an active staff member. Contact an administrator.'}</div>
+        <div>
+          {staffError ?? 'Your account is not an active staff member. Contact an administrator.'}
+        </div>
         <div className="row" style={{ justifyContent: 'center', marginTop: 12 }}>
           <button className="btn btn-sm" onClick={refresh}>
             Try again

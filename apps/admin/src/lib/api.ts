@@ -278,7 +278,10 @@ export interface KbSnapshot {
 export type ExportFilters = { q?: string; category?: string; status?: string };
 
 /** Download the knowledge CSV. Uses blob() (not text()) to preserve the UTF-8 BOM. */
-async function downloadRulesCsv(scope: 'all' | 'filtered', filters: ExportFilters = {}): Promise<void> {
+async function downloadRulesCsv(
+  scope: 'all' | 'filtered',
+  filters: ExportFilters = {},
+): Promise<void> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   const p = new URLSearchParams({ scope });
@@ -315,8 +318,7 @@ export const api = {
   me: () => request<MeResult>(`/api/admin/me`),
   listConversations: (f: InboxFilters = {}) =>
     request<{ conversations: InboxRow[] }>(`/api/admin/conversations${qs(f)}`),
-  getConversation: (id: string) =>
-    request<ConversationDetail>(`/api/admin/conversations/${id}`),
+  getConversation: (id: string) => request<ConversationDetail>(`/api/admin/conversations/${id}`),
   patchConversation: (id: string, body: { status?: ConvStatus; assigned_staff?: string | null }) =>
     request<{ ok: true }>(`/api/admin/conversations/${id}`, {
       method: 'PATCH',
@@ -387,14 +389,25 @@ export const api = {
     }),
   publishAiBehaviour: (id: number) => publishLike(`/api/admin/ai-behaviour/versions/${id}/publish`),
   restoreAiBehaviour: (id: number) => publishLike(`/api/admin/ai-behaviour/versions/${id}/restore`),
-  tryAiBehaviour: (body: { question: string; topic: string; common_behaviour: string; topic_text: string }) =>
-    request<AiTryResult>(`/api/admin/ai-behaviour/try`, { method: 'POST', body: JSON.stringify(body) }),
+  tryAiBehaviour: (body: {
+    question: string;
+    topic: string;
+    common_behaviour: string;
+    topic_text: string;
+  }) =>
+    request<AiTryResult>(`/api/admin/ai-behaviour/try`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   // --- bulk operations + backups (★v1.8 §7.4.2) ---
   disableView: (ids: string[], description: string) =>
-    request<{ disabled: number; snapshot_id: string | null; active_after?: number }>(`/api/admin/rules/disable-view`, {
-      method: 'POST',
-      body: JSON.stringify({ ids, description }),
-    }),
+    request<{ disabled: number; snapshot_id: string | null; active_after?: number }>(
+      `/api/admin/rules/disable-view`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ ids, description }),
+      },
+    ),
   archiveAll: (confirmCount: number) =>
     request<{ archived: number; snapshot_id: string | null }>(`/api/admin/rules/archive-all`, {
       method: 'POST',
@@ -407,9 +420,15 @@ export const api = {
     }),
   listSnapshots: () => request<{ snapshots: KbSnapshot[] }>(`/api/admin/rules/snapshots`),
   undoSnapshot: (id: string) =>
-    request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/undo`, { method: 'POST', body: '{}' }),
+    request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/undo`, {
+      method: 'POST',
+      body: '{}',
+    }),
   restoreSnapshot: (id: string) =>
-    request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/restore`, { method: 'POST', body: '{}' }),
+    request<{ restored: number }>(`/api/admin/rules/snapshots/${id}/restore`, {
+      method: 'POST',
+      body: '{}',
+    }),
   /** ★v1.8: Gemini requests used / left today (estimate). */
   aiUsage: () => request<AiUsage>(`/api/admin/ai-usage`),
   /** ★v1.8: rules the bot can use right now (Dashboard warning when 0). */
@@ -430,9 +449,12 @@ export const api = {
     languages?: string[];
     channels?: Channel[];
     slack_member_id?: string;
-  }) => request<{ staff: Staff }>(`/api/admin/staff`, { method: 'POST', body: JSON.stringify(body) }),
+  }) =>
+    request<{ staff: Staff }>(`/api/admin/staff`, { method: 'POST', body: JSON.stringify(body) }),
   deleteStaff: (id: string) =>
-    request<{ deleted: boolean; auth_user_removed: boolean }>(`/api/admin/staff/${id}`, { method: 'DELETE' }),
+    request<{ deleted: boolean; auth_user_removed: boolean }>(`/api/admin/staff/${id}`, {
+      method: 'DELETE',
+    }),
   updateStaff: (id: string, body: Partial<Staff>) =>
     request<{ staff: Staff }>(`/api/admin/staff/${id}`, {
       method: 'PATCH',

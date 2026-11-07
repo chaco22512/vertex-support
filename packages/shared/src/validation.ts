@@ -18,4 +18,5 @@ export function hasSpreadsheetFormula(text: string): boolean {
 }
 
 export const PLACEHOLDER_REASON = 'contains an unfilled placeholder — fill in before approving';
-export const FORMULA_REASON = 'contains an unprocessed spreadsheet formula — clean before approving';
+export const FORMULA_REASON =
+  'contains an unprocessed spreadsheet formula — clean before approving';

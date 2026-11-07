@@ -14,7 +14,5 @@ export const FALLBACK_ESCALATION_MESSAGE: Record<LanguageCode, string> = {
 };
 
 export function fallbackEscalationMessage(language: string): string {
-  return (
-    FALLBACK_ESCALATION_MESSAGE[language as LanguageCode] ?? FALLBACK_ESCALATION_MESSAGE.en
-  );
+  return FALLBACK_ESCALATION_MESSAGE[language as LanguageCode] ?? FALLBACK_ESCALATION_MESSAGE.en;
 }

@@ -41,15 +41,24 @@ interface VersionRow extends BehaviourContent {
   based_on: number | null;
 }
 
-const LIST_COLUMNS = 'id,state,created_by,created_at,published_by,published_at,safety_report,note,based_on';
+const LIST_COLUMNS =
+  'id,state,created_by,created_at,published_by,published_at,safety_report,note,based_on';
 
 async function staffNames(deps: Deps): Promise<Map<string, string>> {
   const { data } = await deps.db.from('staff').select('id,name,is_active');
   return new Map(((data ?? []) as { id: string; name: string }[]).map((s) => [s.id, s.name]));
 }
 
-async function log(deps: Deps, versionId: number, action: string, by: string, detail: Record<string, unknown> = {}) {
-  await deps.db.from('ai_prompt_change_log').insert({ version_id: versionId, action, changed_by: by, detail });
+async function log(
+  deps: Deps,
+  versionId: number,
+  action: string,
+  by: string,
+  detail: Record<string, unknown> = {},
+) {
+  await deps.db
+    .from('ai_prompt_change_log')
+    .insert({ version_id: versionId, action, changed_by: by, detail });
 }
 
 /** Keep only known topic ids with non-empty-or-empty text (unknown keys are rejected upstream). */
@@ -62,9 +71,18 @@ function unknownTopics(topics: Record<string, string>): string[] {
 export async function getAiBehaviour(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
   const [{ data: latest }, { data: published }, { data: history }, names] = await Promise.all([
-    deps.db.from('ai_prompt_versions').select('*').order('id', { ascending: false }).limit(1).maybeSingle(),
+    deps.db
+      .from('ai_prompt_versions')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     deps.db.from('ai_prompt_versions').select('*').eq('state', 'published').maybeSingle(),
-    deps.db.from('ai_prompt_versions').select(LIST_COLUMNS).order('id', { ascending: false }).limit(20),
+    deps.db
+      .from('ai_prompt_versions')
+      .select(LIST_COLUMNS)
+      .order('id', { ascending: false })
+      .limit(20),
     staffNames(deps),
   ]);
   const name = (id: string | null) => (id && names.get(id)) || '';
@@ -106,7 +124,8 @@ export async function saveVersion(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
   const staff = c.get('staff');
   const parsed = saveBehaviourSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'invalid_body', message: 'Text is too long or malformed.' }, 400);
+  if (!parsed.success)
+    return c.json({ error: 'invalid_body', message: 'Text is too long or malformed.' }, 400);
   const bad = unknownTopics(parsed.data.topic_instructions);
   if (bad.length) return c.json({ error: 'unknown_topic', topics: bad }, 400);
 
@@ -139,10 +158,26 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
   const topicIds = [...new Set(SAFETY_TESTS.map((t) => t.topic))];
   const rulesByTopic = new Map(
     await Promise.all(
-      topicIds.map(async (id) => [id, await fetchScopedRules(deps.db, resolveKbCategories(id, menu), resolveIdPrefixes(id, menu))] as const),
+      topicIds.map(
+        async (id) =>
+          [
+            id,
+            await fetchScopedRules(
+              deps.db,
+              resolveKbCategories(id, menu),
+              resolveIdPrefixes(id, menu),
+            ),
+          ] as const,
+      ),
     ),
   );
-  const lostRules = rulesByTopic.get('lost') ?? (await fetchScopedRules(deps.db, resolveKbCategories('lost', menu), resolveIdPrefixes('lost', menu)));
+  const lostRules =
+    rulesByTopic.get('lost') ??
+    (await fetchScopedRules(
+      deps.db,
+      resolveKbCategories('lost', menu),
+      resolveIdPrefixes('lost', menu),
+    ));
   const lostFees = [...new Set(lostRules.flatMap((r) => r.fee_amounts_jpy))];
   const { data: staffRows } = await deps.db.from('staff').select('name,is_active');
   const names = ((staffRows ?? []) as { name: string; is_active: boolean }[])
@@ -160,7 +195,10 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
           language: 'en',
           topic: resolveTopicLabel(test.topic, menu),
           topics: BEHAVIOUR_TOPICS,
-          behaviour: { common: content.common_behaviour, topic: content.topic_instructions?.[test.topic] ?? '' },
+          behaviour: {
+            common: content.common_behaviour,
+            topic: content.topic_instructions?.[test.topic] ?? '',
+          },
           llm: deps.llm,
           signal: controller.signal,
         });
@@ -179,7 +217,11 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
  * Test a saved version and publish it only if every check passes. Shared by
  * publish and restore. Returns the HTTP response.
  */
-async function testAndPublish(c: Context<AppEnv>, version: VersionRow, action: 'publish' | 'restore'): Promise<Response> {
+async function testAndPublish(
+  c: Context<AppEnv>,
+  version: VersionRow,
+  action: 'publish' | 'restore',
+): Promise<Response> {
   const deps = c.get('deps');
   const staff = c.get('staff');
   const report = await runSafetyTests(deps, version);
@@ -258,7 +300,8 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
   const parsed = tryBehaviourSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
-  if (!BEHAVIOUR_TOPICS.some((t) => t.id === parsed.data.topic)) return c.json({ error: 'unknown_topic' }, 400);
+  if (!BEHAVIOUR_TOPICS.some((t) => t.id === parsed.data.topic))
+    return c.json({ error: 'unknown_topic' }, 400);
 
   const rules = await fetchScopedRules(
     deps.db,

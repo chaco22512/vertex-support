@@ -23,7 +23,8 @@ export const en: Messages = {
     whatsappPlaceholder: 'WhatsApp number',
     contactSend: 'Send',
     contactValidation: 'Enter an email or WhatsApp number.',
-    intakeTitle: 'A few optional details help our team solve this faster. You can skip any of these.',
+    intakeTitle:
+      'A few optional details help our team solve this faster. You can skip any of these.',
     intakeSkip: 'Skip',
     intakeContinue: 'Continue',
     fieldCustomerNumber: 'Customer number',
@@ -95,21 +96,13 @@ export const en: Messages = {
       'How do I return at a convenience store?',
       'What do I need to send back?',
     ],
-    replace: [
-      'My SIM/device is broken',
-      'I want to change my plan',
-      'Is replacement free?',
-    ],
+    replace: ['My SIM/device is broken', 'I want to change my plan', 'Is replacement free?'],
     deposit: [
       'How do I get my SIM deposit back?',
       'When is my deposit refunded?',
       'When will I get my cashback?',
       'Is the deposit paid back to my bank account?',
     ],
-    plans: [
-      'What plans are available?',
-      'What do I need to apply?',
-      'Which plans include calls?',
-    ],
+    plans: ['What plans are available?', 'What do I need to apply?', 'Which plans include calls?'],
   },
 };

@@ -1,6 +1,11 @@
 import type { AiMeta, KbRule } from '@vertex/shared';
 import type { LlmClient } from './llm';
-import { buildLlmMessages, buildSystemPrompt, type HistoryMessage, type PromptBehaviour } from './prompt';
+import {
+  buildLlmMessages,
+  buildSystemPrompt,
+  type HistoryMessage,
+  type PromptBehaviour,
+} from './prompt';
 import { parseAiResponse, type AiResponse } from './parse';
 import { fallbackEscalationMessage } from './locales';
 

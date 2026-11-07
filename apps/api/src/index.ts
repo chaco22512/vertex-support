@@ -39,13 +39,7 @@ import {
   replyConversation,
   translate,
 } from './routes/admin/conversations';
-import {
-  approveRules,
-  createRule,
-  listRules,
-  splitRule,
-  updateRule,
-} from './routes/admin/rules';
+import { approveRules, createRule, listRules, splitRule, updateRule } from './routes/admin/rules';
 import { applyImport, exportRules, previewImport, undoImport } from './routes/admin/rulesCsv';
 import { createStaff, deleteStaff, listStaff, updateStaff } from './routes/admin/staff';
 import { listChangelog } from './routes/admin/changelog';

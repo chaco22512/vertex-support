@@ -53,10 +53,7 @@ export function resolveTopicLabel(topicCategory: string, menu: MenuCategories): 
  * @returns the list of kb_rules.category values to scope to, or null for "all
  *   active customer rules" (topic 'others', unset, unknown, or a '*' mapping).
  */
-export function resolveKbCategories(
-  topicCategory: string,
-  menu: MenuCategories,
-): string[] | null {
+export function resolveKbCategories(topicCategory: string, menu: MenuCategories): string[] | null {
   if (!topicCategory || topicCategory === 'others') return null;
 
   const category = scopeTile(topicCategory, menu);
@@ -83,5 +80,7 @@ export function resolveIdPrefixes(topicCategory: string, menu: MenuCategories): 
 
 /** True when `id` is `code` + exactly 3 digits, so "IN" never matches "INT001". */
 export function idHasCode(id: string, code: string): boolean {
-  return id.length === code.length + 3 && id.startsWith(code) && /^\d{3}$/.test(id.slice(code.length));
+  return (
+    id.length === code.length + 3 && id.startsWith(code) && /^\d{3}$/.test(id.slice(code.length))
+  );
 }

@@ -8,10 +8,12 @@ export const tl: Messages = {
     somethingElse: 'Iba pa',
     changeTopic: 'Palitan ang paksa',
     askAnother: 'Magtanong ng iba',
-    addedToOpenRequest: 'Naidagdag ang iyong mensahe sa iyong bukas na kahilingan. Sasagot ang aming staff.',
+    addedToOpenRequest:
+      'Naidagdag ang iyong mensahe sa iyong bukas na kahilingan. Sasagot ang aming staff.',
     backToChat: 'Bumalik sa chat',
     othersPrompt: 'Pakisabi sa amin ang iyong tanong.',
-    plansMessage: 'Tutulungan ka ng aming staff sa presyo ng mga plan. Mangyaring iwan ang iyong kontak sa ibaba.',
+    plansMessage:
+      'Tutulungan ka ng aming staff sa presyo ng mga plan. Mangyaring iwan ang iyong kontak sa ibaba.',
     inputPlaceholder: 'I-type ang iyong mensahe',
     send: 'Ipadala',
     solved: 'Nalutas na',
@@ -24,7 +26,8 @@ export const tl: Messages = {
     whatsappPlaceholder: 'WhatsApp number',
     contactSend: 'Ipadala',
     contactValidation: 'Maglagay ng email o WhatsApp number.',
-    intakeTitle: 'May ilang opsyonal na detalye na makakatulong para mas mabilis itong masolusyunan. Puwede mong laktawan ang alinman dito.',
+    intakeTitle:
+      'May ilang opsyonal na detalye na makakatulong para mas mabilis itong masolusyunan. Puwede mong laktawan ang alinman dito.',
     intakeSkip: 'Laktawan',
     intakeContinue: 'Magpatuloy',
     fieldCustomerNumber: 'Customer number',
@@ -44,7 +47,8 @@ export const tl: Messages = {
     offline: 'Offline ka. Awtomatiko kaming muling kokonekta.',
     teamReplied: 'Sumagot na ang aming team',
     errorGeneric: 'May nangyaring mali. Pakisubukan muli.',
-    errorTooFast: 'Masyadong mabilis ang pagpapadala mo ng mensahe. Maghintay ng isang minuto, saka subukan muli.',
+    errorTooFast:
+      'Masyadong mabilis ang pagpapadala mo ng mensahe. Maghintay ng isang minuto, saka subukan muli.',
     retry: 'Subukan muli',
     statusAi: 'AI assistant',
     statusWaitingStaff: 'Sasagot ang aming team sa loob ng 24 oras',

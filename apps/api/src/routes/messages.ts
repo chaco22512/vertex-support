@@ -47,7 +47,10 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
   let topicCategory = conversation.topic_category;
   if (ai.topicSwitch) {
     topicCategory = ai.topicSwitch;
-    await db.from('conversations').update({ topic_category: topicCategory }).eq('id', conversation.id);
+    await db
+      .from('conversations')
+      .update({ topic_category: topicCategory })
+      .eq('id', conversation.id);
     const label = topicLabel(topicCategory);
     if (label) {
       await db

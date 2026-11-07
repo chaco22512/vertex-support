@@ -47,7 +47,9 @@ export function AiDiagPanel({ diag, reason }: { diag: AiDiag; reason?: string })
         <dt>Topic</dt>
         <dd>
           {diag.topic || '—'}
-          {diag.topic_guess && diag.topic_guess !== diag.topic ? ` → guessed ${diag.topic_guess}` : ''}
+          {diag.topic_guess && diag.topic_guess !== diag.topic
+            ? ` → guessed ${diag.topic_guess}`
+            : ''}
         </dd>
         <dt>Rules in topic</dt>
         <dd>{diag.scoped_rule_count}</dd>
@@ -55,7 +57,11 @@ export function AiDiagPanel({ diag, reason }: { diag: AiDiag; reason?: string })
         <dd>{diag.primary_reason ?? '—'}</dd>
         <dt>Full-manual search</dt>
         <dd>
-          {diag.fallback_tried ? (diag.fallback_result ? FALLBACK_LABELS[diag.fallback_result] : 'tried') : 'not needed'}
+          {diag.fallback_tried
+            ? diag.fallback_result
+              ? FALLBACK_LABELS[diag.fallback_result]
+              : 'tried'
+            : 'not needed'}
           {diag.candidate_count ? ` (${diag.candidate_count} candidate rules)` : ''}
         </dd>
         {diag.keywords.length ? (
@@ -67,8 +73,12 @@ export function AiDiagPanel({ diag, reason }: { diag: AiDiag; reason?: string })
         <dt>Time</dt>
         <dd>
           {(diag.timings.total_ms / 1000).toFixed(1)}s
-          {diag.timings.primary_ms !== null ? ` (first ${(diag.timings.primary_ms / 1000).toFixed(1)}s` : ''}
-          {diag.timings.fallback_ms !== null ? `, search ${(diag.timings.fallback_ms / 1000).toFixed(1)}s` : ''}
+          {diag.timings.primary_ms !== null
+            ? ` (first ${(diag.timings.primary_ms / 1000).toFixed(1)}s`
+            : ''}
+          {diag.timings.fallback_ms !== null
+            ? `, search ${(diag.timings.fallback_ms / 1000).toFixed(1)}s`
+            : ''}
           {diag.timings.primary_ms !== null ? ')' : ''}
         </dd>
       </dl>

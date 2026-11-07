@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { buildKbCsv, type KbRule, type Role } from '@vertex/shared';
 import { createApp } from '../../index';
 import { FakeSupabase } from '../../testing/fakeSupabase';
-import { fakeKv, fakeSendEmail, fakeSendSlack, fakeVerifyStaff, goodResponse, mockLlm } from '../../testing/mocks';
+import {
+  fakeKv,
+  fakeSendEmail,
+  fakeSendSlack,
+  fakeVerifyStaff,
+  goodResponse,
+  mockLlm,
+} from '../../testing/mocks';
 import type { ApiBindings } from '../../types';
 
 /** Spec v1.8 §7.4.2 — Replace all / Disable all in view / Backups (no physical delete). */
@@ -30,7 +37,11 @@ function rule(id: string, category = 'CAT A', overrides: Partial<KbRule> = {}): 
 
 function setup(role: Role = 'admin') {
   const db = new FakeSupabase();
-  db.tables.kb_rules.push(...[rule('R1'), rule('R2'), rule('R3', 'CAT B')].map((r) => ({ ...r }) as Record<string, unknown>));
+  db.tables.kb_rules.push(
+    ...[rule('R1'), rule('R2'), rule('R3', 'CAT B')].map(
+      (r) => ({ ...r }) as Record<string, unknown>,
+    ),
+  );
   const slack = fakeSendSlack();
   const env: ApiBindings = {
     SUPABASE_URL: 'x',
@@ -59,13 +70,21 @@ function setup(role: Role = 'admin') {
       path,
       {
         method: 'POST',
-        headers: { Authorization: 'Bearer tok', Origin: 'http://localhost:5174', 'Content-Type': 'application/json' },
+        headers: {
+          Authorization: 'Bearer tok',
+          Origin: 'http://localhost:5174',
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(body),
       },
       env,
     );
   const get = (path: string) =>
-    app.request(path, { headers: { Authorization: 'Bearer tok', Origin: 'http://localhost:5174' } }, env);
+    app.request(
+      path,
+      { headers: { Authorization: 'Bearer tok', Origin: 'http://localhost:5174' } },
+      env,
+    );
   return { db, slack, post, get };
 }
 
@@ -81,7 +100,10 @@ function replacementSheet(db: FakeSupabase, newId = 'DR001'): string {
 describe('Replace all (CSV mode=replace)', () => {
   it('previews changed / added / archived counts and the rules the bot can use after', async () => {
     const s = setup();
-    const res = await s.post('/api/admin/rules/import/preview', { csv: replacementSheet(s.db), mode: 'replace' });
+    const res = await s.post('/api/admin/rules/import/preview', {
+      csv: replacementSheet(s.db),
+      mode: 'replace',
+    });
     expect(res.status).toBe(200);
     const body = (await res.json()) as {
       summary: Record<string, number>;
@@ -98,7 +120,10 @@ describe('Replace all (CSV mode=replace)', () => {
 
   it('refuses to apply without typing REPLACE (nothing changes)', async () => {
     const s = setup();
-    const res = await s.post('/api/admin/rules/import/apply', { csv: replacementSheet(s.db), mode: 'replace' });
+    const res = await s.post('/api/admin/rules/import/apply', {
+      csv: replacementSheet(s.db),
+      mode: 'replace',
+    });
     expect(res.status).toBe(400);
     expect(ruleById(s.db, 'R3').status).toBe('active');
     expect(s.db.rpcCalls).toHaveLength(0);
@@ -132,7 +157,11 @@ describe('Replace all (CSV mode=replace)', () => {
   it('Undo puts every rule back and sets the added rule aside (archived, not deleted)', async () => {
     const s = setup();
     const applied = (await (
-      await s.post('/api/admin/rules/import/apply', { csv: replacementSheet(s.db), mode: 'replace', confirm: 'REPLACE' })
+      await s.post('/api/admin/rules/import/apply', {
+        csv: replacementSheet(s.db),
+        mode: 'replace',
+        confirm: 'REPLACE',
+      })
     ).json()) as { snapshot_id: string };
     const res = await s.post(`/api/admin/rules/snapshots/${applied.snapshot_id}/undo`, {});
     expect(res.status).toBe(200);
@@ -141,7 +170,9 @@ describe('Replace all (CSV mode=replace)', () => {
     expect(ruleById(s.db, 'DR001').status).toBe('archived');
     expect(s.db.tables.kb_rules).toHaveLength(4);
     // A second undo of the same backup is refused.
-    expect((await s.post(`/api/admin/rules/snapshots/${applied.snapshot_id}/undo`, {})).status).toBe(409);
+    expect(
+      (await s.post(`/api/admin/rules/snapshots/${applied.snapshot_id}/undo`, {})).status,
+    ).toBe(409);
   });
 
   it('rejects a new row whose Rule ID breaks the convention, saying what to do (row error, not added)', async () => {
@@ -151,8 +182,14 @@ describe('Replace all (CSV mode=replace)', () => {
       ['DR01', 'topic code (2–4 letters) + 3 numbers'],
       ['', 'no Rule ID'],
     ] as const) {
-      const res = await s.post('/api/admin/rules/import/preview', { csv: replacementSheet(s.db, id), mode: 'replace' });
-      const body = (await res.json()) as { summary: Record<string, number>; errors: { reason: string }[] };
+      const res = await s.post('/api/admin/rules/import/preview', {
+        csv: replacementSheet(s.db, id),
+        mode: 'replace',
+      });
+      const body = (await res.json()) as {
+        summary: Record<string, number>;
+        errors: { reason: string }[];
+      };
       expect(body.summary).toMatchObject({ added: 0, errors: 1 });
       expect(body.errors[0]!.reason).toContain(hint);
     }
@@ -175,7 +212,10 @@ describe('Replace all (CSV mode=replace)', () => {
 
   it('warns that nothing would be left for the bot when the sheet is empty', async () => {
     const s = setup();
-    const res = await s.post('/api/admin/rules/import/preview', { csv: buildKbCsv([]), mode: 'replace' });
+    const res = await s.post('/api/admin/rules/import/preview', {
+      csv: buildKbCsv([]),
+      mode: 'replace',
+    });
     const body = (await res.json()) as { summary: Record<string, number>; active_after: number };
     expect(body.summary.archived).toBe(3);
     expect(body.active_after).toBe(0);
@@ -187,7 +227,9 @@ describe('Replace all (CSV mode=replace)', () => {
       /\r?\nR3,CAT B,,Text of R3,/,
       '\r\nR3,CAT B,,,',
     );
-    const body = (await (await s.post('/api/admin/rules/import/preview', { csv, mode: 'replace' })).json()) as {
+    const body = (await (
+      await s.post('/api/admin/rules/import/preview', { csv, mode: 'replace' })
+    ).json()) as {
       summary: Record<string, number>;
     };
     expect(body.summary).toMatchObject({ errors: 1, archived: 0 });
@@ -197,9 +239,16 @@ describe('Replace all (CSV mode=replace)', () => {
 describe('Disable all in this view', () => {
   it('disables exactly the ids in view, snapshots first, notifies, and Undo restores', async () => {
     const s = setup();
-    const res = await s.post('/api/admin/rules/disable-view', { ids: ['R1', 'R2'], description: 'Category: CAT A' });
+    const res = await s.post('/api/admin/rules/disable-view', {
+      ids: ['R1', 'R2'],
+      description: 'Category: CAT A',
+    });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { disabled: number; snapshot_id: string; active_after: number };
+    const body = (await res.json()) as {
+      disabled: number;
+      snapshot_id: string;
+      active_after: number;
+    };
     expect(body).toMatchObject({ disabled: 2, active_after: 1 });
     expect(ruleById(s.db, 'R1').status).toBe('disabled');
     expect(ruleById(s.db, 'R3').status).toBe('active');
@@ -231,19 +280,27 @@ describe('Backups', () => {
       await s.post('/api/admin/rules/disable-view', { ids: ['R1'] });
       ruleById(s.db, 'R1').status = 'active'; // re-arm for the next run
     }
-    const list = (await (await s.get('/api/admin/rules/snapshots')).json()) as { snapshots: unknown[] };
+    const list = (await (await s.get('/api/admin/rules/snapshots')).json()) as {
+      snapshots: unknown[];
+    };
     expect(list.snapshots).toHaveLength(5);
   });
 
   it('restore puts everything back to that point and backs up the current state first', async () => {
     const s = setup();
-    const first = (await (await s.post('/api/admin/rules/disable-view', { ids: ['R1'] })).json()) as {
+    const first = (await (
+      await s.post('/api/admin/rules/disable-view', { ids: ['R1'] })
+    ).json()) as {
       snapshot_id: string;
     };
     await s.post('/api/admin/rules/disable-view', { ids: ['R2', 'R3'] });
     const res = await s.post(`/api/admin/rules/snapshots/${first.snapshot_id}/restore`, {});
     expect(res.status).toBe(200);
-    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id).status)).toEqual(['active', 'active', 'active']);
+    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id).status)).toEqual([
+      'active',
+      'active',
+      'active',
+    ]);
     const kinds = (s.db.tables.kb_rule_snapshots ?? []).map((x) => x.kind);
     expect(kinds).toContain('restore');
   });
@@ -253,10 +310,16 @@ describe('Archive all (owner decision 2026-10-31)', () => {
   it('requires ARCHIVE and the confirmed count; archives everything in one go; Undo restores', async () => {
     const s = setup();
     expect((await s.post('/api/admin/rules/archive-all', { confirm_count: 3 })).status).toBe(400);
-    expect((await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 2 })).status).toBe(409);
+    expect(
+      (await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 2 }))
+        .status,
+    ).toBe(409);
     expect(ruleById(s.db, 'R1').status).toBe('active');
 
-    const res = await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 3 });
+    const res = await s.post('/api/admin/rules/archive-all', {
+      confirm: 'ARCHIVE',
+      confirm_count: 3,
+    });
     const body = (await res.json()) as { archived: number; snapshot_id: string };
     expect(body.archived).toBe(3);
     expect(s.db.tables.kb_rules.every((r) => r.status === 'archived')).toBe(true);
@@ -264,7 +327,11 @@ describe('Archive all (owner decision 2026-10-31)', () => {
     expect(s.slack.calls.at(-1)).toContain('Archive all');
 
     await s.post(`/api/admin/rules/snapshots/${body.snapshot_id}/undo`, {});
-    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id).status)).toEqual(['active', 'active', 'active']);
+    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id).status)).toEqual([
+      'active',
+      'active',
+      'active',
+    ]);
   });
 });
 
@@ -277,17 +344,31 @@ describe('Delete archived rules permanently (owner decision 2026-10-31)', () => 
   it('requires DELETE and the confirmed count; nothing is deleted otherwise', async () => {
     const s = setup();
     withArchived(s);
-    expect((await s.post('/api/admin/rules/delete-archived', { confirm_count: 2 })).status).toBe(400);
-    expect((await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 5 })).status).toBe(409);
+    expect((await s.post('/api/admin/rules/delete-archived', { confirm_count: 2 })).status).toBe(
+      400,
+    );
+    expect(
+      (await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 5 }))
+        .status,
+    ).toBe(409);
     expect(s.db.tables.kb_rules).toHaveLength(3);
   });
 
   it('deletes ONLY archived rules, keeps their history, records the deletion, and notifies', async () => {
     const s = setup();
     withArchived(s);
-    s.db.tables.kb_change_log.push({ id: 900, rule_id: 'R2', source: 'admin_edit', before: {}, after: {} });
+    s.db.tables.kb_change_log.push({
+      id: 900,
+      rule_id: 'R2',
+      source: 'admin_edit',
+      before: {},
+      after: {},
+    });
 
-    const res = await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 2 });
+    const res = await s.post('/api/admin/rules/delete-archived', {
+      confirm: 'DELETE',
+      confirm_count: 2,
+    });
     expect(res.status).toBe(200);
     expect(((await res.json()) as { deleted: number }).deleted).toBe(2);
     expect(s.db.tables.kb_rules.map((r) => r.id)).toEqual(['R1']); // the rule the bot uses stays
@@ -310,18 +391,30 @@ describe('Delete archived rules permanently (owner decision 2026-10-31)', () => 
 
   it('an older backup\'s "Restore everything" also brings deleted rules back', async () => {
     const s = setup();
-    const before = (await (await s.post('/api/admin/rules/disable-view', { ids: ['R1'] })).json()) as {
+    const before = (await (
+      await s.post('/api/admin/rules/disable-view', { ids: ['R1'] })
+    ).json()) as {
       snapshot_id: string;
     };
     withArchived(s);
     await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 2 });
     await s.post(`/api/admin/rules/snapshots/${before.snapshot_id}/restore`, {});
-    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id)?.status)).toEqual(['active', 'active', 'active']);
+    expect(['R1', 'R2', 'R3'].map((id) => ruleById(s.db, id)?.status)).toEqual([
+      'active',
+      'active',
+      'active',
+    ]);
   });
 
   it('is admin-only', async () => {
     const s = setup('staff');
-    expect((await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 1 })).status).toBe(403);
-    expect((await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 3 })).status).toBe(403);
+    expect(
+      (await s.post('/api/admin/rules/delete-archived', { confirm: 'DELETE', confirm_count: 1 }))
+        .status,
+    ).toBe(403);
+    expect(
+      (await s.post('/api/admin/rules/archive-all', { confirm: 'ARCHIVE', confirm_count: 3 }))
+        .status,
+    ).toBe(403);
   });
 });

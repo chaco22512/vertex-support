@@ -30,7 +30,10 @@ interface ConversationRow {
 
 /** Short human-friendly id from the conversation uuid, e.g. "#4F2A" (§Inbox). */
 function shortId(id: string): string {
-  return `#${id.replace(/[^0-9a-f]/gi, '').slice(0, 4).toUpperCase()}`;
+  return `#${id
+    .replace(/[^0-9a-f]/gi, '')
+    .slice(0, 4)
+    .toUpperCase()}`;
 }
 
 async function history(db: SupabaseClient, conversationId: string): Promise<HistoryMessage[]> {
@@ -62,7 +65,9 @@ export async function listConversations(c: Context<AppEnv>): Promise<Response> {
       .select('conversation_id')
       .eq('sender', 'customer')
       .ilike('body', `%${q}%`);
-    matchIds = [...new Set(((data ?? []) as { conversation_id: string }[]).map((m) => m.conversation_id))];
+    matchIds = [
+      ...new Set(((data ?? []) as { conversation_id: string }[]).map((m) => m.conversation_id)),
+    ];
     if (matchIds.length === 0) return c.json({ conversations: [] });
   }
 
@@ -175,7 +180,12 @@ export async function replyConversation(c: Context<AppEnv>): Promise<Response> {
 
   const { data: msg, error } = await db
     .from('messages')
-    .insert({ conversation_id: id, sender: 'staff', staff_id: staff.userId, body: parsed.data.body })
+    .insert({
+      conversation_id: id,
+      sender: 'staff',
+      staff_id: staff.userId,
+      body: parsed.data.body,
+    })
     .select()
     .single();
   if (error || !msg) return c.json({ error: 'server_error' }, 500);
@@ -225,7 +235,11 @@ export async function aiDraft(c: Context<AppEnv>): Promise<Response> {
   const conversation = conv as { language: string; topic_category: string };
 
   const categories = resolveKbCategories(conversation.topic_category, menu);
-  const rules = await fetchScopedRules(db, categories, resolveIdPrefixes(conversation.topic_category, menu));
+  const rules = await fetchScopedRules(
+    db,
+    categories,
+    resolveIdPrefixes(conversation.topic_category, menu),
+  );
   const draft = await draftStaffReply(llm, {
     rules,
     history: await history(db, id),

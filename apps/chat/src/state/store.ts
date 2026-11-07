@@ -54,7 +54,12 @@ function linkToken(): string | null {
 function toChatMessages(msgs: api.ApiMessage[]): ChatMessage[] {
   return msgs
     .filter((m) => !(m.sender === 'system' && m.body === '')) // hide escalation markers
-    .map((m) => ({ key: `srv-${m.id}`, sender: m.sender, body: m.body, at: m.created_at || undefined }));
+    .map((m) => ({
+      key: `srv-${m.id}`,
+      sender: m.sender,
+      body: m.body,
+      at: m.created_at || undefined,
+    }));
 }
 
 export function useChat() {
@@ -63,10 +68,7 @@ export function useChat() {
   // can reopen the conversation from the email on any device (§8).
   const restoreToken = linkToken() ?? persisted?.token ?? null;
   const restoreLanguage = persisted?.language ?? null;
-  const [state, dispatch] = useReducer(
-    reducer,
-    initialState(restoreLanguage, restoreToken),
-  );
+  const [state, dispatch] = useReducer(reducer, initialState(restoreLanguage, restoreToken));
   const t = getMessages(state.language ?? 'en');
   const lastFailedBody = useRef<string | null>(null);
 
@@ -80,7 +82,12 @@ export function useChat() {
         if (cancelled) return;
         const msgs = toChatMessages(res.messages);
         const lastId = res.messages.reduce((m, x) => Math.max(m, x.id), 0);
-        dispatch({ type: 'MERGE_MESSAGES', messages: msgs, lastMessageId: lastId, hasNewStaff: false });
+        dispatch({
+          type: 'MERGE_MESSAGES',
+          messages: msgs,
+          lastMessageId: lastId,
+          hasNewStaff: false,
+        });
         if (restoreLanguage) dispatch({ type: 'SELECT_LANGUAGE', language: restoreLanguage });
         // Persist the link token so polling/resend and later visits keep working.
         savePersisted({ token: restoreToken, language: restoreLanguage ?? 'en' });
@@ -131,12 +138,23 @@ export function useChat() {
           const merged = toChatMessages([
             ...state.messages
               .filter((m) => m.key.startsWith('srv-'))
-              .map((m) => ({ id: Number(m.key.slice(4)), sender: m.sender, body: m.body, ai_meta: null, created_at: m.at ?? '' })),
+              .map((m) => ({
+                id: Number(m.key.slice(4)),
+                sender: m.sender,
+                body: m.body,
+                ai_meta: null,
+                created_at: m.at ?? '',
+              })),
             ...res.messages,
           ]);
           const lastId = res.messages.reduce((mx, x) => Math.max(mx, x.id), state.lastMessageId);
           const hasNewStaff = res.messages.some((m) => m.sender === 'staff');
-          dispatch({ type: 'MERGE_MESSAGES', messages: dedupe(merged), lastMessageId: lastId, hasNewStaff });
+          dispatch({
+            type: 'MERGE_MESSAGES',
+            messages: dedupe(merged),
+            lastMessageId: lastId,
+            hasNewStaff,
+          });
         })
         .catch(() => {
           /* Transient poll error — retry next tick. Offline state is driven only
@@ -188,7 +206,8 @@ export function useChat() {
       // ★v1.8: same conversation, new topic (re-scopes the AI server-side).
       try {
         const res = await api.changeTopic(existing, category.id);
-        if (res.followup_escalated) dispatch({ type: 'FOLLOWUP_NOTE', note: t.ui.addedToOpenRequest });
+        if (res.followup_escalated)
+          dispatch({ type: 'FOLLOWUP_NOTE', note: t.ui.addedToOpenRequest });
       } catch {
         dispatch({ type: 'AI_ERROR' });
       }
@@ -223,13 +242,22 @@ export function useChat() {
           messageId: res.reply.id,
           at: res.reply.created_at || new Date().toISOString(),
           followUpNote: res.followup_escalated ? t.ui.addedToOpenRequest : undefined,
-          topic: topic ? { id: topic.id, behavior: topic.behavior, label: `Topic: ${topic.label}` } : undefined,
+          topic: topic
+            ? { id: topic.id, behavior: topic.behavior, label: `Topic: ${topic.label}` }
+            : undefined,
         });
       } catch (err) {
         clearTimeout(timer);
         if (controller.signal.aborted) {
           // 15s timeout → auto-escalation (§6.3, criterion 10).
-          dispatch({ type: 'AI_REPLY', body: t.ui.escalationTitle, action: 'escalate', options: [], messageId: 0, at: new Date().toISOString() });
+          dispatch({
+            type: 'AI_REPLY',
+            body: t.ui.escalationTitle,
+            action: 'escalate',
+            options: [],
+            messageId: 0,
+            at: new Date().toISOString(),
+          });
         } else {
           lastFailedBody.current = trimmed;
           // 429 from our API = per-session limit (10 messages a minute, §2).
@@ -251,7 +279,11 @@ export function useChat() {
       if (!state.token) return;
       const reason = state.behavior === 'always_escalate' ? 'price_question' : 'not_in_manual';
       try {
-        await api.postContact(state.token, { ...contact, reason, intake: state.intake ?? undefined });
+        await api.postContact(state.token, {
+          ...contact,
+          reason,
+          intake: state.intake ?? undefined,
+        });
         dispatch({ type: 'CONTACT_SENT', contact });
       } catch {
         // Surface an error on the escalation card so the customer can retry (§5.4).

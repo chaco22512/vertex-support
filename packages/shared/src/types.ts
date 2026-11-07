@@ -178,7 +178,12 @@ export interface AiDiag {
   /** Query terms used for retrieval. */
   keywords: string[];
   error: AiErrorKind | null;
-  timings: { primary_ms: number | null; retrieve_ms: number | null; fallback_ms: number | null; total_ms: number };
+  timings: {
+    primary_ms: number | null;
+    retrieve_ms: number | null;
+    fallback_ms: number | null;
+    total_ms: number;
+  };
 }
 
 export interface Message {

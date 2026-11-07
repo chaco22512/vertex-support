@@ -36,7 +36,11 @@ export function Knowledge() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('not_archived');
   const [editing, setEditing] = useState<KbRule | null>(null);
   const [creating, setCreating] = useState(false);
-  const [importCsv, setImportCsv] = useState<{ text: string; name: string; mode: ImportMode } | null>(null);
+  const [importCsv, setImportCsv] = useState<{
+    text: string;
+    name: string;
+    mode: ImportMode;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const [disabling, setDisabling] = useState(false);
@@ -64,7 +68,11 @@ export function Knowledge() {
   const statusRules = useMemo(
     () =>
       rules.filter((r) =>
-        statusFilter === 'all' ? true : statusFilter === 'not_archived' ? r.status !== 'archived' : r.status === statusFilter,
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'not_archived'
+            ? r.status !== 'archived'
+            : r.status === statusFilter,
       ),
     [rules, statusFilter],
   );
@@ -102,8 +110,10 @@ export function Knowledge() {
     .join(', ');
   const usableAfterDisable = useMemo(() => {
     const off = new Set(disableTargets.map((r) => r.id));
-    return rules.filter((r) => r.status === 'active' && r.audience === 'customer' && r.ai_can_answer && !off.has(r.id))
-      .length;
+    return rules.filter(
+      (r) =>
+        r.status === 'active' && r.audience === 'customer' && r.ai_can_answer && !off.has(r.id),
+    ).length;
   }, [rules, disableTargets]);
 
   /** Toast with a one-click Undo backed by the bulk-change backup (★v1.8). */
@@ -139,7 +149,10 @@ export function Knowledge() {
   async function download(scope: 'filtered' | 'all') {
     setBusy(true);
     try {
-      await api.downloadRulesCsv(scope, { q: search.trim() || undefined, category: activeCategory ?? undefined });
+      await api.downloadRulesCsv(scope, {
+        q: search.trim() || undefined,
+        category: activeCategory ?? undefined,
+      });
     } catch {
       toast.show({ message: 'Could not download the CSV.' });
     } finally {
@@ -217,10 +230,18 @@ export function Knowledge() {
                     <button role="menuitem" onClick={() => replaceFileRef.current?.click()}>
                       Replace all from CSV…
                     </button>
-                    <button role="menuitem" onClick={() => setDisabling(true)} disabled={disableTargets.length === 0}>
+                    <button
+                      role="menuitem"
+                      onClick={() => setDisabling(true)}
+                      disabled={disableTargets.length === 0}
+                    >
                       Disable all in this view ({disableTargets.length})…
                     </button>
-                    <button role="menuitem" onClick={() => setConfirmAll('archive')} disabled={liveCount === 0}>
+                    <button
+                      role="menuitem"
+                      onClick={() => setConfirmAll('archive')}
+                      disabled={liveCount === 0}
+                    >
                       Archive all ({liveCount})…
                     </button>
                     <button role="menuitem" onClick={() => setBackupsOpen(true)}>
@@ -366,7 +387,10 @@ export function Knowledge() {
           onDone={(result) => {
             setDisabling(false);
             void fetchRules();
-            showBulkUndo(`Disabled ${result.disabled} rule(s) (kept, not deleted).`, result.snapshot_id);
+            showBulkUndo(
+              `Disabled ${result.disabled} rule(s) (kept, not deleted).`,
+              result.snapshot_id,
+            );
           }}
         />
       ) : null}
@@ -451,22 +475,40 @@ function NewRuleDialog({
     <Dialog title="New rule" onClose={onClose}>
       <div className="field">
         <label htmlFor="new-cat">Category</label>
-        <input id="new-cat" type="text" value={category} onChange={(e) => setCategory(e.target.value)} />
+        <input
+          id="new-cat"
+          type="text"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+        />
       </div>
       <div className="field">
         <label htmlFor="new-text">Rule text</label>
-        <textarea id="new-text" rows={5} value={ruleText} onChange={(e) => setRuleText(e.target.value)} />
+        <textarea
+          id="new-text"
+          rows={5}
+          value={ruleText}
+          onChange={(e) => setRuleText(e.target.value)}
+        />
       </div>
       <div className="row wrap">
         <div className="field">
           <label htmlFor="new-audience">Audience</label>
-          <select id="new-audience" value={audience} onChange={(e) => setAudience(e.target.value as 'customer' | 'internal')}>
+          <select
+            id="new-audience"
+            value={audience}
+            onChange={(e) => setAudience(e.target.value as 'customer' | 'internal')}
+          >
             <option value="customer">Customer</option>
             <option value="internal">Internal</option>
           </select>
         </div>
         <label className="row" style={{ alignSelf: 'flex-end' }}>
-          <input type="checkbox" checked={aiCanAnswer} onChange={(e) => setAiCanAnswer(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={aiCanAnswer}
+            onChange={(e) => setAiCanAnswer(e.target.checked)}
+          />
           AI can answer
         </label>
       </div>
