@@ -13,6 +13,16 @@ export function hasUnfilledPlaceholder(text: string): boolean {
 /** Unprocessed Google-Sheets formula (starts with `=`, or contains the export marker). */
 const FORMULA_RE = /^\s*=|DUMMYFUNCTION/;
 
+/**
+ * A spreadsheet error value instead of text (e.g. "#NAME?" — Excel/Sheets turns a
+ * cell that starts with "-", "+" or "=" into a formula and it fails).
+ */
+const SPREADSHEET_ERROR_RE = /^\s*#(NAME\?|VALUE!|REF!|N\/A|DIV\/0!|NUM!|NULL!|ERROR!)\s*$/i;
+
+export function isSpreadsheetError(text: string): boolean {
+  return SPREADSHEET_ERROR_RE.test(text);
+}
+
 export function hasSpreadsheetFormula(text: string): boolean {
   return FORMULA_RE.test(text);
 }

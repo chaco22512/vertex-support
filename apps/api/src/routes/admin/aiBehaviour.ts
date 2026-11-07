@@ -16,7 +16,7 @@ import {
 } from '@vertex/ai';
 import type { AppEnv, Deps } from '../../types';
 import { saveBehaviourSchema, tryBehaviourSchema } from '../../dto';
-import { menu } from '../../lib/menu';
+import { loadMenu, menu } from '../../lib/menu';
 import { BEHAVIOUR_LIMITS, BEHAVIOUR_TOPICS, type BehaviourContent } from '../../lib/aiBehaviour';
 
 /**
@@ -148,14 +148,21 @@ export async function saveVersion(c: Context<AppEnv>): Promise<Response> {
 }
 
 function runErrorKind(err: unknown, signal: AbortSignal): string {
-  if (err instanceof GeminiError && err.status === 429) return 'rate_limited';
+  if (err instanceof GeminiError && err.status === 429)
+    return err.isDailyLimit ? 'daily_limit' : 'rate_limited';
   if (signal.aborted) return 'timeout';
   return 'llm_error';
 }
 
-/** Run the fixed safety question set with a version's text (4 model calls, in parallel). */
+/**
+ * Run the fixed safety question set with a version's text: 4 model calls, ONE
+ * AT A TIME (★2026-11-07 — in parallel they used 4 of the 5-per-minute cap at
+ * once and failed whenever a customer was chatting). After a usage-limit error
+ * the remaining tests are skipped (not run) to save quota.
+ */
 export async function runSafetyTests(deps: Deps, content: BehaviourContent): Promise<SafetyReport> {
   const topicIds = [...new Set(SAFETY_TESTS.map((t) => t.topic))];
+  const scopeMenu = await loadMenu(deps.db);
   const rulesByTopic = new Map(
     await Promise.all(
       topicIds.map(
@@ -165,7 +172,7 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
             await fetchScopedRules(
               deps.db,
               resolveKbCategories(id, menu),
-              resolveIdPrefixes(id, menu),
+              resolveIdPrefixes(id, scopeMenu),
             ),
           ] as const,
       ),
@@ -176,7 +183,7 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
     (await fetchScopedRules(
       deps.db,
       resolveKbCategories('lost', menu),
-      resolveIdPrefixes('lost', menu),
+      resolveIdPrefixes('lost', scopeMenu),
     ));
   const lostFees = [...new Set(lostRules.flatMap((r) => r.fee_amounts_jpy))];
   const { data: staffRows } = await deps.db.from('staff').select('name,is_active');
@@ -184,33 +191,44 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
     .filter((s) => s.is_active !== false)
     .map((s) => s.name);
 
-  const runs: SafetyRun[] = await Promise.all(
-    SAFETY_TESTS.map(async (test): Promise<SafetyRun> => {
-      const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), TEST_TIMEOUT_MS);
-      try {
-        const result = await runAiReply({
-          rules: rulesByTopic.get(test.topic) ?? [],
-          history: [{ sender: 'customer', body: test.question }],
-          language: 'en',
-          topic: resolveTopicLabel(test.topic, menu),
-          topics: BEHAVIOUR_TOPICS,
-          behaviour: {
-            common: content.common_behaviour,
-            topic: content.topic_instructions?.[test.topic] ?? '',
-          },
-          llm: deps.llm,
-          signal: controller.signal,
-        });
-        return { test, result };
-      } catch (err) {
-        return { test, error: runErrorKind(err, controller.signal) };
-      } finally {
-        clearTimeout(timer);
-      }
-    }),
-  );
+  const runs: SafetyRun[] = [];
+  let limited = false;
+  for (const test of SAFETY_TESTS) {
+    if (limited) {
+      runs.push({ test, error: 'skipped' });
+      continue;
+    }
+    runs.push(await runOne(test));
+  }
   return evaluateSafety(runs, { lostFees, staffNames: names });
+
+  async function runOne(test: (typeof SAFETY_TESTS)[number]): Promise<SafetyRun> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TEST_TIMEOUT_MS);
+    try {
+      const result = await runAiReply({
+        rules: rulesByTopic.get(test.topic) ?? [],
+        history: [{ sender: 'customer', body: test.question }],
+        language: 'en',
+        topic: resolveTopicLabel(test.topic, menu),
+        topics: BEHAVIOUR_TOPICS,
+        behaviour: {
+          common: content.common_behaviour,
+          topic: content.topic_instructions?.[test.topic] ?? '',
+        },
+        llm: deps.llm,
+        signal: controller.signal,
+        purpose: 'safety_test',
+      });
+      return { test, result };
+    } catch (err) {
+      const error = runErrorKind(err, controller.signal);
+      if (error === 'rate_limited' || error === 'daily_limit') limited = true;
+      return { test, error };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
 }
 
 /**
@@ -306,7 +324,7 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
   const rules = await fetchScopedRules(
     deps.db,
     resolveKbCategories(parsed.data.topic, menu),
-    resolveIdPrefixes(parsed.data.topic, menu),
+    resolveIdPrefixes(parsed.data.topic, await loadMenu(deps.db)),
   );
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TEST_TIMEOUT_MS);
@@ -320,6 +338,7 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
       behaviour: { common: parsed.data.common_behaviour, topic: parsed.data.topic_text },
       llm: deps.llm,
       signal: controller.signal,
+      purpose: 'try_it',
     });
     return c.json({
       answer: r.answer,
@@ -337,10 +356,12 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
         error: kind,
         message:
           kind === 'rate_limited'
-            ? 'The AI usage limit was reached. Try again later.'
-            : kind === 'timeout'
-              ? 'The AI took too long to reply. Try again.'
-              : 'The AI service had a problem. Try again.',
+            ? 'The AI per-minute limit was reached. Wait a minute and try again.'
+            : kind === 'daily_limit'
+              ? "Today's AI limit is used up (resets at 17:00 JST; 16:00 in summer)."
+              : kind === 'timeout'
+                ? 'The AI took too long to reply. Try again.'
+                : 'The AI service had a problem. Try again.',
       },
       503,
     );

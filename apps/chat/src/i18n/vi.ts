@@ -49,6 +49,9 @@ export const vi: Messages = {
     teamReplied: 'Đội ngũ của chúng tôi đã trả lời',
     errorGeneric: 'Đã xảy ra lỗi. Vui lòng thử lại.',
     errorTooFast: 'Bạn đang gửi tin nhắn quá nhanh. Vui lòng đợi một phút rồi thử lại.',
+    newChat: 'Cuộc trò chuyện mới',
+    newChatConfirm:
+      'Bắt đầu cuộc trò chuyện mới? Màn hình sẽ được xóa. Nếu nhóm hỗ trợ đang giúp bạn, câu trả lời vẫn sẽ được gửi qua email hoặc WhatsApp.',
     retry: 'Thử lại',
     statusAi: 'Trợ lý AI',
     statusWaitingStaff: 'Nhóm của chúng tôi sẽ trả lời trong vòng 24 giờ',

@@ -12,13 +12,14 @@ export function outcomeOf(err: unknown): AiCallOutcome {
 
 /**
  * Wraps the model client so every call is logged in ai_call_log (spec v1.8
- * §7.1 "AI requests today"). Counts only — no prompt or customer text. A
+ * §7.1 "AI requests today") with what it was for (★2026-11-07 purpose).
+ * Counts only — no prompt or customer text. A
  * logging failure never affects the reply.
  */
 export function countingLlm(inner: LlmClient, db: SupabaseClient): LlmClient {
-  const record = async (outcome: AiCallOutcome) => {
+  const record = async (outcome: AiCallOutcome, purpose: string) => {
     try {
-      await db.from('ai_call_log').insert({ model: inner.model, outcome });
+      await db.from('ai_call_log').insert({ model: inner.model, outcome, purpose });
     } catch {
       /* best effort */
     }
@@ -28,12 +29,12 @@ export function countingLlm(inner: LlmClient, db: SupabaseClient): LlmClient {
     async generate(req: LlmGenerateRequest): Promise<string> {
       try {
         const out = await inner.generate(req);
-        await record('ok');
+        await record('ok', req.purpose ?? '');
         return out;
       } catch (err) {
         // Our own timeout aborts the request; it may still count at Google, so
         // treat it like any other error (counted as used).
-        await record(outcomeOf(err));
+        await record(outcomeOf(err), req.purpose ?? '');
         throw err;
       }
     },

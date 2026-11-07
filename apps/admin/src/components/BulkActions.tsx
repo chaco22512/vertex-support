@@ -78,6 +78,7 @@ export function DisableViewDialog({
 const KIND_LABEL: Record<string, string> = {
   replace_all: 'Replace all',
   disable_view: 'Disable all in view',
+  bulk_status: 'Selected rules (archive / disable / activate)',
   csv_import: 'CSV import (add / update)',
   delete_archived: 'Delete archived rules (permanent)',
   restore: 'Before a restore',

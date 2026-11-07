@@ -5,11 +5,12 @@ import {
   fetchScopedRules,
   resolveIdPrefixes,
   resolveKbCategories,
+  translateManyToEnglish,
   translateToEnglish,
   type HistoryMessage,
 } from '@vertex/ai';
 import type { AppEnv } from '../../types';
-import { menu } from '../../lib/menu';
+import { loadMenu, menu } from '../../lib/menu';
 import { notifyStaffReply } from '../../lib/notify';
 import { draftBodySchema, patchConversationSchema, replySchema, translateSchema } from '../../dto';
 
@@ -212,12 +213,51 @@ export async function replyConversation(c: Context<AppEnv>): Promise<Response> {
 
 /** POST /api/admin/conversations/:id/translate — customer text → English (§7.3). */
 export async function translate(c: Context<AppEnv>): Promise<Response> {
-  const { llm } = c.get('deps');
-  const parsed = translateSchema.safeParse(await c.req.json().catch(() => null));
-  if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
-  const translation = await translateToEnglish(llm, parsed.data.text);
-  return c.json({ translation });
+  const { db, llm } = c.get('deps');
+  const id = c.req.param('id') ?? '';
+  const body: unknown = await c.req.json().catch(() => null);
+  // Legacy single-text form (kept for an admin tab opened before the deploy).
+  if (body && typeof body === 'object' && 'text' in body) {
+    const parsed = translateSchema.safeParse(body);
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
+    return c.json({ translation: await translateToEnglish(llm, parsed.data.text) });
+  }
+
+  // ★2026-11-07: every customer message of the conversation, in ONE model call;
+  // translations are saved, so re-opening the conversation never calls the AI.
+  const { data, error } = await db
+    .from('messages')
+    .select('id,body,translation_en')
+    .eq('conversation_id', id)
+    .eq('sender', 'customer')
+    .order('id', { ascending: true });
+  if (error) return c.json({ error: 'server_error' }, 500);
+  const rows = (data ?? []) as { id: number; body: string; translation_en: string | null }[];
+  const translations: Record<number, string> = {};
+  for (const r of rows) if (r.translation_en) translations[r.id] = r.translation_en;
+  const pending = rows.filter((r) => !r.translation_en).slice(-TRANSLATE_BATCH_MAX);
+  if (pending.length === 0) return c.json({ translations, calls: 0 });
+
+  let out: string[];
+  try {
+    out = await translateManyToEnglish(
+      llm,
+      pending.map((r) => r.body),
+    );
+  } catch {
+    return c.json({ translations, error: 'translation_failed' }, 502);
+  }
+  await Promise.all(
+    pending.map(async (r, i) => {
+      translations[r.id] = out[i]!;
+      await db.from('messages').update({ translation_en: out[i] }).eq('id', r.id);
+    }),
+  );
+  return c.json({ translations, calls: 1 });
 }
+
+/** At most this many untranslated messages go into one translate call. */
+const TRANSLATE_BATCH_MAX = 30;
 
 /**
  * POST /api/admin/conversations/:id/ai-draft — generate a reply draft (§7.3).
@@ -238,7 +278,7 @@ export async function aiDraft(c: Context<AppEnv>): Promise<Response> {
   const rules = await fetchScopedRules(
     db,
     categories,
-    resolveIdPrefixes(conversation.topic_category, menu),
+    resolveIdPrefixes(conversation.topic_category, await loadMenu(db)),
   );
   const draft = await draftStaffReply(llm, {
     rules,

@@ -13,6 +13,7 @@ import { StaffPage } from './pages/StaffPage';
 import { History } from './pages/History';
 import { AiDiagnostics } from './pages/AiDiagnostics';
 import { AiBehaviour } from './pages/AiBehaviour';
+import { TopicCodes } from './pages/TopicCodes';
 
 /** Gate on a valid session AND an active staff row (§7 roles). */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -67,6 +68,14 @@ export function App() {
           element={
             <RequireAdmin>
               <Knowledge />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="topic-codes"
+          element={
+            <RequireAdmin>
+              <TopicCodes />
             </RequireAdmin>
           }
         />

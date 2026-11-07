@@ -80,6 +80,18 @@ export function useChat() {
       .getMessages(restoreToken)
       .then((res) => {
         if (cancelled) return;
+        // ★2026-11-07: a finished conversation remembered on this device is not
+        // reopened — the customer starts fresh. An email link (?t=) still opens
+        // it, so a staff reply can be read.
+        if (!linkToken() && (res.status === 'resolved' || res.status === 'closed')) {
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+          } catch {
+            /* ignore */
+          }
+          dispatch({ type: 'NEW_QUESTION' });
+          return;
+        }
         const msgs = toChatMessages(res.messages);
         const lastId = res.messages.reduce((m, x) => Math.max(m, x.id), 0);
         dispatch({

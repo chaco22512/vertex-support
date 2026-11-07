@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { FallbackResult } from '@vertex/shared';
-import { api, type DiagnosticRow } from '../lib/api';
+import { api, type AiUsage, type DiagnosticRow } from '../lib/api';
 import { formatTime } from '../lib/time';
 import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { diagOutcome, ERROR_LABELS, FALLBACK_LABELS } from '../components/AiDiagPanel';
@@ -58,6 +58,8 @@ export function AiDiagnostics() {
         AI replies that were passed to staff or needed a search of the full manual (latest{' '}
         {windowSize}). Open a row to see which rules the search found.
       </p>
+
+      <PurposePanel />
 
       <div className="summary-chips">
         <button className={`chip${filter === '' ? ' active' : ''}`} onClick={() => setFilter('')}>
@@ -195,5 +197,66 @@ function RankCheck({ candidates }: { candidates: string[] }) {
         </span>
       ) : null}
     </div>
+  );
+}
+
+/** ★2026-11-07: what the AI requests were for (today / last 7 days) and calls per customer question. */
+const PURPOSE_LABELS: Record<string, string> = {
+  reply: 'Customer question (first try)',
+  reply_retry: 'Customer question — retry (unreadable reply)',
+  fallback: 'Customer question — full-manual search',
+  fallback_retry: 'Full-manual search — retry',
+  translate: 'Translate (staff)',
+  draft: 'AI draft (staff)',
+  safety_test: 'Safety tests (AI behaviour Publish)',
+  try_it: 'Try it (AI behaviour)',
+  unknown: 'Before tracking started',
+};
+
+function PurposePanel() {
+  const [usage, setUsage] = useState<AiUsage | null>(null);
+  useEffect(() => {
+    void api
+      .aiUsage()
+      .then(setUsage)
+      .catch(() => {});
+  }, []);
+  const p = usage?.purposes;
+  if (!p) return null;
+  const keys = [...new Set([...Object.keys(PURPOSE_LABELS), ...Object.keys(p.week)])].filter(
+    (k) => (p.today[k] ?? 0) + (p.week[k] ?? 0) > 0,
+  );
+  const fmt = (n: number | null) => (n === null ? '—' : n.toFixed(2));
+  return (
+    <section className="panel-box">
+      <h2 style={{ marginTop: 0, fontSize: 15 }}>AI requests by purpose</h2>
+      <p className="muted" style={{ marginTop: 0, fontSize: 'var(--font-aux)' }}>
+        Requests per customer question: <strong>{fmt(p.per_question_today)}</strong> today ·{' '}
+        <strong>{fmt(p.per_question_week)}</strong> last 7 days (first try + retries + full-manual
+        search, per question).
+      </p>
+      {keys.length === 0 ? (
+        <p className="muted">No AI requests in the last 7 days.</p>
+      ) : (
+        <table className="data">
+          <thead>
+            <tr>
+              <th>Purpose</th>
+              <th style={{ textAlign: 'right' }}>Today</th>
+              <th style={{ textAlign: 'right' }}>Last 7 days</th>
+            </tr>
+          </thead>
+          <tbody>
+            {keys.map((k) => (
+              <tr key={k}>
+                <td>{PURPOSE_LABELS[k] ?? k}</td>
+                <td style={{ textAlign: 'right' }}>{p.today[k] ?? 0}</td>
+                <td style={{ textAlign: 'right' }}>{p.week[k] ?? 0}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
   );
 }

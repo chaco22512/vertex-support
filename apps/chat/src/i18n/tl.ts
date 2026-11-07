@@ -49,6 +49,9 @@ export const tl: Messages = {
     errorGeneric: 'May nangyaring mali. Pakisubukan muli.',
     errorTooFast:
       'Masyadong mabilis ang pagpapadala mo ng mensahe. Maghintay ng isang minuto, saka subukan muli.',
+    newChat: 'Bagong chat',
+    newChatConfirm:
+      'Magsimula ng bagong chat? Mabubura ang nasa screen. Kung tinutulungan ka na ng aming team, darating pa rin ang sagot nila sa email o WhatsApp.',
     retry: 'Subukan muli',
     statusAi: 'AI assistant',
     statusWaitingStaff: 'Sasagot ang aming team sa loob ng 24 oras',

@@ -4,15 +4,23 @@ import {
   computeRuleChanges,
   normalizeRuleId,
   parseImportCsv,
+  ruleIdCode,
   ruleIdProblem,
+  RULE_ID_CODES,
   type EditableValues,
   type FieldChange,
   type KbRule,
   type ParsedImportRow,
 } from '@vertex/shared';
 import type { AppEnv, Deps } from '../../types';
-import { archiveAllSchema, deleteArchivedSchema, disableViewSchema } from '../../dto';
+import {
+  archiveAllSchema,
+  bulkStatusSchema,
+  deleteArchivedSchema,
+  disableViewSchema,
+} from '../../dto';
 import { fetchAllRules } from '../../lib/kbRules';
+import { loadMenu } from '../../lib/menu';
 
 /**
  * Safe bulk knowledge operations (spec v1.8 §7.4.2) — the safe version of the
@@ -61,6 +69,8 @@ export interface ImportDiff {
   /** Replace all only: rules missing from the sheet (→ archived). */
   toArchive: { id: string; category: string; status: string }[];
   errors: { line: number; id: string; reason: string }[];
+  /** ★2026-11-07: topic codes in the sheet that no tile uses yet (imported anyway). */
+  unlinkedCodes: { code: string; count: number; sample_ids: string[] }[];
   ignored: number;
   unchanged: number;
   activeBefore: number;
@@ -89,6 +99,7 @@ export async function diffImport(
     newRules: [],
     toArchive: [],
     errors: [],
+    unlinkedCodes: [],
     ignored: 0,
     unchanged: 0,
     activeBefore,
@@ -195,17 +206,45 @@ export async function diffImport(
   for (const r of toArchive) after.set(r.id, { ...after.get(r.id)!, status: 'archived' });
 
   const activeAfter = [...after.values()].filter(aiUsable).length + newUsable;
+  const unlinkedCodes = await findUnlinkedCodes(db, [...inSheet]);
   return {
     mode,
     changes,
     newRules,
     toArchive,
     errors,
+    unlinkedCodes,
     ignored,
     unchanged,
     activeBefore,
     activeAfter,
   };
+}
+
+/**
+ * Codes (2–4 letters of a convention ID) that are neither built in nor linked
+ * to a tile on the "Topic codes" screen. Their rules are imported, but only
+ * "Something else" and the full-manual search can use them until linked.
+ */
+async function findUnlinkedCodes(
+  db: SupabaseClient,
+  ids: string[],
+): Promise<ImportDiff['unlinkedCodes']> {
+  const scopeMenu = await loadMenu(db);
+  const linked = new Set([
+    ...Object.keys(RULE_ID_CODES),
+    ...scopeMenu.categories.flatMap((c) => c.id_prefixes ?? []),
+  ]);
+  const byCode = new Map<string, string[]>();
+  for (const id of ids) {
+    const code = ruleIdCode(id);
+    if (!code || linked.has(code)) continue;
+    if (!byCode.has(code)) byCode.set(code, []);
+    byCode.get(code)!.push(id);
+  }
+  return [...byCode.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : 1))
+    .map(([code, list]) => ({ code, count: list.length, sample_ids: list.sort().slice(0, 5) }));
 }
 
 /** Preview payload (no writes). */
@@ -231,6 +270,7 @@ export function importPreviewBody(d: ImportDiff) {
     active_before: d.activeBefore,
     active_after: d.activeAfter,
     errors: d.errors,
+    unlinked_codes: d.unlinkedCodes,
   };
 }
 
@@ -449,6 +489,75 @@ export async function disableView(c: Context<AppEnv>): Promise<Response> {
       `(not deleted). Rules the bot can use: ${activeAfter}. A backup was saved; it can be undone.`,
   );
   return c.json({ disabled, snapshot_id: snapId, active_after: activeAfter });
+}
+
+// --- Select and act (★2026-11-07) ------------------------------------------
+
+const BULK_VERB = { active: 'Activate', disabled: 'Disable', archived: 'Archive' } as const;
+
+/**
+ * POST /api/admin/rules/bulk-status — set one status on the rules the admin
+ * ticked (Archive / Disable / Activate selected). Backup first, then one
+ * set-based update that logs every change; Undo comes from the backup.
+ * Activate only sets status: internal or "Bot may use = No" rules still never
+ * reach the AI (Hard rule 3 — fetchScopedRules filters them).
+ */
+export async function bulkStatus(c: Context<AppEnv>): Promise<Response> {
+  const deps = c.get('deps');
+  const { db } = deps;
+  const staff = c.get('staff');
+  const parsed = bulkStatusSchema.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
+  const { status, description } = parsed.data;
+
+  const all = await fetchAllRules(db, {});
+  const known = new Set(all.map((r) => r.id));
+  const unknown = parsed.data.ids.filter((id) => !known.has(id));
+  if (unknown.length > 0) {
+    return c.json(
+      {
+        error: 'unknown_ids',
+        message: 'Some rules no longer exist. Reload and try again.',
+        ids: unknown.slice(0, 20),
+      },
+      409,
+    );
+  }
+  const wanted = new Set(parsed.data.ids);
+  const targets = all.filter((r) => wanted.has(r.id) && r.status !== status);
+  if (targets.length === 0) return c.json({ changed: 0, snapshot_id: null });
+
+  const ids = targets.map((r) => r.id);
+  const activeAfter = all.filter((r) => aiUsable(wanted.has(r.id) ? { ...r, status } : r)).length;
+  const verb = BULK_VERB[status];
+  const note = `${verb} selected: ${ids.length} rule(s)${description ? ` — ${description}` : ''}`;
+  const { data: snapId, error: snapErr } = await db.rpc('kb_take_snapshot', {
+    p_kind: 'bulk_status',
+    p_staff: staff.userId,
+    p_affected: ids,
+    p_note: note,
+  });
+  if (snapErr || !snapId)
+    return c.json(
+      { error: 'server_error', message: 'Could not save a backup; nothing changed.' },
+      500,
+    );
+
+  const { data, error } = await db.rpc('kb_bulk_set_status', {
+    p_ids: ids,
+    p_status: status,
+    p_staff: staff.userId,
+    p_source: 'bulk_selected',
+  });
+  if (error) return c.json({ error: 'server_error', snapshot_id: snapId }, 500);
+  const changed = Number(data ?? 0);
+
+  await notifyBulk(
+    deps,
+    `${note} by ${staff.name}${status === 'archived' ? ' (kept, not deleted)' : ''}. ` +
+      `Rules the bot can use: ${activeAfter}. A backup was saved; it can be undone.`,
+  );
+  return c.json({ changed, snapshot_id: snapId, active_after: activeAfter });
 }
 
 // --- Backups (snapshots) ---------------------------------------------------

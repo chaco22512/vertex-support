@@ -19,6 +19,11 @@ export function App(): JSX.Element {
         statusText={statusText}
         languageLabel={LANGUAGE_NATIVE_NAMES[lang]}
         onChangeLanguage={chat.changeLanguage}
+        newChat={
+          state.token || state.messages.length > 0
+            ? { label: t.ui.newChat, confirm: t.ui.newChatConfirm, onConfirm: chat.newQuestion }
+            : undefined
+        }
       />
 
       {state.offline && (

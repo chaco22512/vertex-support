@@ -113,6 +113,6 @@ describe('evaluateSafety', () => {
     const runs = SAFETY_TESTS.map((test) => ({ test, error: 'rate_limited' }));
     const r = evaluateSafety(runs, ctx);
     expect(r.passed).toBe(false);
-    expect(r.checks.find((x) => x.id === 'price')!.detail).toContain('usage limit');
+    expect(r.checks.find((x) => x.id === 'price')!.detail).toContain('per-minute limit');
   });
 });

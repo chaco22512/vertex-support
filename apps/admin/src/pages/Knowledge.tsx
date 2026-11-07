@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { KbRule, RuleStatus } from '@vertex/shared';
-import { api, type ImportApplyResult, type ImportMode } from '../lib/api';
+import { api, type BulkStatus, type ImportApplyResult, type ImportMode } from '../lib/api';
 import { EmptyState, ErrorState, TableSkeleton } from '../components/states';
 import { RuleDialog } from '../components/RuleDialog';
 import { ImportPreviewDialog } from '../components/ImportPreviewDialog';
@@ -48,6 +48,9 @@ export function Knowledge() {
   // ★v1.8 (owner decision 2026-10-31): Archive all / permanent delete of archived rules.
   const [confirmAll, setConfirmAll] = useState<'archive' | 'delete' | null>(null);
   const archivedCount = useMemo(() => rules.filter((r) => r.status === 'archived').length, [rules]);
+  // ★2026-11-07: tick rules, then Archive / Disable / Activate just those.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkAction, setBulkAction] = useState<BulkStatus | null>(null);
   const liveCount = rules.length - archivedCount;
 
   const fetchRules = useCallback(async () => {
@@ -55,6 +58,9 @@ export function Knowledge() {
     try {
       const { rules } = await api.listRules();
       setRules(rules);
+      // Keep only ticks on rules that still exist.
+      const ids = new Set(rules.map((r) => r.id));
+      setSelected((prev) => new Set([...prev].filter((id) => ids.has(id))));
       setLoad('ready');
     } catch {
       setLoad('error');
@@ -115,6 +121,25 @@ export function Knowledge() {
         r.status === 'active' && r.audience === 'customer' && r.ai_can_answer && !off.has(r.id),
     ).length;
   }, [rules, disableTargets]);
+
+  const selectedInView = filtered.filter((r) => selected.has(r.id)).length;
+  const allInViewSelected = filtered.length > 0 && selectedInView === filtered.length;
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleView() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allInViewSelected) for (const r of filtered) next.delete(r.id);
+      else for (const r of filtered) next.add(r.id);
+      return next;
+    });
+  }
 
   /** Toast with a one-click Undo backed by the bulk-change backup (★v1.8). */
   function showBulkUndo(message: string, snapshotId: string | null) {
@@ -294,6 +319,30 @@ export function Knowledge() {
         </div>
       </div>
 
+      {isAdmin && selected.size > 0 ? (
+        <div className="selection-bar" role="region" aria-label="Selected rules">
+          <strong>{selected.size} selected</strong>
+          {!allInViewSelected && filtered.length > 0 ? (
+            <button className="btn btn-sm btn-ghost" onClick={toggleView}>
+              Select all {filtered.length} in this view
+            </button>
+          ) : null}
+          <span className="grow" />
+          <button className="btn btn-sm" onClick={() => setBulkAction('archived')}>
+            Archive selected ({selected.size})
+          </button>
+          <button className="btn btn-sm" onClick={() => setBulkAction('disabled')}>
+            Disable selected
+          </button>
+          <button className="btn btn-sm" onClick={() => setBulkAction('active')}>
+            Activate selected
+          </button>
+          <button className="btn btn-sm btn-ghost" onClick={() => setSelected(new Set())}>
+            Clear
+          </button>
+        </div>
+      ) : null}
+
       {load === 'loading' ? (
         <TableSkeleton cols={4} />
       ) : load === 'error' ? (
@@ -304,6 +353,22 @@ export function Knowledge() {
             <table className="data">
               <thead>
                 <tr>
+                  {isAdmin ? (
+                    <th style={{ width: 32 }}>
+                      <input
+                        type="checkbox"
+                        aria-label={
+                          allInViewSelected ? 'Clear all in this view' : 'Select all in this view'
+                        }
+                        checked={allInViewSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = selectedInView > 0 && !allInViewSelected;
+                        }}
+                        onChange={toggleView}
+                        disabled={filtered.length === 0}
+                      />
+                    </th>
+                  ) : null}
                   <th>ID</th>
                   <th>Rule</th>
                   <th>Audience</th>
@@ -313,13 +378,27 @@ export function Knowledge() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr style={{ cursor: 'default' }}>
-                    <td colSpan={4}>
+                    <td colSpan={isAdmin ? 5 : 4}>
                       <EmptyState title="No rules match." />
                     </td>
                   </tr>
                 ) : (
                   filtered.map((r) => (
-                    <tr key={r.id} onClick={() => setEditing(r)}>
+                    <tr
+                      key={r.id}
+                      onClick={() => setEditing(r)}
+                      className={selected.has(r.id) ? 'selected' : undefined}
+                    >
+                      {isAdmin ? (
+                        <td onClick={(e) => e.stopPropagation()}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Select ${r.id}`}
+                            checked={selected.has(r.id)}
+                            onChange={() => toggleOne(r.id)}
+                          />
+                        </td>
+                      ) : null}
                       <td>{r.id}</td>
                       <td>
                         {r.rule_text.slice(0, 80)}
@@ -409,6 +488,19 @@ export function Knowledge() {
                 : `Permanently deleted ${r.count} archived rule(s). Change history is kept.`,
               r.snapshot_id,
             );
+          }}
+        />
+      ) : null}
+      {bulkAction ? (
+        <BulkSelectedDialog
+          action={bulkAction}
+          rules={rules.filter((r) => selected.has(r.id))}
+          onClose={() => setBulkAction(null)}
+          onDone={(message, snapshotId) => {
+            setBulkAction(null);
+            setSelected(new Set());
+            void fetchRules();
+            showBulkUndo(message, snapshotId);
           }}
         />
       ) : null}
@@ -526,6 +618,90 @@ function NewRuleDialog({
         </button>
         <button className="btn btn-primary" onClick={() => void create()} disabled={busy}>
           {busy ? 'Saving…' : 'Save rule'}
+        </button>
+      </div>
+    </Dialog>
+  );
+}
+
+const BULK_COPY: Record<BulkStatus, { verb: string; done: string; note: string }> = {
+  archived: {
+    verb: 'Archive',
+    done: 'Archived',
+    note: 'Archived rules are kept (not deleted) and hidden from the list; the bot stops using them.',
+  },
+  disabled: {
+    verb: 'Disable',
+    done: 'Disabled',
+    note: 'The bot stops using them. They stay in the list.',
+  },
+  active: {
+    verb: 'Activate',
+    done: 'Activated',
+    note: 'Rules marked Internal or “Bot may use = No” are switched on but the bot still never uses them.',
+  },
+};
+
+/** ★2026-11-07: confirm Archive / Disable / Activate for the ticked rules. */
+function BulkSelectedDialog({
+  action,
+  rules,
+  onClose,
+  onDone,
+}: {
+  action: BulkStatus;
+  rules: KbRule[];
+  onClose: () => void;
+  onDone: (message: string, snapshotId: string | null) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const copy = BULK_COPY[action];
+  const changing = rules.filter((r) => r.status !== action);
+
+  async function run() {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.bulkStatus(
+        rules.map((x) => x.id),
+        action,
+        `${rules.length} selected`,
+      );
+      onDone(`${copy.done} ${r.changed} rule(s).`, r.snapshot_id);
+    } catch {
+      setError('Nothing was changed. Reload the page and try again.');
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog title={`${copy.verb} ${rules.length} selected rule(s)?`} onClose={onClose}>
+      <p style={{ marginTop: 0 }}>
+        {changing.length === rules.length
+          ? `${rules.length} rule(s) will be changed.`
+          : `${changing.length} of ${rules.length} will be changed (the others already have this status).`}{' '}
+        {copy.note}
+      </p>
+      <p className="muted">
+        A backup is saved first, so this can be undone — with Undo on the message that appears next,
+        or later from Bulk actions → Backups. Every change is recorded in Change history.
+      </p>
+      {error ? (
+        <div className="state error" style={{ padding: 0 }} role="alert">
+          {error}
+        </div>
+      ) : null}
+      <div className="dialog-actions">
+        <button className="btn" onClick={onClose} disabled={busy}>
+          Cancel
+        </button>
+        <button
+          className={`btn ${action === 'active' ? 'btn-primary' : 'btn-danger'}`}
+          onClick={() => void run()}
+          disabled={busy || changing.length === 0}
+        >
+          {busy ? 'Working…' : `${copy.verb} ${changing.length}`}
         </button>
       </div>
     </Dialog>

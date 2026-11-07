@@ -87,3 +87,44 @@ describe('Dashboard AI requests card (v1.8 §7.1)', () => {
     expect(container!.textContent).toContain('passed to staff');
   });
 });
+
+describe('Dashboard per-minute AI requests (2026-11-07)', () => {
+  const hour = Array.from({ length: 60 }, (_, i) => ({
+    minute: new Date(Date.UTC(2026, 10, 7, 3, i)).toISOString(),
+    calls: i === 59 ? 4 : i === 30 ? 5 : 0,
+    limited: i === 30,
+  }));
+  const withMinute = (used: number, limited = false) => ({
+    used_today: 9,
+    limit: 20,
+    remaining: 11,
+    resets_at: '2026-11-07T08:00:00.000Z',
+    daily_limit_hit: false,
+    minute: { used, limit: 5, limited },
+    last_hour: hour,
+  });
+  const minuteCard = () =>
+    [...container!.querySelectorAll('.metric-card')].find((c) =>
+      c.textContent?.includes('AI requests this minute'),
+    )!;
+
+  it('shows "n / 5" in the warning colour near the limit, and the last-hour chart', async () => {
+    kbHealth.mockResolvedValue({ active_rules: 15 });
+    aiUsage.mockResolvedValueOnce(withMinute(4));
+    await mount();
+    expect(minuteCard().textContent).toContain('4 / 5');
+    expect(minuteCard().querySelector('.metric-value.warn')).toBeTruthy();
+    expect(container!.textContent).toContain('AI requests per minute — last hour');
+    expect(container!.textContent).toContain('limit hit in 1 minute');
+    expect(container!.querySelectorAll('.minute-bar')).toHaveLength(2);
+    expect(container!.querySelectorAll('.minute-bar.limited')).toHaveLength(1);
+  });
+
+  it('turns red when the per-minute limit was hit', async () => {
+    kbHealth.mockResolvedValue({ active_rules: 15 });
+    aiUsage.mockResolvedValueOnce(withMinute(5, true));
+    await mount();
+    expect(container!.textContent).toContain('Per-minute limit hit');
+    expect(minuteCard().querySelector('.metric-value.danger')).toBeTruthy();
+  });
+});

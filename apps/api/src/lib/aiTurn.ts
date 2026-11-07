@@ -1,5 +1,6 @@
 import {
   buildRetrievalQuery,
+  busyEscalationMessage,
   fallbackEscalationMessage,
   fetchScopedRules,
   GeminiError,
@@ -13,7 +14,7 @@ import {
 } from '@vertex/ai';
 import type { AiDiag, AiErrorKind, Conversation, FallbackResult, KbRule } from '@vertex/shared';
 import type { Deps } from '../types';
-import { menu } from './menu';
+import { loadMenu, menu } from './menu';
 import { behaviourFor, loadPublishedBehaviour, type BehaviourContent } from './aiBehaviour';
 
 /**
@@ -42,7 +43,8 @@ export interface AiTurnResult extends AiReplyResult {
 
 /** Map an LLM failure to the kind recorded in ai_meta.diag (★v1.8, never silent). */
 function errorKind(err: unknown, signal: AbortSignal): AiErrorKind {
-  if (err instanceof GeminiError && err.status === 429) return 'rate_limited';
+  if (err instanceof GeminiError && err.status === 429)
+    return err.isDailyLimit ? 'daily_limit' : 'rate_limited';
   if (signal.aborted) return 'timeout';
   return 'llm_error';
 }
@@ -54,10 +56,14 @@ function deadline(ms: number): { signal: AbortSignal; clear: () => void } {
   return { signal: controller.signal, clear: () => clearTimeout(timer) };
 }
 
-/** Fallback-escalation reply used when no model output is usable. */
-function cannedEscalation(deps: Deps, conversation: Conversation): AiReplyResult {
+/**
+ * Fallback-escalation reply used when no model output is usable. `busy` =
+ * the AI itself failed (limit / timeout / error): a natural "we're busy, a
+ * staff member will help" message instead (★2026-11-07); never silent.
+ */
+function cannedEscalation(deps: Deps, conversation: Conversation, busy = false): AiReplyResult {
   return {
-    answer: fallbackEscalationMessage(conversation.language),
+    answer: (busy ? busyEscalationMessage : fallbackEscalationMessage)(conversation.language),
     detected_language: conversation.language,
     aiMeta: {
       action: 'escalate',
@@ -118,6 +124,9 @@ export async function generateAiReply(
     categories === null ? null : fetchScopedRules(deps.db, null).catch(() => null);
   // ★v1.8 Phase 2: the CS-published behaviour (②/③), read alongside the rules.
   const behaviourPromise = loadPublishedBehaviour(deps.db);
+  // ★2026-11-07: tile ranges include the CS-added topic codes (admin "Topic codes").
+  const scopeMenuPromise = loadMenu(deps.db);
+  let scopeMenu = menu;
   let published: BehaviourContent | null = null;
 
   const run = (
@@ -125,6 +134,7 @@ export async function generateAiReply(
     label: string | null,
     topicId: string | null,
     signal: AbortSignal,
+    purpose: 'reply' | 'fallback',
   ) =>
     runAiReply({
       rules,
@@ -136,6 +146,7 @@ export async function generateAiReply(
       behaviour: behaviourFor(published, topicId),
       llm: deps.llm,
       signal,
+      purpose,
     });
 
   // --- 1. scoped attempt ---------------------------------------------------
@@ -143,7 +154,10 @@ export async function generateAiReply(
   let scopedRules: KbRule[];
   try {
     [scopedRules, published] = await Promise.all([
-      fetchScopedRules(deps.db, categories, resolveIdPrefixes(currentTopic, menu)),
+      scopeMenuPromise.then((m) => {
+        scopeMenu = m;
+        return fetchScopedRules(deps.db, categories, resolveIdPrefixes(currentTopic, m));
+      }),
       behaviourPromise,
     ]);
   } catch {
@@ -173,11 +187,14 @@ export async function generateAiReply(
     const primary = deadline(Math.min(PRIMARY_TIMEOUT_MS, AI_BUDGET_MS - elapsed()));
     const tPrimary = Date.now();
     try {
-      result = await run(scopedRules, topic, currentTopic || null, primary.signal);
-      if (result.fellBack) diag.error = 'parse_failed';
+      result = await run(scopedRules, topic, currentTopic || null, primary.signal, 'reply');
+      if (result.fellBack) {
+        diag.error = 'parse_failed';
+        result = cannedEscalation(deps, conversation, true);
+      }
     } catch (err) {
       diag.error = errorKind(err, primary.signal);
-      return finish(cannedEscalation(deps, conversation));
+      return finish(cannedEscalation(deps, conversation, true));
     } finally {
       primary.clear();
       diag.timings.primary_ms = Date.now() - tPrimary;
@@ -207,7 +224,7 @@ export async function generateAiReply(
   const guessScope = diag.topic_guess ? resolveKbCategories(diag.topic_guess, menu) : null;
   const ranked = rankRules(allRules, diag.keywords, {
     boostCategories: guessScope,
-    boostIdPrefixes: diag.topic_guess ? resolveIdPrefixes(diag.topic_guess, menu) : [],
+    boostIdPrefixes: diag.topic_guess ? resolveIdPrefixes(diag.topic_guess, scopeMenu) : [],
   });
   diag.timings.retrieve_ms = Date.now() - tRetrieve;
   diag.candidate_count = ranked.length;
@@ -225,10 +242,14 @@ export async function generateAiReply(
       guessLabel,
       diag.topic_guess ?? (currentTopic || null),
       fallback.signal,
+      'fallback',
     );
   } catch (err) {
     const kind = errorKind(err, fallback.signal);
-    return finish(result, kind === 'rate_limited' || kind === 'timeout' ? kind : 'error');
+    return finish(
+      result,
+      kind === 'rate_limited' || kind === 'daily_limit' || kind === 'timeout' ? kind : 'error',
+    );
   } finally {
     fallback.clear();
     diag.timings.fallback_ms = Date.now() - tFallback;

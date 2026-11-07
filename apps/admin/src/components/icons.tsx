@@ -97,3 +97,10 @@ export const IconCheck = (p: IconProps) => (
     <path d="M20 6 9 17l-5-5" />
   </Svg>
 );
+/** ★2026-11-07 Topic codes nav icon (tag). */
+export const IconTag = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" />
+    <circle cx="7.5" cy="7.5" r="1.5" />
+  </Svg>
+);

@@ -5,7 +5,7 @@
  */
 import type { Audience, KbRule, RuleStatus } from './types';
 import { CSV_BOM, parseCsv, stringifyCsv } from './csv';
-import { hasSpreadsheetFormula, hasUnfilledPlaceholder } from './validation';
+import { hasSpreadsheetFormula, hasUnfilledPlaceholder, isSpreadsheetError } from './validation';
 
 export const KB_CSV_HEADERS = [
   'Rule ID',
@@ -246,6 +246,11 @@ export function parseImportCsv(
     if (c.text >= 0) {
       const t = at(c.text);
       if (t.trim() === '') errors.push('Answer text cannot be empty.');
+      else if (isSpreadsheetError(t))
+        errors.push(
+          `Answer text is a spreadsheet error ("${t.trim()}"), not text. This happens when a cell starts with "-", "+" or "=". ` +
+            'Retype the answer in the sheet (e.g. start the list with "•" or put a word before the first "-") and export again.',
+        );
       else if (hasUnfilledPlaceholder(t))
         errors.push('Answer text still contains an unfilled placeholder.');
       else if (hasSpreadsheetFormula(t))

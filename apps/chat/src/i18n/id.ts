@@ -48,6 +48,9 @@ export const id: Messages = {
     teamReplied: 'Tim kami telah membalas',
     errorGeneric: 'Terjadi kesalahan. Silakan coba lagi.',
     errorTooFast: 'Anda mengirim pesan terlalu cepat. Silakan tunggu satu menit, lalu coba lagi.',
+    newChat: 'Chat baru',
+    newChatConfirm:
+      'Mulai chat baru? Layar akan dikosongkan. Jika tim kami sedang membantu Anda, balasan mereka tetap akan dikirim lewat email atau WhatsApp.',
     retry: 'Coba lagi',
     statusAi: 'Asisten AI',
     statusWaitingStaff: 'Tim kami akan membalas dalam 24 jam',

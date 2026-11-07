@@ -61,8 +61,11 @@ export interface SafetyContext {
 }
 
 const RUN_ERROR: Record<string, string> = {
-  rate_limited:
-    'Could not run: the AI usage limit was reached (try again later or after the plan upgrade).',
+  rate_limited: 'Could not run: the AI per-minute limit was reached. Wait a minute and try again.',
+  daily_limit:
+    "Could not run: today's AI limit is used up (resets at 17:00 JST; 16:00 in summer). Try again after the reset.",
+  skipped:
+    'Not run: an earlier test hit the AI usage limit, so the rest were skipped to save quota.',
   timeout: 'Could not run: the AI took too long to reply.',
 };
 

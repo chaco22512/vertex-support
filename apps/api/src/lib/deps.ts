@@ -32,12 +32,16 @@ export function defaultDeps(env: ApiBindings): Deps {
     sendSlack: (text: string) => postSlack(env.SLACK_WEBHOOK_URL, text),
     sendEmail: (msg) => sendResend(env.RESEND_API_KEY, env.EMAIL_FROM || DEFAULT_EMAIL_FROM, msg),
     emailFrom: env.EMAIL_FROM || DEFAULT_EMAIL_FROM,
-    aiDailyLimit: dailyLimit(env.GEMINI_DAILY_LIMIT),
+    aiDailyLimit: limitVar(env.GEMINI_DAILY_LIMIT, 20),
+    aiRpmLimit: limitVar(env.GEMINI_RPM_LIMIT, 5),
   };
 }
 
-/** GEMINI_DAILY_LIMIT → a non-negative integer (default 20, the current free-tier cap). */
-function dailyLimit(raw: string | undefined): number {
+/**
+ * GEMINI_DAILY_LIMIT / GEMINI_RPM_LIMIT → a non-negative integer, else the
+ * fallback (the current free-tier caps: 20 per day, 5 per minute). 0 = no cap.
+ */
+function limitVar(raw: string | undefined, fallback: number): number {
   const n = Number(raw);
-  return raw !== undefined && raw !== '' && Number.isInteger(n) && n >= 0 ? n : 20;
+  return raw !== undefined && raw !== '' && Number.isInteger(n) && n >= 0 ? n : fallback;
 }

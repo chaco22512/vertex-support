@@ -6,7 +6,8 @@ export const FALLBACK_LABELS: Record<FallbackResult, string> = {
   not_found: 'Not in manual (full manual searched)',
   policy_escalation: 'Escalated by policy after search',
   no_candidates: 'No matching rules in the manual',
-  rate_limited: 'AI rate limit (429) during search',
+  rate_limited: 'Busy right now (per-minute limit) during search',
+  daily_limit: 'Daily limit reached during search',
   timeout: 'Search timed out',
   skipped_no_time: 'Search skipped — out of time',
   scope_was_all: 'Topic already covered the whole manual',
@@ -14,7 +15,8 @@ export const FALLBACK_LABELS: Record<FallbackResult, string> = {
 };
 
 export const ERROR_LABELS: Record<NonNullable<AiDiag['error']>, string> = {
-  rate_limited: 'AI rate limit (429)',
+  rate_limited: 'Busy right now (per-minute limit)',
+  daily_limit: 'Daily limit reached',
   timeout: 'AI timed out',
   llm_error: 'AI service error',
   parse_failed: 'AI reply unreadable',

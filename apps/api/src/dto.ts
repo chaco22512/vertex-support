@@ -154,3 +154,15 @@ export const deleteArchivedSchema = z.object({
   confirm: z.literal('DELETE'),
   confirm_count: z.number().int().min(1),
 });
+
+// --- Topic codes (★2026-11-07) / select-and-act bulk status (★2026-11-07) ---
+export const topicCodeSchema = z.object({
+  label: z.string().trim().max(80).default(''),
+  topics: z.array(z.string().min(1).max(64)).max(20),
+});
+export const bulkStatusSchema = z.object({
+  ids: z.array(z.string().min(1).max(64)).min(1).max(5000),
+  status: z.enum(['active', 'disabled', 'archived']),
+  /** What the admin selected, for the backup note / Slack (e.g. "12 selected in: Topic=Deposit"). */
+  description: z.string().max(200).default(''),
+});

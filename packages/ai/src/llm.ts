@@ -6,6 +6,20 @@ export interface LlmMessage {
   text: string;
 }
 
+/**
+ * ★2026-11-07: what a model call is for — logged per call (ai_call_log.purpose)
+ * so the admin can see calls per customer question.
+ */
+export type AiCallPurpose =
+  | 'reply'
+  | 'reply_retry'
+  | 'fallback'
+  | 'fallback_retry'
+  | 'translate'
+  | 'draft'
+  | 'safety_test'
+  | 'try_it';
+
 export interface LlmGenerateRequest {
   system: string;
   messages: LlmMessage[];
@@ -15,6 +29,8 @@ export interface LlmGenerateRequest {
   /** Force JSON output. Defaults to true (the chat pipeline). Set false for
    *  plain-text uses like translation / staff-reply drafts (§7.3). */
   json?: boolean;
+  /** Usage-log tag only; never sent to the model. */
+  purpose?: AiCallPurpose;
 }
 
 export interface LlmClient {

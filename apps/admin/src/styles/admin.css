@@ -201,6 +201,52 @@ button {
 .metric-value.danger {
   color: var(--danger);
 }
+.metric-value.warn {
+  color: var(--warning);
+}
+/* ★2026-11-07 Dashboard: AI requests per minute, last hour */
+.minute-chart {
+  margin: var(--sp-4) 0 var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.minute-chart figcaption {
+  font-size: var(--font-aux);
+  margin-bottom: var(--sp-2);
+}
+.minute-chart svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.minute-bar {
+  fill: var(--ink-muted);
+}
+.minute-bar.limited {
+  fill: var(--danger);
+}
+.minute-hit {
+  fill: transparent;
+}
+.minute-hit:hover {
+  fill: var(--accent-soft);
+  fill-opacity: 0.6;
+}
+.minute-axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.minute-limit {
+  stroke: var(--warning);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.minute-text {
+  fill: var(--ink-muted);
+  font-size: 11px;
+}
 .metric-sub {
   color: var(--ink-muted);
   font-size: var(--font-aux);
@@ -717,4 +763,42 @@ textarea {
 }
 .menu button.menu-danger:hover:not(:disabled) {
   background: var(--danger-soft);
+}
+
+/* ★2026-11-07: a plain bordered box (AI diagnostics "by purpose", Topic codes) */
+.panel-box {
+  margin: 0 0 var(--sp-4);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.notice-warn {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--warning-soft);
+  border-radius: var(--radius-control);
+  font-size: var(--font-aux);
+}
+
+/* ★2026-11-07 Knowledge: sticky bar for ticked rules */
+.selection-bar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--accent-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.selection-bar .grow {
+  flex: 1;
+}
+table.data tr.selected td {
+  background: var(--accent-soft);
 }

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { KbRule } from '@vertex/shared';
+import { idHasCode } from './categories';
 
 /** PostgREST returns at most ~1000 rows per request; page through in this size. */
 const PAGE_SIZE = 1000;
@@ -34,11 +35,14 @@ export async function fetchScopedRules(
   );
   if (categories === null || idPrefixes.length === 0) return byCategory;
 
-  // PostgREST or-filter: the code + exactly 3 characters (`_` = one character),
-  // so "IN" never picks up "INT001". Codes are validated A–Z, 2–4 letters.
-  const byPrefix = await fetchPaged(client, (q) =>
-    q.or(idPrefixes.map((p) => `id.ilike.${p}___`).join(',')),
-  );
+  // PostgREST or-filter: the code + 3 or 4 characters (`_` = one character),
+  // then idHasCode keeps only code + 3–4 DIGITS, so "IN" never picks up
+  // "INT001". Codes are validated A–Z, 2–4 letters.
+  const byPrefix = (
+    await fetchPaged(client, (q) =>
+      q.or(idPrefixes.flatMap((p) => [`id.ilike.${p}___`, `id.ilike.${p}____`]).join(',')),
+    )
+  ).filter((r) => idPrefixes.some((p) => idHasCode(r.id, p)));
   const merged = new Map<string, KbRule>();
   for (const r of [...byCategory, ...byPrefix]) merged.set(r.id, r);
   return [...merged.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));

@@ -41,6 +41,13 @@ export function Conversation() {
     try {
       const d = await api.getConversation(id);
       setDetail(d);
+      // Translations saved earlier cost nothing to show again.
+      const saved = d.messages.filter((m) => m.translation_en);
+      if (saved.length)
+        setTranslations((prev) => ({
+          ...Object.fromEntries(saved.map((m) => [m.id, m.translation_en!])),
+          ...prev,
+        }));
       setReply(d.draft);
       setLoad('ready');
       markSeen(id);
@@ -77,17 +84,22 @@ export function Conversation() {
     const pending = detail.messages.filter(
       (m) => m.sender === 'customer' && !(m.id in translations),
     );
-    const results = await Promise.all(
-      pending.map(async (m) => {
-        try {
-          const { translation } = await api.translate(id, m.body);
-          return [m.id, translation] as const;
-        } catch {
-          return [m.id, '(translation unavailable)'] as const;
-        }
-      }),
-    );
-    if (results.length) setTranslations((prev) => ({ ...prev, ...Object.fromEntries(results) }));
+    if (pending.length === 0) return;
+    // ★2026-11-07: one AI call for the whole conversation (saved server-side),
+    // instead of one call per message — that burst used up the per-minute limit.
+    try {
+      const { translations: got } = await api.translateAll(id);
+      const next: Record<number, string> = {};
+      for (const m of pending) next[m.id] = got[m.id] ?? '(translation unavailable)';
+      setTranslations((prev) => ({ ...prev, ...next }));
+    } catch {
+      setTranslations((prev) => ({
+        ...prev,
+        ...Object.fromEntries(
+          pending.map((m) => [m.id, '(translation unavailable — try again in a minute)']),
+        ),
+      }));
+    }
   }, [translateOn, detail, translations, id]);
 
   const openRule = useCallback(async (ruleId: string) => {

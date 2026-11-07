@@ -9,12 +9,14 @@ import {
   IconSliders,
   IconReview,
   IconStaff,
+  IconTag,
 } from './icons';
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, adminOnly: false },
   { to: '/inbox', label: 'Inbox', icon: IconInbox, end: false, adminOnly: false },
   { to: '/knowledge', label: 'Knowledge', icon: IconBook, end: false, adminOnly: true },
+  { to: '/topic-codes', label: 'Topic codes', icon: IconTag, end: false, adminOnly: true },
   { to: '/review', label: 'Review queue', icon: IconReview, end: false, adminOnly: true },
   { to: '/staff', label: 'Staff', icon: IconStaff, end: false, adminOnly: true },
   { to: '/history', label: 'Change history', icon: IconHistory, end: false, adminOnly: true },

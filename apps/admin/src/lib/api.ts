@@ -91,6 +91,8 @@ export interface DetailMessage {
   body: string;
   ai_meta: AiMeta | null;
   created_at: string;
+  /** ★2026-11-07: saved English translation (staff only). */
+  translation_en?: string | null;
 }
 
 export interface ConversationDetail {
@@ -165,6 +167,8 @@ export interface ImportPreview {
   to_archive?: { count: number; sample: { id: string; category: string; status: string }[] };
   active_before?: number;
   active_after?: number;
+  /** ★2026-11-07: topic codes in the sheet that no tile uses yet (imported anyway). */
+  unlinked_codes?: { code: string; count: number; sample_ids: string[] }[];
 }
 export interface ImportApplyResult {
   applied: number;
@@ -244,7 +248,33 @@ export interface AiUsage {
   remaining: number | null;
   resets_at: string;
   daily_limit_hit: boolean;
+  /** ★2026-11-07: calls Google accepted in the last 60 s vs the per-minute cap (0 = none). */
+  minute?: { used: number; limit: number; limited: boolean };
+  /** Last 60 minutes, oldest first. */
+  last_hour?: { minute: string; calls: number; limited: boolean }[];
+  purposes?: {
+    today: Record<string, number>;
+    week: Record<string, number>;
+    per_question_today: number | null;
+    per_question_week: number | null;
+  };
 }
+
+/** ★2026-11-07 admin "Topic codes". */
+export interface TopicCodeRow {
+  code: string;
+  label: string;
+  builtin: boolean;
+  builtin_topics: string[];
+  extra_topics: string[];
+  rule_count: number;
+  unlinked: boolean;
+}
+export interface TopicCodes {
+  tiles: { id: string; label: string }[];
+  codes: TopicCodeRow[];
+}
+export type BulkStatus = 'active' | 'disabled' | 'archived';
 
 /**
  * "today 17:00 (JST)" / "tomorrow 17:00 (JST)" — the AI quota reset in Japan
@@ -329,11 +359,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ body }),
     }),
-  translate: (id: string, text: string) =>
-    request<{ translation: string }>(`/api/admin/conversations/${id}/translate`, {
-      method: 'POST',
-      body: JSON.stringify({ text }),
-    }),
+  /** ★2026-11-07: every customer message in one AI call; saved, so a reload costs nothing. */
+  translateAll: (id: string) =>
+    request<{ translations: Record<string, string>; calls: number }>(
+      `/api/admin/conversations/${id}/translate`,
+      {
+        method: 'POST',
+        body: '{}',
+      },
+    ),
   aiDraft: (id: string) =>
     request<{ draft: string }>(`/api/admin/conversations/${id}/ai-draft`, { method: 'POST' }),
   saveDraft: (id: string, body: string) =>
@@ -431,6 +465,23 @@ export const api = {
     }),
   /** ★v1.8: Gemini requests used / left today (estimate). */
   aiUsage: () => request<AiUsage>(`/api/admin/ai-usage`),
+  topicCodes: () => request<TopicCodes>(`/api/admin/topic-codes`),
+  saveTopicCode: (code: string, body: { label: string; topics: string[] }) =>
+    request<{ code: string; topics: string[] }>(
+      `/api/admin/topic-codes/${encodeURIComponent(code)}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(body),
+      },
+    ),
+  bulkStatus: (ids: string[], status: BulkStatus, description: string) =>
+    request<{ changed: number; snapshot_id: string | null; active_after?: number }>(
+      `/api/admin/rules/bulk-status`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ ids, status, description }),
+      },
+    ),
   /** ★v1.8: rules the bot can use right now (Dashboard warning when 0). */
   kbHealth: () => request<{ active_rules: number }>(`/api/admin/kb-health`),
   listChangelog: () => request<{ entries: KbChangeLog[] }>(`/api/admin/changelog`),

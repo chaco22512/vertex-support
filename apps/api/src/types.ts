@@ -8,6 +8,8 @@ export interface ApiBindings extends Env {
   RATE_LIMIT: KVNamespace;
   /** ★v1.8: Gemini requests allowed per (Pacific) day; "0" = no cap (billing on). Default 20. */
   GEMINI_DAILY_LIMIT?: string;
+  /** ★2026-11-07: Gemini requests allowed per minute; "0" = no cap. Default 5 (free tier). */
+  GEMINI_RPM_LIMIT?: string;
 }
 
 /** Authenticated staff context resolved from a Supabase Auth JWT (§7). */
@@ -35,6 +37,8 @@ export interface Deps {
   emailFrom: string;
   /** ★v1.8: daily Gemini request cap for the usage display (0 = none). Default 20. */
   aiDailyLimit?: number;
+  /** ★2026-11-07: per-minute Gemini request cap for the usage display (0 = none). Default 5. */
+  aiRpmLimit?: number;
 }
 
 export interface Variables {

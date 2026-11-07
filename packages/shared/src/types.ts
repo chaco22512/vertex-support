@@ -137,7 +137,10 @@ export type FallbackResult =
   | 'not_found'
   | 'policy_escalation'
   | 'no_candidates'
+  /** Per-minute cap (RPM) — busy right now. */
   | 'rate_limited'
+  /** ★2026-11-07: per-day cap (RPD) — no AI until the daily reset. */
+  | 'daily_limit'
   | 'timeout'
   | 'skipped_no_time'
   | 'scope_was_all'
@@ -145,7 +148,10 @@ export type FallbackResult =
 
 /** Why an AI call failed (★v1.8). Recorded instead of a silent escalation. */
 export type AiErrorKind =
+  /** 429 on the per-minute cap (RPM): busy right now. */
   | 'rate_limited'
+  /** ★2026-11-07: 429 on the per-day cap (RPD): no AI until the daily reset. */
+  | 'daily_limit'
   | 'timeout'
   | 'llm_error'
   | 'parse_failed'

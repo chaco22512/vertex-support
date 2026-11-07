@@ -10,6 +10,7 @@ import { postTopic } from './routes/topic';
 import { listAiDiagnostics } from './routes/admin/aiDiagnostics';
 import { getKbHealth } from './routes/admin/kbHealth';
 import { getAiUsage } from './routes/admin/aiUsage';
+import { listTopicCodes, putTopicCode } from './routes/admin/topicCodes';
 import {
   getAiBehaviour,
   getVersion,
@@ -20,6 +21,7 @@ import {
 } from './routes/admin/aiBehaviour';
 import {
   archiveAll,
+  bulkStatus,
   deleteArchived,
   disableView,
   listSnapshots,
@@ -96,6 +98,7 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.post('/rules/import/apply', adminOnly, applyImport);
   admin.post('/rules/import/undo', adminOnly, undoImport);
   admin.post('/rules/disable-view', adminOnly, disableView);
+  admin.post('/rules/bulk-status', adminOnly, bulkStatus);
   admin.post('/rules/archive-all', adminOnly, archiveAll);
   admin.post('/rules/delete-archived', adminOnly, deleteArchived);
   admin.get('/rules/snapshots', adminOnly, listSnapshots);
@@ -109,6 +112,8 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.delete('/staff/:id', adminOnly, deleteStaff);
   admin.get('/changelog', adminOnly, listChangelog);
   admin.get('/ai-diagnostics', adminOnly, listAiDiagnostics);
+  admin.get('/topic-codes', adminOnly, listTopicCodes);
+  admin.put('/topic-codes/:code', adminOnly, putTopicCode);
   admin.get('/kb-health', getKbHealth);
   admin.get('/ai-usage', getAiUsage);
   admin.get('/ai-behaviour', adminOnly, getAiBehaviour);

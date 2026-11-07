@@ -178,8 +178,8 @@ describe('Replace all (CSV mode=replace)', () => {
   it('rejects a new row whose Rule ID breaks the convention, saying what to do (row error, not added)', async () => {
     const s = setup();
     for (const [id, hint] of [
-      ['XX001', 'not a topic code'],
-      ['DR01', 'topic code (2–4 letters) + 3 numbers'],
+      ['DR01', '3–4 numbers, e.g. DR001, ESP001 or CN0001'],
+      ['ABCDE001', '2–4 capital letters'],
       ['', 'no Rule ID'],
     ] as const) {
       const res = await s.post('/api/admin/rules/import/preview', {
@@ -193,6 +193,60 @@ describe('Replace all (CSV mode=replace)', () => {
       expect(body.summary).toMatchObject({ added: 0, errors: 1 });
       expect(body.errors[0]!.reason).toContain(hint);
     }
+  });
+
+  it('imports a code that is not built in (ESP001, CN0001) and warns when no tile uses it', async () => {
+    const s = setup();
+    const csv =
+      replacementSheet(s.db, 'esp001') +
+      'CN0001,Cancellation,,Four digits,,No,,Customer,Yes,Active,,,,,\r\n';
+    const res = await s.post('/api/admin/rules/import/preview', { csv, mode: 'update' });
+    const body = (await res.json()) as {
+      summary: Record<string, number>;
+      errors: unknown[];
+      new_rules: { id: string }[];
+      unlinked_codes: { code: string; count: number; sample_ids: string[] }[];
+    };
+    expect(body.errors).toEqual([]);
+    expect(body.new_rules.map((r) => r.id).sort()).toEqual(['CN0001', 'ESP001']);
+    expect(body.unlinked_codes).toEqual([{ code: 'ESP', count: 1, sample_ids: ['ESP001'] }]);
+
+    // Once ESP is linked to a tile on "Topic codes", the warning goes away.
+    s.db.tables.kb_topic_codes = [{ code: 'ESP', label: 'eSIM', topics: ['plans'] }];
+    const again = (await (
+      await s.post('/api/admin/rules/import/preview', { csv, mode: 'update' })
+    ).json()) as {
+      unlinked_codes: unknown[];
+    };
+    expect(again.unlinked_codes).toEqual([]);
+  });
+
+  it('only a Rule ID repeated inside the sheet is a duplicate error', async () => {
+    const s = setup();
+    const csv =
+      replacementSheet(s.db, 'ESP001') +
+      'esp001,eSIM,,Same id again,,No,,Customer,Yes,Active,,,,,\r\n';
+    const body = (await (
+      await s.post('/api/admin/rules/import/preview', { csv, mode: 'update' })
+    ).json()) as {
+      errors: { reason: string }[];
+    };
+    expect(body.errors).toHaveLength(1);
+    expect(body.errors[0]!.reason).toContain('appears more than once');
+  });
+
+  it('rejects a spreadsheet error value (#NAME?) as Answer text', async () => {
+    const s = setup();
+    const csv =
+      replacementSheet(s.db, 'DR001') + 'ESP005,eSIM,,#NAME?,,No,,Customer,Yes,Active,,,,,\r\n';
+    const body = (await (
+      await s.post('/api/admin/rules/import/preview', { csv, mode: 'update' })
+    ).json()) as {
+      errors: { id: string; reason: string }[];
+    };
+    expect(body.errors).toHaveLength(1);
+    expect(body.errors[0]).toMatchObject({ id: 'ESP005' });
+    expect(body.errors[0]!.reason).toContain('spreadsheet error');
   });
 
   it('a failed apply changes nothing (one transaction)', async () => {
@@ -270,6 +324,70 @@ describe('Disable all in this view', () => {
     const s = setup('staff');
     expect((await s.post('/api/admin/rules/disable-view', { ids: ['R1'] })).status).toBe(403);
     expect((await s.get('/api/admin/rules/snapshots')).status).toBe(403);
+  });
+});
+
+describe('Select and act (Archive / Disable / Activate selected)', () => {
+  it('archives exactly the selected rules, backs up first, logs, notifies, and Undo restores', async () => {
+    const s = setup();
+    const res = await s.post('/api/admin/rules/bulk-status', {
+      ids: ['R1', 'R3'],
+      status: 'archived',
+      description: '2 selected',
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      changed: number;
+      snapshot_id: string;
+      active_after: number;
+    };
+    expect(body).toMatchObject({ changed: 2, active_after: 1 });
+    expect(ruleById(s.db, 'R1').status).toBe('archived');
+    expect(ruleById(s.db, 'R2').status).toBe('active');
+    expect(ruleById(s.db, 'R3').status).toBe('archived');
+    expect(s.db.tables.kb_change_log.filter((l) => l.source === 'bulk_selected')).toHaveLength(2);
+    expect(s.db.tables.kb_rule_snapshots![0]).toMatchObject({ kind: 'bulk_status' });
+    expect(s.slack.calls[0]).toContain('Archive selected: 2 rule(s)');
+
+    await s.post(`/api/admin/rules/snapshots/${body.snapshot_id}/undo`, {});
+    expect(ruleById(s.db, 'R1').status).toBe('active');
+    expect(ruleById(s.db, 'R3').status).toBe('active');
+  });
+
+  it('disables and re-activates selected rules; already-matching rules are left alone', async () => {
+    const s = setup();
+    await s.post('/api/admin/rules/bulk-status', { ids: ['R1', 'R2'], status: 'disabled' });
+    expect(ruleById(s.db, 'R2').status).toBe('disabled');
+    const res = await s.post('/api/admin/rules/bulk-status', {
+      ids: ['R1', 'R3'],
+      status: 'active',
+    });
+    expect(((await res.json()) as { changed: number }).changed).toBe(1); // R3 was already active
+    expect(ruleById(s.db, 'R1').status).toBe('active');
+    expect(ruleById(s.db, 'R2').status).toBe('disabled');
+  });
+
+  it('activating an internal rule does not let the AI use it (Hard rule 3)', async () => {
+    const s = setup();
+    s.db.tables.kb_rules.push({
+      ...rule('IN001', 'X', { audience: 'internal', status: 'disabled' }),
+    } as Record<string, unknown>);
+    const res = await s.post('/api/admin/rules/bulk-status', { ids: ['IN001'], status: 'active' });
+    expect(((await res.json()) as { active_after: number }).active_after).toBe(3);
+  });
+
+  it('refuses unknown ids and non-admins; nothing changes', async () => {
+    const s = setup();
+    expect(
+      (await s.post('/api/admin/rules/bulk-status', { ids: ['R1', 'ZZZ'], status: 'archived' }))
+        .status,
+    ).toBe(409);
+    expect(ruleById(s.db, 'R1').status).toBe('active');
+    const staff = setup('staff');
+    expect(
+      (await staff.post('/api/admin/rules/bulk-status', { ids: ['R1'], status: 'archived' }))
+        .status,
+    ).toBe(403);
   });
 });
 

@@ -45,6 +45,9 @@ export const en: Messages = {
     teamReplied: 'Our team replied',
     errorGeneric: 'Something went wrong. Please try again.',
     errorTooFast: "You're sending messages very quickly. Please wait a minute, then try again.",
+    newChat: 'New chat',
+    newChatConfirm:
+      'Start a new chat? This clears the screen. If our team is already helping you, their reply will still reach you by email or WhatsApp.',
     retry: 'Try again',
     statusAi: 'AI assistant',
     statusWaitingStaff: 'Our team will reply within 24 hours',

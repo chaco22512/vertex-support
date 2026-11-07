@@ -1,26 +1,32 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeRuleId, ruleIdProblem } from './ruleId';
+import { normalizeRuleId, ruleIdCode, ruleIdProblem } from './ruleId';
 
-describe('Rule ID convention (v1.8 §3.1)', () => {
+describe('Rule ID convention (v1.8 §3.1, widened 2026-11-07)', () => {
   it('normalises case and spaces', () => {
     expect(normalizeRuleId(' dr001 ')).toBe('DR001');
+    expect(normalizeRuleId('esp001')).toBe('ESP001');
   });
 
-  it('accepts topic code + 3 digits', () => {
-    expect(ruleIdProblem('DR001')).toBeNull();
-    expect(ruleIdProblem('GN120')).toBeNull();
-    expect(ruleIdProblem('APN001')).toBeNull(); // 3-letter code (CS APN sheet)
+  it('accepts 2–4 letters + 3–4 digits, including codes that are not built in', () => {
+    for (const id of ['DR001', 'GN120', 'APN001', 'ESP001', 'CN0001', 'ABCD9999', 'XX001']) {
+      expect(ruleIdProblem(id)).toBeNull();
+    }
   });
 
-  it('explains what to do for each kind of mistake', () => {
+  it('rejects anything else and states the allowed format', () => {
+    for (const id of ['', 'DR-01', 'DR01', 'ABCDE001', 'DR00001', 'D001', '001DR']) {
+      const p = ruleIdProblem(id)!;
+      expect(p).toBeTruthy();
+      expect(p).toContain('2–4 capital letters');
+      expect(p).toContain('3–4 numbers');
+    }
     expect(ruleIdProblem('')).toContain('no Rule ID');
     expect(ruleIdProblem('DR-01')).toContain('only contain letters and numbers');
-    expect(ruleIdProblem('DR01')).toContain('topic code (2–4 letters) + 3 numbers');
-    expect(ruleIdProblem('ABCDE001')).toContain('expected format');
-    expect(ruleIdProblem('ABC001')).toContain('not a topic code');
-    expect(ruleIdProblem('DR0001')).toContain('expected format');
-    const unknown = ruleIdProblem('XX001')!;
-    expect(unknown).toContain('not a topic code');
-    expect(unknown).toContain('DR (Deposit refund)');
+  });
+
+  it('reads the topic code of convention IDs only', () => {
+    expect(ruleIdCode('ESP001')).toBe('ESP');
+    expect(ruleIdCode('cn0001')).toBe('CN');
+    expect(ruleIdCode('R508')).toBeNull();
   });
 });

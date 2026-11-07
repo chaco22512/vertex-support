@@ -64,25 +64,111 @@ export function summarizeUsage(rows: { outcome: string }[], limit: number, now: 
   };
 }
 
-/** Read today's calls (Pacific day) and summarise them. */
+export interface CallRow {
+  at: string;
+  outcome: string;
+  purpose?: string | null;
+}
+
+/** ★2026-11-07: the per-minute view (RPM) and what the calls were for. */
+export interface AiActivity {
+  /** Calls Google accepted in the last 60 seconds vs the per-minute cap (0 = none). */
+  minute: { used: number; limit: number; limited: boolean };
+  /** The last 60 minutes, oldest first: calls per minute and whether a limit was hit. */
+  last_hour: { minute: string; calls: number; limited: boolean }[];
+  purposes: {
+    today: Record<string, number>;
+    week: Record<string, number>;
+    /** Model calls per customer question (reply + retries + fallback) / replies; null = no replies. */
+    per_question_today: number | null;
+    per_question_week: number | null;
+  };
+}
+
+/** A call Google accepted (counts toward its limits); refused calls (429) do not. */
+const counted = (r: { outcome: string }) => r.outcome === 'ok' || r.outcome === 'error';
+const refused = (r: { outcome: string }) =>
+  r.outcome === 'rate_limited' || r.outcome === 'daily_limit';
+const CUSTOMER_PURPOSES = new Set(['reply', 'reply_retry', 'fallback', 'fallback_retry']);
+
+function purposeCounts(rows: CallRow[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const r of rows.filter(counted)) {
+    const p = r.purpose || 'unknown';
+    out[p] = (out[p] ?? 0) + 1;
+  }
+  return out;
+}
+
+function perQuestion(counts: Record<string, number>): number | null {
+  const replies = counts.reply ?? 0;
+  if (replies === 0) return null;
+  const calls = Object.entries(counts)
+    .filter(([p]) => CUSTOMER_PURPOSES.has(p))
+    .reduce((n, [, v]) => n + v, 0);
+  return Math.round((calls / replies) * 100) / 100;
+}
+
+/** Summarise the last 7 days of calls into the per-minute / per-purpose view. */
+export function summarizeActivity(rows: CallRow[], rpmLimit: number, now: Date): AiActivity {
+  const t = now.getTime();
+  const minuteStart = Math.floor(t / 60_000) * 60_000;
+  const hourStart = minuteStart - 59 * 60_000;
+  const lastMinute = rows.filter((r) => t - Date.parse(r.at) < 60_000 && Date.parse(r.at) <= t);
+  const last_hour = Array.from({ length: 60 }, (_, i) => ({
+    minute: new Date(hourStart + i * 60_000).toISOString(),
+    calls: 0,
+    limited: false,
+  }));
+  for (const r of rows) {
+    const i = Math.floor((Date.parse(r.at) - hourStart) / 60_000);
+    if (i < 0 || i >= 60) continue;
+    if (counted(r)) last_hour[i]!.calls += 1;
+    if (refused(r)) last_hour[i]!.limited = true;
+  }
+  const dayStart = pacificDayStart(now).getTime();
+  const today = purposeCounts(rows.filter((r) => Date.parse(r.at) >= dayStart));
+  const week = purposeCounts(rows.filter((r) => t - Date.parse(r.at) < 7 * 86_400_000));
+  return {
+    minute: {
+      used: lastMinute.filter(counted).length,
+      limit: rpmLimit,
+      limited: lastMinute.some((r) => r.outcome === 'rate_limited'),
+    },
+    last_hour,
+    purposes: {
+      today,
+      week,
+      per_question_today: perQuestion(today),
+      per_question_week: perQuestion(week),
+    },
+  };
+}
+
+/** Read the last 7 days of calls and summarise today (Pacific day), the last minute/hour and purposes. */
 export async function loadUsage(
   db: SupabaseClient,
   limit: number,
   now = new Date(),
-): Promise<AiUsage> {
-  const rows: { outcome: string }[] = [];
-  const since = pacificDayStart(now).toISOString();
+  rpmLimit = 5,
+): Promise<AiUsage & AiActivity> {
+  const rows: CallRow[] = [];
+  const dayStart = pacificDayStart(now);
+  const since = new Date(
+    Math.min(dayStart.getTime(), now.getTime() - 7 * 86_400_000),
+  ).toISOString();
   for (let from = 0; ; from += 1000) {
     const { data, error } = await db
       .from('ai_call_log')
-      .select('outcome')
+      .select('at,outcome,purpose')
       .gte('at', since)
       .order('id', { ascending: true })
       .range(from, from + 999);
     if (error) throw new Error(error.message);
-    const page = (data ?? []) as { outcome: string }[];
+    const page = (data ?? []) as CallRow[];
     rows.push(...page);
     if (page.length < 1000) break;
   }
-  return summarizeUsage(rows, limit, now);
+  const today = rows.filter((r) => Date.parse(r.at) >= dayStart.getTime());
+  return { ...summarizeUsage(today, limit, now), ...summarizeActivity(rows, rpmLimit, now) };
 }

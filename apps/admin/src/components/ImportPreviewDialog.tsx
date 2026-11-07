@@ -151,6 +151,22 @@ export function ImportPreviewDialog({
             </>
           ) : null}
 
+          {preview!.unlinked_codes?.length ? (
+            <div className="notice-warn" role="status">
+              {preview!.unlinked_codes.map((u) => (
+                <div key={u.code}>
+                  <strong>{u.code}</strong> is not linked to any chat tile yet ({u.count} rule
+                  {u.count === 1 ? '' : 's'}, e.g. {u.sample_ids.join(', ')}). They will be
+                  imported, but until linked only “Something else” and the full-manual search use
+                  them.
+                </div>
+              ))}
+              <div style={{ marginTop: 'var(--sp-1)' }}>
+                Link the code on the <a href="/topic-codes">Topic codes</a> screen.
+              </div>
+            </div>
+          ) : null}
+
           {added > 0 ? (
             <details style={{ marginTop: 'var(--sp-2)' }} open={s!.changed === 0}>
               <summary>{added} new rule(s) will be added</summary>

@@ -48,6 +48,9 @@ export interface UiStrings {
   errorGeneric: string;
   /** ★v1.8: shown when this chat sent too many messages in a minute. */
   errorTooFast: string;
+  /** ★2026-11-07 header button + its confirmation. */
+  newChat: string;
+  newChatConfirm: string;
   retry: string;
   statusAi: string;
   statusWaitingStaff: string;

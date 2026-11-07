@@ -1,5 +1,5 @@
 import type { AiMeta, KbRule } from '@vertex/shared';
-import type { LlmClient } from './llm';
+import type { AiCallPurpose, LlmClient } from './llm';
 import {
   buildLlmMessages,
   buildSystemPrompt,
@@ -27,6 +27,8 @@ export interface RunAiReplyInput {
   llm: LlmClient;
   /** Optional abort signal forwarded to the LLM (timeout enforcement, §6.3). */
   signal?: AbortSignal;
+  /** Usage-log tag (default 'reply'); a format retry of reply/fallback is logged as *_retry. */
+  purpose?: AiCallPurpose;
 }
 
 export interface AiReplyResult {
@@ -41,6 +43,11 @@ export interface AiReplyResult {
 }
 
 const MAX_ATTEMPTS = 2; // initial try + one retry (§4.2)
+
+function purposeOf(purpose: AiCallPurpose = 'reply', attempt: number): AiCallPurpose {
+  if (attempt === 0) return purpose;
+  return purpose === 'reply' ? 'reply_retry' : purpose === 'fallback' ? 'fallback_retry' : purpose;
+}
 
 /**
  * Run the AI reply pipeline (§4.1–4.3): build prompt from scoped rules and
@@ -59,7 +66,12 @@ export async function runAiReply(input: RunAiReplyInput): Promise<AiReplyResult>
 
   let parsed: AiResponse | null = null;
   for (let attempt = 0; attempt < MAX_ATTEMPTS && parsed === null; attempt++) {
-    const raw = await input.llm.generate({ system, messages, signal: input.signal });
+    const raw = await input.llm.generate({
+      system,
+      messages,
+      signal: input.signal,
+      purpose: purposeOf(input.purpose, attempt),
+    });
     parsed = parseAiResponse(raw);
   }
 

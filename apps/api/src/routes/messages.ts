@@ -123,7 +123,8 @@ export async function getMessages(c: Context<AppEnv>): Promise<Response> {
   const { data, error } = await query;
   if (error) return c.json({ error: 'server_error' }, 500);
   return c.json({
-    messages: data ?? [],
+    // The staff-side English translation (★2026-11-07) is not for the customer.
+    messages: ((data ?? []) as Record<string, unknown>[]).map(({ translation_en: _t, ...m }) => m),
     status: conversation.status,
     reply_due_at: conversation.reply_due_at,
   });

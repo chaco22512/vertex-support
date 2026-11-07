@@ -78,9 +78,42 @@ export function resolveIdPrefixes(topicCategory: string, menu: MenuCategories): 
   return (category?.id_prefixes ?? []).filter((p) => /^[A-Z]{2,4}$/.test(p));
 }
 
-/** True when `id` is `code` + exactly 3 digits, so "IN" never matches "INT001". */
+/** True when `id` is `code` + 3–4 digits, so "IN" never matches "INT001". */
 export function idHasCode(id: string, code: string): boolean {
-  return (
-    id.length === code.length + 3 && id.startsWith(code) && /^\d{3}$/.test(id.slice(code.length))
-  );
+  const n = id.length - code.length;
+  return (n === 3 || n === 4) && id.startsWith(code) && /^\d+$/.test(id.slice(code.length));
+}
+
+/** A CS-added link between a topic code and tiles (admin "Topic codes", table kb_topic_codes). */
+export interface TopicCodeLink {
+  code: string;
+  topics: string[];
+}
+
+/**
+ * ★2026-11-07: the menu with CS-added topic-code links merged into each
+ * tile's id_prefixes. A link to a tile that shares another's range
+ * (scope_of, e.g. connection) is applied to that range; retired ids (aliases)
+ * to the tile they were merged into. Unknown tiles / bad codes are ignored.
+ */
+export function withTopicCodes(menu: MenuCategories, links: TopicCodeLink[]): MenuCategories {
+  if (links.length === 0) return menu;
+  const extra = new Map<string, Set<string>>();
+  for (const { code, topics } of links) {
+    if (!/^[A-Z]{2,4}$/.test(code)) continue;
+    for (const t of topics) {
+      const tile = scopeTile(t, menu);
+      if (!tile || tile.id === 'others') continue;
+      if (!extra.has(tile.id)) extra.set(tile.id, new Set());
+      extra.get(tile.id)!.add(code);
+    }
+  }
+  return {
+    ...menu,
+    categories: menu.categories.map((c) => {
+      const add = extra.get(c.id);
+      if (!add) return c;
+      return { ...c, id_prefixes: [...new Set([...(c.id_prefixes ?? []), ...add])] };
+    }),
+  };
 }

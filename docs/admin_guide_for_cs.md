@@ -10,9 +10,10 @@ your sheets (the old manuals are kept in storage as *Archived* and are not used)
 
 ### Rule IDs — please read this first
 
-Every row needs a **Rule ID**: a topic code (2–4 letters) + a 3-digit number, for
-example **DR001**. Letters and numbers only. Capital or small letters don't
-matter (dr001 is the same as DR001). Each ID can appear only once in a file.
+Every row needs a **Rule ID**: a topic code (**2–4 capital letters**) followed by
+**3–4 numbers**, for example **DR001**, **ESP001** or **CN0001**. Letters and numbers
+only. Capital or small letters don't matter (esp001 is the same as ESP001). Each ID
+can appear only once in a file.
 
 The topic code decides **which chat topic the bot uses the rule for**, so pick
 the code that matches the topic:
@@ -32,6 +33,13 @@ the code that matches the topic:
 | PL | Plans & requirements | Plans (the bot never gives monthly prices or discount amounts) |
 | GN | General — used on every topic | All topics |
 | OT | Other | Only when a customer asks under "Others" |
+
+**You can start a new topic code yourself** (for example **ESP** for eSIM) — no
+need to ask us. The rules are imported straight away. Until the code is linked to a
+chat tile, the preview shows a yellow note and the bot uses those rules only under
+"Something else" and in its full-manual search. To link it: open **Topic codes** in
+the menu, tick the tiles the code belongs to, and press **Save**. The same screen
+shows every code, how many rules use it, and which tiles use it.
 
 **Always keep the same ID for the same rule.** If you change the wording of DR003,
 keep it DR003 — do not give it a new number, and never reuse an old number for a
@@ -64,11 +72,22 @@ go through. Each message says what to fix, for example:
 | Message starts with | What to do |
 |---|---|
 | "This row has no Rule ID" | Add an ID such as DR016. |
-| "… is not in the expected format" | Use the topic code (2–4 letters) + 3 numbers, e.g. DR001 or APN001. |
-| "… is not a topic code" | Use one of the codes in the table above. |
+| "… is not in the expected format" | Use 2–4 capital letters + 3–4 numbers, e.g. DR001, ESP001 or CN0001. |
+| "Answer text is a spreadsheet error (#NAME?)" | The cell starts with "-", "+" or "=" so the spreadsheet turned it into a broken formula. Retype the answer (e.g. start the list with "•") and export again. |
 | "… appears more than once" | Keep one row per Rule ID (dr001 and DR001 count as the same). |
 | "This new rule has no Topic" | Fill in the Topic column. |
 | "… still contains an unfilled placeholder / a spreadsheet formula" | Replace it with the final text. |
+
+### Archive, disable or activate only some rules
+
+Tick the box at the start of each rule you want (the box in the header ticks or
+clears every rule in the current view; "Select all … in this view" does the same
+from the bar). A bar appears at the top: **Archive selected**, **Disable selected**,
+**Activate selected**, **Clear**. You are asked to confirm with the number of
+rules. A backup is saved first, so you can **Undo** from the message that appears
+or later from **Bulk actions → Backups**; every change is in **Change history**.
+Activating a rule that is *Internal* or *Bot may use = No* switches it on, but the
+bot still never uses it.
 
 ### Undo
 
@@ -178,3 +197,26 @@ The number is counted by the bot itself, so it is a close estimate; Google's own
 page has the official figure. The **AI behaviour** page also shows how many are
 left before you click **Publish** (uses 4) or **Try it** (uses 1).
 
+
+## AI request limits (Google free plan)
+
+- The whole company shares **20 AI requests a day** and **5 a minute**. The
+  Dashboard shows both: "AI requests (whole company) n / 20" and "AI requests this
+  minute n / 5" (orange near the limit, red at it), plus a small chart of the last
+  hour. Google's day restarts at 17:00 Japan time (16:00 in summer).
+- Customer chats, Translate, AI draft, Try it and the Publish safety tests all
+  count. **AI diagnostics → AI requests by purpose** shows what used them and how
+  many requests one customer question takes on average.
+- When a limit is hit, customers are never left without an answer: they see "We're
+  receiving a lot of questions right now, so a member of our support team will help
+  you directly", and the chat is passed to staff as usual. In AI diagnostics these
+  show as "Busy right now (per-minute limit)" or "Daily limit reached".
+- **Translate** now translates the whole conversation with one request and keeps
+  the result, so opening the conversation again costs nothing.
+
+## Customers: "New chat"
+
+Customers can tap **New chat** at the top of the chat to clear the screen and start
+over (they are asked first). A finished (resolved or closed) conversation is no
+longer reopened when the customer comes back on the same phone; the link in our
+reply email still opens the conversation.

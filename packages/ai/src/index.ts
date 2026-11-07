@@ -1,4 +1,4 @@
-export type { LlmClient, LlmMessage, LlmGenerateRequest } from './llm';
+export type { AiCallPurpose, LlmClient, LlmMessage, LlmGenerateRequest } from './llm';
 export { maskPii, type MaskResult } from './pii';
 export {
   resolveKbCategories,
@@ -6,7 +6,9 @@ export {
   resolveIdPrefixes,
   canonicalTopic,
   idHasCode,
+  withTopicCodes,
   GENERAL_CATEGORY,
+  type TopicCodeLink,
   type MenuCategory,
   type MenuCategories,
 } from './categories';
@@ -30,10 +32,15 @@ export {
   DEFAULT_COMMON_BEHAVIOUR,
 } from './prompt';
 export { parseAiResponse, aiResponseSchema, ESCALATION_REASONS, type AiResponse } from './parse';
-export { fallbackEscalationMessage, FALLBACK_ESCALATION_MESSAGE } from './locales';
+export {
+  busyEscalationMessage,
+  BUSY_ESCALATION_MESSAGE,
+  fallbackEscalationMessage,
+  FALLBACK_ESCALATION_MESSAGE,
+} from './locales';
 export { runAiReply, type RunAiReplyInput, type AiReplyResult } from './pipeline';
 export { GeminiClient, GeminiError, DEFAULT_GEMINI_MODEL, type GeminiConfig } from './gemini';
-export { translateToEnglish, draftStaffReply } from './admin';
+export { translateToEnglish, translateManyToEnglish, draftStaffReply } from './admin';
 export {
   SAFETY_TESTS,
   evaluateSafety,

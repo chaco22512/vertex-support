@@ -6,6 +6,7 @@ v1.7→v1.8 の変更（CS要望3件＋取得上限の調査。指示書 `docs/c
 - **Phase 2（AI behaviour タブ）**: プロンプトを ①安全ルール(固定)／②共通の振る舞い(編集可)／③トピック別の指示(編集可) の3層に分け、下書き→セーフティテスト→Publish、版管理・ロールバック、Try it（§4.2.1, §7.8）。
 - **Phase 3（ナレッジ一括操作の安全版）**: CSV「Replace all」モード（対象外は archived、物理削除なし）、「Disable all in this view」、自動スナップショット3世代＋復元、アクティブ0件時は全質問をエスカレ（§3, §4.1.0, §7.4.2）。
 - 受け入れ基準 52–64 を追加（§10）。
+- **2026-11-07 CS フィードバック対応**: ① Gemini 上限 — ai_call_log に用途（purpose）を記録、Dashboard に「AI requests this minute n / 5」と直近1時間の分単位グラフ（`GEMINI_RPM_LIMIT`、既定5）、diagnostics で RPM（rate_limited）と RPD（daily_limit）を区別、AI 不調時の顧客文言を自然な「混み合っています」に（5言語）、Translate は会話1件につき AI 1回＋保存、安全テストは1件ずつ実行。② チャットのヘッダーに「New chat」（確認あり）、resolved/closed の会話は端末から復元しない（`?t=` リンクは従来どおり復元）。④ Rule ID を「英大文字2〜4＋数字3〜4桁」に拡大、未登録の記号も取り込み可（プレビューで警告）、admin「Topic codes」画面で記号→タイルを CS が紐付け（`kb_topic_codes`）。Answer text がスプレッドシートのエラー値（`#NAME?` 等）の行はエラー。⑤ Knowledge で行を選択して Archive / Disable / Activate（バックアップ・Undo・変更履歴・Slack）。受け入れ基準 78–86。
 - **2026-11-06 タイル再編（11→10）**: (a) Internet を「Set up APN or mobile internet」(`internet`) と「Report a signal or connection issue」(`connection`, `scope_of: internet`＝同じナレッジ範囲。違いは定型質問のみ。将来 scope_of を外せば分離可) に表示分割。(c) Signal stopped / re-issue を Lost/damaged に、Refund/deposit/cashback を Deposit refund に統合（範囲の付け替えで、ルールは無効化しない。旧 topic id は menu の `aliases` で統合先の範囲・ラベルに読み替え）。Plans は AI 回答タイルに変更（PL ルールを範囲に。月額・割引・COD は安全ルールで引き続き price_question）。(b) Holiday Plans／Discounts and Promo はナレッジ待ちで保留（docs/pending-cs-assets.md）。遅延による電波停止の説明は CS に GN001 として追加依頼（現状 PY007）。受け入れ基準 74–77。
 - **CS管理CSVによるナレッジ運用（2026-10-31）**: CS が作る CSV を唯一の正とし、更新のたびに取り込む。旧 2,886 件（R/P/F/C）は 10/30 の Replace all で archived のまま保持（復元しない）。Rule ID 規約（§3.1）、ID 記号によるトピック範囲（§4.1）、両モードで新規追加・1トランザクション適用（§7.4.1）、Dashboard の空ナレッジ警告（§7.1）。受け入れ基準 65–70。
 - **2026-11-06 CS 改定**: メニューの見出し・タイル文言を CS 案に変更（5言語、トピック・範囲・会話フローは不変。見出し "How can we help you today?"、Cancel my SIM card or Wi-Fi plan／Return my SIM card or Wi-Fi device／Deposit refund or cashback inquiry／Change or replace my plan／Replace a lost or damaged SIM card/device／Pay my monthly bill／View plans and requirements／Something else）。AI 使用回数の表示を「会社全体で共有する Google の無料枠」「リセットは日本時間 17:00（夏は16:00）、today/tomorrow 付き」と明記。顧客チャットで 1分10回の送信制限に当たった場合は「少し待ってから再送」の専用メッセージ（5言語）。
@@ -185,7 +186,7 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 ※ 詳細スキーマは各Phaseの計画で確定し、マイグレーションとして追加する（既存データの削除・型変更を伴わない追加のみ）。
 
 ### 3.1 Rule ID 規約（★v1.8、CS管理CSV）
-- 形式: **トピック記号2〜4文字＋連番3桁**（例 `DR001`, `APN001`）。英数字のみ。大文字小文字を区別しない（保存は大文字）。1つの CSV 内で重複不可。トピック範囲は「記号＋ちょうど3桁」で照合（`IN` が `INT001` に一致しない）。Status 列は `Waiting` / `Pending` も「Waiting for review」として受け付ける（2026-11-01、CS の APN シート対応）。
+- 形式: **トピック記号＝英大文字2〜4文字＋連番3〜4桁**（例 `DR001`, `APN001`, `ESP001`, `CN0001`。2026-11-07 に3桁固定から拡大）。英数字のみ。大文字小文字を区別しない（保存は大文字）。1つの CSV 内で重複不可（エラーは形式違反と CSV 内重複のみ）。トピック範囲は「記号＋数字3〜4桁」で照合（`IN` が `INT001` に一致しない）。**記号は CS が自由に追加してよい**（下表にない記号も取り込める。どのタイルにも紐付いていない記号はプレビューで警告し、紐付けるまでは Something else と全マニュアル検索でのみ使われる）。紐付けは admin の **Topic codes** 画面（表 `kb_topic_codes`、menu の `id_prefixes` に追加される形で合成）。Status 列は `Waiting` / `Pending` も「Waiting for review」として受け付ける（2026-11-01、CS の APN シート対応）。
 - **同じルールには常に同じ ID を使う**（変更履歴 kb_change_log が Rule ID で繋がり、誰がいつ何を変えたか追えるため）。番号の付け直し・再利用はしない。
 - **ID の記号が AI のトピック範囲を決める**（§4.1。Topic 列は表示・分類用の自由記述）。記号表（`packages/shared/src/ruleId.ts` と `data/menu_categories.json` の `id_prefixes`）:
 
@@ -466,7 +467,7 @@ Supabase Auth ログイン必須。UIは英語。ロール: admin（全機能）
 - **両モードで、未登録の Rule ID の行は New rule として追加**（§3.1 の規約に合う ID のみ。Topic と Answer text が必須）。空のナレッジからの初回取り込みもこれで成立。Rule ID 空欄の行は自動採番せずエラー。
 - プレビュー: 更新 n・新規 n・アーカイブ n（Replace all のみ）・スキップ（エラー）n、AI が使えるルール数 before→after（0 は赤警告）。Replace all は `REPLACE` の入力が必須（サーバでも強制）。
 - **適用は Postgres 関数 `kb_import_apply` 1回＝1トランザクション**: バックアップ → 更新 → 追加 → アーカイブ → 変更履歴。どこかで失敗すれば何も変わらず、空や入れ替え途中の状態は外から見えない。両モードともバックアップを取るので Undo は Backups から（旧 v1.7 の `/import/undo` は過去分専用）。
-- エラー文言は「何が悪いか＋次にどうするか」（例: `Rule ID "DR01" is not in the expected format. Use 2 letters for the topic + 3 numbers, e.g. DR001.` / `Rule ID "DR003" appears more than once (lines 5 and 9). Keep one row per Rule ID.` / `Rule ID "XX001" starts with "XX", which is not a topic code. Use one of: …` / `This row has no Rule ID. Give it an ID … e.g. DR016.`）。
+- エラー文言は「何が悪いか＋次にどうするか」（例: `Rule ID "DR01" is not in the expected format. Use 2 letters for the topic + 3 numbers, e.g. DR001.` / `Rule ID "DR003" appears more than once (lines 5 and 9). Keep one row per Rule ID.`（2026-11-07 から未知の記号はエラーにしない。形式エラーは「A Rule ID is 2–4 capital letters (the topic code) followed by 3–4 numbers, e.g. DR001, ESP001 or CN0001.」を必ず含む） / `This row has no Rule ID. Give it an ID … e.g. DR016.`）。
 - CS の正本ファイルはリポジトリ `data/kb/` にも保存（初回: `Deposit_Refund_formatted_for_KB.csv`）。
 
 #### 7.4.2 一括操作（★v1.8 Phase 3。「all clear」要望の安全版、実装確定）
@@ -684,7 +685,7 @@ CS管理CSVによるナレッジ運用（★v1.8 2026-10-31）:
 66. 1行編集して再取り込みすると更新1件のみで、kb_change_log の同じ Rule ID に「追加→更新」が繋がる
 67. Replace all で CSV から外した行は archived になり（削除されない）、Undo で復元できる。REPLACE の入力なしでは実行できない
 68. 適用が途中で失敗しても何も変わらない（1トランザクション）
-69. Rule ID の規約違反・未知の記号・CSV 内の重複（大文字小文字違い含む）・ID 空欄は、次にすべきことが分かるエラーとしてその行だけスキップされる
+69. Rule ID の規約違反・CSV 内の重複（大文字小文字違い含む）・ID 空欄は、次にすべきことが分かるエラーとしてその行だけスキップされる（未知の記号は 2026-11-07 からエラーではなく警告。基準84）
 70. AI が使えるルールが0件のとき、AI はモデルを呼ばず全件エスカレし、Dashboard に警告が出る
 
 Archive all／完全削除（★v1.8 オーナー判断 2026-10-31）:
@@ -697,6 +698,17 @@ Archive all／完全削除（★v1.8 オーナー判断 2026-10-31）:
 75. 2つの Internet タイルは同じナレッジ範囲を使い、表示する定型質問だけが異なる
 76. 旧 Re-issue／Refund タイルの会話は統合先（Lost／Deposit）の範囲とラベルで続行できる
 77. Plans タイルは AI が PL ルールで回答し、月額・割引・COD を聞かれたら金額を出さずスタッフへ回す
+
+CS フィードバック対応（★2026-11-07）:
+78. Gemini の 429 は diagnostics で「1分の上限（rate_limited）」と「1日の上限（daily_limit）」に分かれて記録される（全マニュアル検索中の 429 も同様）
+79. AI の上限・タイムアウト・不調のとき、顧客には AI や上限に触れない「混み合っているので担当者が対応します」の文言（5言語）が出て、通常どおりスタッフへエスカレーションされる（無言で止まらない）
+80. Dashboard に「AI requests this minute n / 上限」（上限-1 で警告色、上限到達・拒否で赤）と直近1時間の分単位グラフが出て、30秒ごとに更新される。上限値は `GEMINI_RPM_LIMIT` / `GEMINI_DAILY_LIMIT` で変更でき、コードに埋め込まない
+81. AI の呼び出しは用途（reply / reply_retry / fallback / translate / draft / safety_test / try_it）付きで記録され、AI diagnostics に用途別件数と「1質問あたりの呼び出し回数」が出る
+82. Translate は会話1件につき AI 1回で全メッセージを訳し、訳は保存されて再表示で AI を呼ばない。訳は顧客の API 応答に含まれない
+83. チャットのヘッダーの「New chat」は確認のうえ画面と保存済み会話をクリアして最初から始める。resolved/closed の会話は再訪時に復元しない（メールの `?t=` リンクは復元する）。文言は5言語
+84. ESP001・CN0001 のような新形式の ID が取り込め、未登録の記号は警告付きで取り込まれる。エラーは形式違反と CSV 内重複のみで、エラー文に許可される形式が書かれている
+85. Topic codes 画面で記号をタイルに紐付けると、その記号のルールがそのタイルの AI 範囲に入る（admin のみ）
+86. Knowledge で選んだルールだけを Archive / Disable / Activate でき、確認ダイアログに件数と「元に戻せる」旨が出て、実行後に Undo・Backups・変更履歴・Slack 通知がある。Activate しても internal / Bot may use=No のルールは AI に渡らない
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 
