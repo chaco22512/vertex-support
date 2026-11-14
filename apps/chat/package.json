@@ -11,7 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "preact": "^10.24.0"
+    "preact": "^10.24.0",
+    "@vertex/shared": "workspace:*"
   },
   "devDependencies": {
     "@preact/preset-vite": "^2.9.0",

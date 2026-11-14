@@ -3,7 +3,7 @@ import { isTopicCode, normalizeRuleId, ruleIdCode, RULE_ID_CODES } from '@vertex
 import type { AppEnv } from '../../types';
 import { topicCodeSchema } from '../../dto';
 import { fetchAllRules } from '../../lib/kbRules';
-import { loadTopicCodeLinks, menu } from '../../lib/menu';
+import { loadTiles, loadTopicCodeLinks, menu, type TileRow } from '../../lib/menu';
 
 /**
  * ★2026-11-07 admin "Topic codes": which chat tiles use the rules of each Rule
@@ -11,7 +11,22 @@ import { loadTopicCodeLinks, menu } from '../../lib/menu';
  * data/menu_categories.json and are read-only here; CS adds links (and new
  * codes such as ESP) in table kb_topic_codes. The AI range of a tile is the
  * union of both (lib/menu loadMenu).
+ *
+ * ★2026-11-14: once the tiles live in the database (admin "Topics"), a code's
+ * tiles are simply the tiles whose id_prefixes contain it — all editable here
+ * and in Topics (one source); kb_topic_codes then only keeps the code names.
  */
+
+/** DB tiles a code can be linked to: own knowledge range, not "Something else". */
+function linkableDbTiles(tiles: TileRow[]): TileRow[] {
+  return tiles.filter((t) => !t.scope_of && t.id !== 'others');
+}
+
+function dbTileLabel(t: TileRow, tiles: TileRow[]): string {
+  const shared = tiles.filter((x) => x.scope_of === t.id).map((x) => x.labels.en || x.id);
+  const label = `${t.labels.en || t.id}${t.enabled ? '' : ' (hidden)'}`;
+  return shared.length ? `${label} + ${shared.join(' + ')}` : label;
+}
 
 /** Tiles a code can be linked to: every tile with its own knowledge range except "Something else". */
 function linkableTiles(): { id: string; label: string }[] {
@@ -31,12 +46,15 @@ function linkableTiles(): { id: string; label: string }[] {
 /** GET /api/admin/topic-codes */
 export async function listTopicCodes(c: Context<AppEnv>): Promise<Response> {
   const { db } = c.get('deps');
-  const tiles = linkableTiles();
-  const [links, rules, labels] = await Promise.all([
+  const [links, rules, labels, dbTiles] = await Promise.all([
     loadTopicCodeLinks(db),
     fetchAllRules(db, {}),
     db.from('kb_topic_codes').select('code,label'),
+    loadTiles(db),
   ]);
+  const tiles = dbTiles
+    ? linkableDbTiles(dbTiles).map((t) => ({ id: t.id, label: dbTileLabel(t, dbTiles) }))
+    : linkableTiles();
   const labelOf = new Map(
     ((labels.data ?? []) as { code: string; label: string }[]).map((r) => [r.code, r.label]),
   );
@@ -50,6 +68,23 @@ export async function listTopicCodes(c: Context<AppEnv>): Promise<Response> {
   }
 
   const codes = new Set([...Object.keys(RULE_ID_CODES), ...extra.keys(), ...counts.keys()]);
+  if (dbTiles) {
+    const rows = [...codes].sort().map((code) => {
+      const topics = linkableDbTiles(dbTiles)
+        .filter((t) => t.id_prefixes.includes(code))
+        .map((t) => t.id);
+      return {
+        code,
+        label: labelOf.get(code) || RULE_ID_CODES[code] || '',
+        builtin: code in RULE_ID_CODES,
+        builtin_topics: [] as string[],
+        extra_topics: topics,
+        rule_count: counts.get(code) ?? 0,
+        unlinked: topics.length === 0 && code !== 'OT',
+      };
+    });
+    return c.json({ tiles, codes: rows });
+  }
   const rows = [...codes].sort().map((code) => {
     const builtinTopics = tiles
       .filter((t) => menu.categories.find((m) => m.id === t.id)?.id_prefixes?.includes(code))
@@ -82,6 +117,8 @@ export async function putTopicCode(c: Context<AppEnv>): Promise<Response> {
   }
   const parsed = topicCodeSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
+  const dbTiles = await loadTiles(deps.db);
+  if (dbTiles) return putTopicCodeOnTiles(c, code, parsed.data, dbTiles);
   const tileIds = new Set(linkableTiles().map((t) => t.id));
   const unknown = parsed.data.topics.filter((t) => !tileIds.has(t));
   if (unknown.length > 0) return c.json({ error: 'unknown_topics', topics: unknown }, 400);
@@ -110,4 +147,49 @@ export async function putTopicCode(c: Context<AppEnv>): Promise<Response> {
     `🏷 Topic code ${code} — ${staff.name} set its extra tiles to: ${names.length ? names.join(', ') : '(none)'}.`,
   );
   return c.json({ code, topics });
+}
+
+/** ★2026-11-14 DB tiles: set which tiles use a code by editing their id_prefixes. */
+async function putTopicCodeOnTiles(
+  c: Context<AppEnv>,
+  code: string,
+  body: { label: string; topics: string[] },
+  dbTiles: TileRow[],
+): Promise<Response> {
+  const deps = c.get('deps');
+  const staff = c.get('staff');
+  const linkable = linkableDbTiles(dbTiles);
+  const ids = new Set(linkable.map((t) => t.id));
+  const unknown = body.topics.filter((t) => !ids.has(t));
+  if (unknown.length > 0) return c.json({ error: 'unknown_topics', topics: unknown }, 400);
+  const want = new Set(body.topics);
+  const now = new Date().toISOString();
+  for (const t of linkable) {
+    const has = t.id_prefixes.includes(code);
+    if (has === want.has(t.id)) continue;
+    const next = has ? t.id_prefixes.filter((p) => p !== code) : [...t.id_prefixes, code];
+    const { error } = await deps.db
+      .from('menu_tiles')
+      .update({ id_prefixes: next, updated_by: staff.userId, updated_at: now })
+      .eq('id', t.id);
+    if (error) return c.json({ error: 'server_error', message: 'Not saved. Please try again.' }, 500);
+    await deps.db.from('menu_tile_change_log').insert({
+      tile_id: t.id,
+      action: 'link_codes',
+      changed_by: staff.userId,
+      before: { id_prefixes: t.id_prefixes },
+      after: { id_prefixes: next },
+    });
+  }
+  // Keep the code's name (and, for reference, its tiles) in kb_topic_codes.
+  const row = { label: body.label, topics: [...want], updated_by: staff.userId, updated_at: now };
+  const { data: existing } = await deps.db.from('kb_topic_codes').select('code').eq('code', code).maybeSingle();
+  if (existing) await deps.db.from('kb_topic_codes').update(row).eq('code', code);
+  else await deps.db.from('kb_topic_codes').insert({ code, ...row });
+
+  const names = linkable.filter((t) => want.has(t.id)).map((t) => t.labels.en || t.id);
+  await deps.sendSlack(
+    `🏷 Topic code ${code} — ${staff.name} set its tiles to: ${names.length ? names.join(', ') : '(none)'}.`,
+  );
+  return c.json({ code, topics: [...want] });
 }

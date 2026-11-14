@@ -26,6 +26,12 @@ describe('resolveKbCategories', () => {
     expect(resolveKbCategories('plans', menu)).toBeNull();
   });
 
+  it('2026-11-14: a tile with codes but no legacy categories stays scoped (GENERAL RULES + its codes)', () => {
+    const m = { categories: [{ id: 'holiday', kb_categories: [], id_prefixes: ['HPD'] }, { id: 'bare' }] };
+    expect(resolveKbCategories('holiday', m)).toEqual(['GENERAL RULES']);
+    expect(resolveKbCategories('bare', m)).toEqual(['GENERAL RULES']);
+  });
+
   it('scopes to the category set and always adds GENERAL RULES', () => {
     expect(resolveKbCategories('internet', menu)?.sort()).toEqual(
       ['APN SETTINGS', 'GENERAL RULES'].sort(),

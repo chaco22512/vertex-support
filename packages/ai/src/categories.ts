@@ -16,6 +16,8 @@ export interface MenuCategory {
    */
   scope_of?: string;
   behavior?: string;
+  /** ★2026-11-14 false = hidden from the chat menu (kept for older conversations' range). */
+  enabled?: boolean;
 }
 
 export interface MenuCategories {
@@ -60,7 +62,10 @@ export function resolveKbCategories(topicCategory: string, menu: MenuCategories)
   if (!category || category.id === 'others') return null;
 
   const kb = category.kb_categories ?? [];
-  if (kb.length === 0 || kb.includes('*')) return null;
+  // '*' = everything. ★2026-11-14: an EMPTY list no longer means everything —
+  // a CS-created tile has no legacy categories and must stay scoped to its own
+  // topic codes (+ GENERAL RULES). Only the retired always_escalate tile kept it.
+  if (kb.includes('*') || (kb.length === 0 && category.behavior === 'always_escalate')) return null;
 
   const set = new Set(kb);
   set.add(GENERAL_CATEGORY);

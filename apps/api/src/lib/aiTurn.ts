@@ -14,7 +14,7 @@ import {
 } from '@vertex/ai';
 import type { AiDiag, AiErrorKind, Conversation, FallbackResult, KbRule } from '@vertex/shared';
 import type { Deps } from '../types';
-import { loadMenu, menu } from './menu';
+import { assignableTopics, loadMenu, topicLabelIn } from './menu';
 import { behaviourFor, loadPublishedBehaviour, type BehaviourContent } from './aiBehaviour';
 
 /**
@@ -30,15 +30,11 @@ export const FALLBACK_START_LIMIT_MS = 7_500;
 /** @deprecated v1.8 — kept for callers that still reference the old name. */
 export const AI_TIMEOUT_MS = AI_BUDGET_MS;
 
-/** Topics the model may assign a question to (★v1.8; Plans answered by the AI since 2026-11-06). */
-const TOPICS = menu.categories
-  .filter((c) => c.id !== 'others')
-  .map((c) => ({ id: c.id, label: c.label_en ?? c.id }));
-const TOPIC_IDS = new Set(TOPICS.map((t) => t.id));
-
 export interface AiTurnResult extends AiReplyResult {
   /** New topic_category when the latest question moved to another topic (★v1.8). */
   topicSwitch: string | null;
+  /** English label of the new topic, for the staff-visible "Topic:" marker. */
+  topicSwitchLabel: string | null;
 }
 
 /** Map an LLM failure to the kind recorded in ai_meta.diag (★v1.8, never silent). */
@@ -97,6 +93,16 @@ export async function generateAiReply(
   const t0 = Date.now();
   const elapsed = () => Date.now() - t0;
   const currentTopic = conversation.topic_category ?? '';
+  // ★2026-11-14: the CS-managed tiles (admin "Topics") decide each topic's
+  // range, label and the topics the model may assign. Never fails (bundled
+  // menu as fallback).
+  const menu = await loadMenu(deps.db);
+  /** Topics the model may assign a question to (★v1.8; enabled tiles except Something else). */
+  const TOPICS = assignableTopics(menu);
+  const TOPIC_IDS = new Set(TOPICS.map((t) => t.id));
+  /** A model-supplied topic id, kept only if it is a real menu topic. */
+  const validTopic = (id: string | null | undefined): string | null =>
+    id && TOPIC_IDS.has(id) ? id : null;
   const categories = resolveKbCategories(currentTopic, menu);
   const topic = resolveTopicLabel(currentTopic, menu);
   const pendingCase =
@@ -124,9 +130,6 @@ export async function generateAiReply(
     categories === null ? null : fetchScopedRules(deps.db, null).catch(() => null);
   // ★v1.8 Phase 2: the CS-published behaviour (②/③), read alongside the rules.
   const behaviourPromise = loadPublishedBehaviour(deps.db);
-  // ★2026-11-07: tile ranges include the CS-added topic codes (admin "Topic codes").
-  const scopeMenuPromise = loadMenu(deps.db);
-  let scopeMenu = menu;
   let published: BehaviourContent | null = null;
 
   const run = (
@@ -143,7 +146,7 @@ export async function generateAiReply(
       topic: label,
       topics: TOPICS,
       pendingCase,
-      behaviour: behaviourFor(published, topicId),
+      behaviour: behaviourFor(published, topicId, menu),
       llm: deps.llm,
       signal,
       purpose,
@@ -154,10 +157,7 @@ export async function generateAiReply(
   let scopedRules: KbRule[];
   try {
     [scopedRules, published] = await Promise.all([
-      scopeMenuPromise.then((m) => {
-        scopeMenu = m;
-        return fetchScopedRules(deps.db, categories, resolveIdPrefixes(currentTopic, m));
-      }),
+      fetchScopedRules(deps.db, categories, resolveIdPrefixes(currentTopic, menu)),
       behaviourPromise,
     ]);
   } catch {
@@ -224,7 +224,7 @@ export async function generateAiReply(
   const guessScope = diag.topic_guess ? resolveKbCategories(diag.topic_guess, menu) : null;
   const ranked = rankRules(allRules, diag.keywords, {
     boostCategories: guessScope,
-    boostIdPrefixes: diag.topic_guess ? resolveIdPrefixes(diag.topic_guess, scopeMenu) : [],
+    boostIdPrefixes: diag.topic_guess ? resolveIdPrefixes(diag.topic_guess, menu) : [],
   });
   diag.timings.retrieve_ms = Date.now() - tRetrieve;
   diag.candidate_count = ranked.length;
@@ -277,11 +277,8 @@ export async function generateAiReply(
     }
     const guess = diag.topic_guess;
     const topicSwitch = guess && guess !== currentTopic && guess !== 'others' ? guess : null;
-    return { ...r, aiMeta, topicSwitch };
+    const topicSwitchLabel = topicSwitch ? topicLabelIn(menu, topicSwitch) : null;
+    return { ...r, aiMeta, topicSwitch, topicSwitchLabel };
   }
 }
 
-/** A model-supplied topic id, kept only if it is a real menu topic. */
-function validTopic(id: string | null | undefined): string | null {
-  return id && TOPIC_IDS.has(id) ? id : null;
-}

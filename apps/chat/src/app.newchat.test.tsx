@@ -11,6 +11,7 @@ import { vi as viLang } from './i18n/vi';
 
 const getMessages = vi.fn();
 vi.mock('./api/client', () => ({
+  fetchMenu: () => Promise.resolve(null),
   createConversation: vi.fn().mockResolvedValue({
     token: 'tok',
     id: 'c1',

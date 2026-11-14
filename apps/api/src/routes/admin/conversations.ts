@@ -10,7 +10,7 @@ import {
   type HistoryMessage,
 } from '@vertex/ai';
 import type { AppEnv } from '../../types';
-import { loadMenu, menu } from '../../lib/menu';
+import { loadMenu } from '../../lib/menu';
 import { notifyStaffReply } from '../../lib/notify';
 import { draftBodySchema, patchConversationSchema, replySchema, translateSchema } from '../../dto';
 
@@ -274,11 +274,12 @@ export async function aiDraft(c: Context<AppEnv>): Promise<Response> {
   if (!conv) return c.json({ error: 'not_found' }, 404);
   const conversation = conv as { language: string; topic_category: string };
 
+  const menu = await loadMenu(db);
   const categories = resolveKbCategories(conversation.topic_category, menu);
   const rules = await fetchScopedRules(
     db,
     categories,
-    resolveIdPrefixes(conversation.topic_category, await loadMenu(db)),
+    resolveIdPrefixes(conversation.topic_category, menu),
   );
   const draft = await draftStaffReply(llm, {
     rules,

@@ -45,6 +45,16 @@ import { approveRules, createRule, listRules, splitRule, updateRule } from './ro
 import { applyImport, exportRules, previewImport, undoImport } from './routes/admin/rulesCsv';
 import { createStaff, deleteStaff, listStaff, updateStaff } from './routes/admin/staff';
 import { listChangelog } from './routes/admin/changelog';
+import {
+  createTile,
+  getPublicMenu,
+  listTileChangelog,
+  listTiles,
+  reorderTiles,
+  saveTileInstructions,
+  translateTile,
+  updateTile,
+} from './routes/admin/tiles';
 
 /**
  * Build the chat API (§9). `makeDeps` is injectable so tests can supply mock
@@ -61,6 +71,8 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
 
   app.get('/health', (c) => c.json({ status: 'ok', service: 'vertex-support-api' }));
   app.post('/api/conversations', createConversation);
+  // ★2026-11-14: the chat menu (CS-managed tiles). Public, read-only.
+  app.get('/api/menu', getPublicMenu);
 
   // Session-scoped routes: resolve the conversation from the token, then apply the
   // KV-backed rate limit ONLY to mutating (POST) routes. GET /messages is the 5s
@@ -112,6 +124,13 @@ export function createApp(makeDeps: (env: ApiBindings) => Deps = defaultDeps) {
   admin.delete('/staff/:id', adminOnly, deleteStaff);
   admin.get('/changelog', adminOnly, listChangelog);
   admin.get('/ai-diagnostics', adminOnly, listAiDiagnostics);
+  admin.get('/tiles', adminOnly, listTiles);
+  admin.post('/tiles', adminOnly, createTile);
+  admin.post('/tiles/order', adminOnly, reorderTiles);
+  admin.post('/tiles/translate', adminOnly, translateTile);
+  admin.get('/tiles/changelog', adminOnly, listTileChangelog);
+  admin.put('/tiles/:id', adminOnly, updateTile);
+  admin.post('/tiles/:id/instructions', adminOnly, saveTileInstructions);
   admin.get('/topic-codes', adminOnly, listTopicCodes);
   admin.put('/topic-codes/:code', adminOnly, putTopicCode);
   admin.get('/kb-health', getKbHealth);

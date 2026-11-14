@@ -3,7 +3,7 @@ import type { Conversation } from '@vertex/shared';
 import type { AppEnv } from '../types';
 import { createConversationSchema } from '../dto';
 import { generateSessionToken } from '../lib/token';
-import { topicLabel } from '../lib/menu';
+import { loadMenu, topicLabelIn } from '../lib/menu';
 
 /** POST /api/conversations — create an anonymous session (§9). */
 export async function createConversation(c: Context<AppEnv>): Promise<Response> {
@@ -29,7 +29,9 @@ export async function createConversation(c: Context<AppEnv>): Promise<Response> 
 
   // Persist a staff-visible "Topic:" marker so the conversation carries context
   // in the admin view (§6.2, acceptance criterion 23). Non-empty body => shown.
-  const label = conv.topic_category ? topicLabel(conv.topic_category) : null;
+  const label = conv.topic_category
+    ? topicLabelIn(await loadMenu(db), conv.topic_category)
+    : null;
   if (label) {
     await db.from('messages').insert({
       conversation_id: conv.id,

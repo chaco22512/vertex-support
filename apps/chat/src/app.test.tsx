@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/preact';
 import { en } from './i18n/en';
 
 vi.mock('./api/client', () => ({
+  fetchMenu: vi.fn().mockResolvedValue(null),
   createConversation: vi.fn().mockResolvedValue({
     token: 'tok',
     id: 'c1',
@@ -60,11 +61,32 @@ describe('App guided flow', () => {
     expect(screen.queryByText(en.ui.intakeTitle)).toBeNull();
   });
 
-  it('shows 10 tiles: two Internet tiles, no Re-issue / Refund tiles', async () => {
+  it('shows 12 tiles: two Internet tiles, no Re-issue / Refund tiles', async () => {
     render(<App />);
     fireEvent.click(screen.getByRole('button', { name: 'English' }));
     expect(await screen.findByRole('button', { name: en.categories.connection })).toBeTruthy();
     expect(screen.getByRole('button', { name: en.categories.internet })).toBeTruthy();
     expect(document.querySelectorAll('.tile')).toHaveLength(12);
+  });
+
+  it('2026-11-14: shows the CS-managed tiles from /api/menu in the chosen language (English fallback)', async () => {
+    const client = await import('./api/client');
+    vi.mocked(client.fetchMenu).mockResolvedValueOnce([
+      {
+        id: 'holiday',
+        icon: 'ti-plane',
+        labels: { en: 'Holiday plans', vi: 'Gói kỳ nghỉ' },
+        sub_questions: { en: ['How do I apply?'] },
+        behavior: '',
+      },
+      { id: 'others', icon: 'ti-message-circle', labels: { en: 'Something else' }, sub_questions: {}, behavior: 'free_text' },
+    ]);
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: 'Tiếng Việt' }));
+    expect(await screen.findByRole('button', { name: 'Gói kỳ nghỉ' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Something else' })).toBeTruthy();
+    expect(document.querySelectorAll('.tile')).toHaveLength(2);
+    fireEvent.click(screen.getByRole('button', { name: 'Gói kỳ nghỉ' }));
+    expect(await screen.findByRole('button', { name: 'How do I apply?' })).toBeTruthy();
   });
 });

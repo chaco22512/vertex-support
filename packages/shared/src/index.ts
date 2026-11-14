@@ -5,3 +5,4 @@ export * from './csv';
 export * from './kbCsv';
 export * from './ruleId';
 export { createAnonClient, createServiceClient } from './supabase';
+export * from './tiles';

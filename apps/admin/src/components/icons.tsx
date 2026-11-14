@@ -104,3 +104,13 @@ export const IconTag = (p: IconProps) => (
     <circle cx="7.5" cy="7.5" r="1.5" />
   </Svg>
 );
+
+/** ★2026-11-14 Topics: a 2×2 grid of tiles. */
+export const IconGrid = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="4" y="4" width="6" height="6" rx="1" />
+    <rect x="14" y="4" width="6" height="6" rx="1" />
+    <rect x="4" y="14" width="6" height="6" rx="1" />
+    <rect x="14" y="14" width="6" height="6" rx="1" />
+  </Svg>
+);

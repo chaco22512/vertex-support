@@ -88,6 +88,9 @@ importers:
 
   apps/chat:
     dependencies:
+      '@vertex/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       preact:
         specifier: ^10.24.0
         version: 10.29.4

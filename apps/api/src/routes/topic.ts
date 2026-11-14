@@ -2,7 +2,7 @@ import type { Context } from 'hono';
 import type { AppEnv } from '../types';
 import { changeTopicSchema } from '../dto';
 import { escalateFollowUp } from '../lib/escalation';
-import { menu, topicLabel } from '../lib/menu';
+import { loadMenu, topicLabelIn } from '../lib/menu';
 
 /**
  * POST /api/conversations/:token/topic — "Ask another question" (★v1.8 §6.1-7):
@@ -18,7 +18,11 @@ export async function postTopic(c: Context<AppEnv>): Promise<Response> {
 
   const parsed = changeTopicSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
-  const topic = menu.categories.find((cat) => cat.id === parsed.data.topic_category);
+  const menu = await loadMenu(db);
+  // ★2026-11-14: only tiles shown in the chat menu can be chosen.
+  const topic = menu.categories.find(
+    (cat) => cat.id === parsed.data.topic_category && cat.enabled !== false,
+  );
   if (!topic) return c.json({ error: 'unknown_topic' }, 400);
 
   if (topic.id !== conversation.topic_category) {
@@ -27,7 +31,7 @@ export async function postTopic(c: Context<AppEnv>): Promise<Response> {
       .update({ topic_category: topic.id, updated_at: new Date().toISOString() })
       .eq('id', conversation.id);
   }
-  const label = topicLabel(topic.id);
+  const label = topicLabelIn(menu, topic.id);
   if (label) {
     await db.from('messages').insert({ conversation_id: conversation.id, sender: 'system', body: `Topic: ${label}` });
   }

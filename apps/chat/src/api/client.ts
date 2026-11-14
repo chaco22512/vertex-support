@@ -1,4 +1,5 @@
 import type { EscalationReason, IntakeInfo } from '@vertex/shared';
+import type { PublicTile } from '@vertex/shared/tiles';
 
 // Default to the IPv4 loopback: `wrangler dev` binds 127.0.0.1 only, while
 // browsers resolve "localhost" to IPv6 (::1) first and would fail to connect.
@@ -52,6 +53,26 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   if (!res.ok) throw new Error(`request_failed_${res.status}`);
   return (await res.json()) as T;
+}
+
+/**
+ * ★2026-11-14 the menu tiles CS manages in the admin ("Topics"). null = use the
+ * built-in menu (not set up yet, offline, slow or failed — never blocks the chat).
+ * A plain GET (no JSON header) so the browser needs no CORS preflight.
+ */
+export async function fetchMenu(timeoutMs = 4000): Promise<PublicTile[] | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${API_BASE}/api/menu`, { signal: controller.signal });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { tiles?: PublicTile[] | null };
+    return Array.isArray(body.tiles) && body.tiles.length > 0 ? body.tiles : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export function createConversation(input: {

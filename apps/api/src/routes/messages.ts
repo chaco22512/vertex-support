@@ -5,7 +5,6 @@ import type { AppEnv } from '../types';
 import { postMessageSchema } from '../dto';
 import { generateAiReply } from '../lib/aiTurn';
 import { escalateFollowUp } from '../lib/escalation';
-import { topicLabel } from '../lib/menu';
 
 const HISTORY_LIMIT = 40; // §4.1 (★v1.6: raised 20→40 so troubleshooting threads keep context)
 
@@ -51,7 +50,7 @@ export async function postMessage(c: Context<AppEnv>): Promise<Response> {
       .from('conversations')
       .update({ topic_category: topicCategory })
       .eq('id', conversation.id);
-    const label = topicLabel(topicCategory);
+    const label = ai.topicSwitchLabel;
     if (label) {
       await db
         .from('messages')

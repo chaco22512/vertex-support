@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useReducer, useRef } from 'preact/hooks';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'preact/hooks';
+import type { PublicTile } from '@vertex/shared/tiles';
 import type { IntakeInfo, LanguageCode } from '@vertex/shared';
 import * as api from '../api/client';
 import { getMessages } from '../i18n';
@@ -71,6 +72,18 @@ export function useChat() {
   const [state, dispatch] = useReducer(reducer, initialState(restoreLanguage, restoreToken));
   const t = getMessages(state.language ?? 'en');
   const lastFailedBody = useRef<string | null>(null);
+  // ★2026-11-14: CS-managed tiles; the built-in menu shows until (or unless) they load.
+  const [remoteMenu, setRemoteMenu] = useState<PublicTile[] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    void api.fetchMenu().then((tiles) => {
+      if (!cancelled && tiles) setRemoteMenu(tiles);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const lang = state.language ?? 'en';
 
   // Restore a prior session's messages (§6.3 session_token history restore).
   useEffect(() => {
@@ -244,7 +257,7 @@ export function useChat() {
         const meta = res.reply.ai_meta;
         const action = meta?.action ?? (res.escalated ? 'escalate' : 'answer');
         const topic = res.topic_category
-          ? localizedCategories(t).find((c) => c.id === res.topic_category)
+          ? localizedCategories(t, lang, remoteMenu).find((c) => c.id === res.topic_category)
           : undefined;
         dispatch({
           type: 'AI_REPLY',
@@ -278,7 +291,7 @@ export function useChat() {
         }
       }
     },
-    [state.token, state.topicCategory, ensureConversation, t],
+    [state.token, state.topicCategory, ensureConversation, t, lang, remoteMenu],
   );
 
   const intakeDone = useCallback(
@@ -358,7 +371,7 @@ export function useChat() {
   return {
     state,
     t,
-    categories: localizedCategories(t),
+    categories: localizedCategories(t, lang, remoteMenu),
     selectLanguage,
     selectCategory,
     send,

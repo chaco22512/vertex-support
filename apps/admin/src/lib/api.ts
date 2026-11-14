@@ -335,6 +335,49 @@ async function downloadRulesCsv(
  * Publish / restore (★v1.8 §7.8): a 422 is not an error for the caller — it
  * carries the safety report saying why the version was NOT published.
  */
+// --- ★2026-11-14 Topics (CS-managed chat tiles) ---
+export interface AdminTile {
+  id: string;
+  position: number;
+  enabled: boolean;
+  icon: string;
+  labels: Record<string, string>;
+  sub_questions: Record<string, string[]>;
+  id_prefixes: string[];
+  kb_categories: string[];
+  scope_of: string | null;
+  behavior: string;
+  no_knowledge: boolean;
+  /** Topic instructions in the latest AI behaviour version (draft or live). */
+  instructions: string;
+  /** Topic instructions customers get now (published version). */
+  instructions_published: string;
+  /** The latest draft also changes other parts of AI behaviour. */
+  other_unpublished_changes: boolean;
+}
+export interface TilesState {
+  tiles: AdminTile[];
+  codes: { code: string; label: string; rule_count: number }[];
+  latest_version: { id: number; state: string } | null;
+  instructions_limits: { topicTarget: number; max: number };
+}
+export interface TileInput {
+  labels: Record<string, string>;
+  icon: string;
+  id_prefixes: string[];
+  sub_questions: Record<string, string[]>;
+  enabled: boolean;
+}
+export interface TileChange {
+  id: number;
+  tile_id: string;
+  action: string;
+  changed_at: string;
+  changed_by_name: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+}
+
 async function publishLike(path: string): Promise<AiPublishResult> {
   try {
     return await request<AiPublishResult>(path, { method: 'POST', body: '{}' });
@@ -465,6 +508,36 @@ export const api = {
     }),
   /** ★v1.8: Gemini requests used / left today (estimate). */
   aiUsage: () => request<AiUsage>(`/api/admin/ai-usage`),
+  tiles: () => request<TilesState>(`/api/admin/tiles`),
+  createTile: (body: TileInput) =>
+    request<{ tile: AdminTile; no_knowledge: boolean }>(`/api/admin/tiles`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateTile: (id: string, body: TileInput) =>
+    request<{ tile: AdminTile; no_knowledge: boolean }>(`/api/admin/tiles/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  reorderTiles: (ids: string[]) =>
+    request<{ order: string[] }>(`/api/admin/tiles/order`, {
+      method: 'POST',
+      body: JSON.stringify({ ids }),
+    }),
+  saveTileInstructions: (id: string, text: string) =>
+    request<{ version_id: number | null; unchanged?: boolean }>(
+      `/api/admin/tiles/${encodeURIComponent(id)}/instructions`,
+      { method: 'POST', body: JSON.stringify({ text }) },
+    ),
+  translateTile: (label: string, subQuestions: string[]) =>
+    request<{ labels: Record<string, string>; sub_questions: Record<string, string[]> }>(
+      `/api/admin/tiles/translate`,
+      { method: 'POST', body: JSON.stringify({ label, sub_questions: subQuestions }) },
+    ),
+  tileChangelog: () => request<{ entries: TileChange[] }>(`/api/admin/tiles/changelog`),
+  /** Public chat menu (enabled tiles) — used for topic labels on every staff screen. */
+  publicMenu: () =>
+    request<{ tiles: { id: string; labels: Record<string, string> }[] | null }>(`/api/menu`),
   topicCodes: () => request<TopicCodes>(`/api/admin/topic-codes`),
   saveTopicCode: (code: string, body: { label: string; topics: string[] }) =>
     request<{ code: string; topics: string[] }>(

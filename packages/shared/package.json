@@ -7,6 +7,10 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
+    },
+    "./tiles": {
+      "types": "./src/tiles.ts",
+      "default": "./src/tiles.ts"
     }
   },
   "scripts": {

@@ -19,7 +19,24 @@ const byId = new Map(categories.map((c) => [c.id, c]));
  * Retired topics (merged on 2026-11-06) show the tile they were merged into.
  */
 export function topicLabel(topicId: string): string {
-  return byId.get(menu.aliases?.[topicId] ?? topicId)?.label_en ?? topicId ?? '—';
+  const id = menu.aliases?.[topicId] ?? topicId;
+  return liveLabels.get(id) ?? byId.get(id)?.label_en ?? topicId ?? '—';
+}
+
+/** ★2026-11-14 English labels of the CS-managed tiles (admin "Topics"), loaded once per session. */
+const liveLabels = new Map<string, string>();
+let primed: Promise<void> | null = null;
+export function primeTopicLabels(): Promise<void> {
+  // Dynamic import keeps this module free of the Supabase client (pure helpers).
+  primed ??= import('./api')
+    .then(({ api }) => api.publicMenu())
+    .then((r) => {
+      for (const t of r.tiles ?? []) if (t.labels?.en) liveLabels.set(t.id, t.labels.en);
+    })
+    .catch(() => {
+      primed = null; // try again next time; the built-in labels stay meanwhile
+    });
+  return primed;
 }
 
 export const LANGUAGE_NAMES: Record<string, string> = {

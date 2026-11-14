@@ -1,8 +1,11 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { primeTopicLabels } from '../lib/categories';
 import { useAuth } from '../lib/auth';
 import {
   IconBook,
   IconDashboard,
+  IconGrid,
   IconHistory,
   IconInbox,
   IconPulse,
@@ -16,6 +19,7 @@ const NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, adminOnly: false },
   { to: '/inbox', label: 'Inbox', icon: IconInbox, end: false, adminOnly: false },
   { to: '/knowledge', label: 'Knowledge', icon: IconBook, end: false, adminOnly: true },
+  { to: '/topics', label: 'Topics', icon: IconGrid, end: false, adminOnly: true },
   { to: '/topic-codes', label: 'Topic codes', icon: IconTag, end: false, adminOnly: true },
   { to: '/review', label: 'Review queue', icon: IconReview, end: false, adminOnly: true },
   { to: '/staff', label: 'Staff', icon: IconStaff, end: false, adminOnly: true },
@@ -27,6 +31,10 @@ const NAV = [
 export function Layout() {
   const { staff, signOut } = useAuth();
   const isAdmin = staff?.role === 'admin';
+  // ★2026-11-14: topic labels for tiles CS created in Topics (Inbox, conversations).
+  useEffect(() => {
+    void primeTopicLabels();
+  }, []);
 
   return (
     <div className="shell">

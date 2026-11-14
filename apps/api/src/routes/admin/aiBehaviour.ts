@@ -11,13 +11,14 @@ import {
   resolveKbCategories,
   resolveTopicLabel,
   runAiReply,
+  type MenuCategories,
   type SafetyReport,
   type SafetyRun,
 } from '@vertex/ai';
 import type { AppEnv, Deps } from '../../types';
 import { saveBehaviourSchema, tryBehaviourSchema } from '../../dto';
-import { loadMenu, menu } from '../../lib/menu';
-import { BEHAVIOUR_LIMITS, BEHAVIOUR_TOPICS, type BehaviourContent } from '../../lib/aiBehaviour';
+import { assignableTopics, loadMenu } from '../../lib/menu';
+import { BEHAVIOUR_LIMITS, behaviourTopics, type BehaviourContent } from '../../lib/aiBehaviour';
 
 /**
  * Admin "AI behaviour" tab (spec v1.8 §7.8): CS edits layers ② (common) and
@@ -62,15 +63,15 @@ async function log(
 }
 
 /** Keep only known topic ids with non-empty-or-empty text (unknown keys are rejected upstream). */
-function unknownTopics(topics: Record<string, string>): string[] {
-  const ids = new Set(BEHAVIOUR_TOPICS.map((t) => t.id));
+function unknownTopics(topics: Record<string, string>, menu: MenuCategories): string[] {
+  const ids = new Set(behaviourTopics(menu).map((t) => t.id));
   return Object.keys(topics).filter((k) => !ids.has(k));
 }
 
 /** GET /api/admin/ai-behaviour — fixed layers, topics, limits, latest + published version, history. */
 export async function getAiBehaviour(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
-  const [{ data: latest }, { data: published }, { data: history }, names] = await Promise.all([
+  const [{ data: latest }, { data: published }, { data: history }, names, menu] = await Promise.all([
     deps.db
       .from('ai_prompt_versions')
       .select('*')
@@ -84,12 +85,13 @@ export async function getAiBehaviour(c: Context<AppEnv>): Promise<Response> {
       .order('id', { ascending: false })
       .limit(20),
     staffNames(deps),
+    loadMenu(deps.db),
   ]);
   const name = (id: string | null) => (id && names.get(id)) || '';
   return c.json({
     fixed: { system: SYSTEM_TEXT, safety_rules: SAFETY_RULES_TEXT },
     default_common_behaviour: DEFAULT_COMMON_BEHAVIOUR,
-    topics: BEHAVIOUR_TOPICS,
+    topics: behaviourTopics(menu),
     limits: BEHAVIOUR_LIMITS,
     latest: latest ?? null,
     published: published ?? null,
@@ -126,7 +128,7 @@ export async function saveVersion(c: Context<AppEnv>): Promise<Response> {
   const parsed = saveBehaviourSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success)
     return c.json({ error: 'invalid_body', message: 'Text is too long or malformed.' }, 400);
-  const bad = unknownTopics(parsed.data.topic_instructions);
+  const bad = unknownTopics(parsed.data.topic_instructions, await loadMenu(deps.db));
   if (bad.length) return c.json({ error: 'unknown_topic', topics: bad }, 400);
 
   const { data, error } = await deps.db
@@ -162,7 +164,7 @@ function runErrorKind(err: unknown, signal: AbortSignal): string {
  */
 export async function runSafetyTests(deps: Deps, content: BehaviourContent): Promise<SafetyReport> {
   const topicIds = [...new Set(SAFETY_TESTS.map((t) => t.topic))];
-  const scopeMenu = await loadMenu(deps.db);
+  const menu = await loadMenu(deps.db);
   const rulesByTopic = new Map(
     await Promise.all(
       topicIds.map(
@@ -172,7 +174,7 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
             await fetchScopedRules(
               deps.db,
               resolveKbCategories(id, menu),
-              resolveIdPrefixes(id, scopeMenu),
+              resolveIdPrefixes(id, menu),
             ),
           ] as const,
       ),
@@ -183,7 +185,7 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
     (await fetchScopedRules(
       deps.db,
       resolveKbCategories('lost', menu),
-      resolveIdPrefixes('lost', scopeMenu),
+      resolveIdPrefixes('lost', menu),
     ));
   const lostFees = [...new Set(lostRules.flatMap((r) => r.fee_amounts_jpy))];
   const { data: staffRows } = await deps.db.from('staff').select('name,is_active');
@@ -211,7 +213,7 @@ export async function runSafetyTests(deps: Deps, content: BehaviourContent): Pro
         history: [{ sender: 'customer', body: test.question }],
         language: 'en',
         topic: resolveTopicLabel(test.topic, menu),
-        topics: BEHAVIOUR_TOPICS,
+        topics: assignableTopics(menu),
         behaviour: {
           common: content.common_behaviour,
           topic: content.topic_instructions?.[test.topic] ?? '',
@@ -318,13 +320,14 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
   const deps = c.get('deps');
   const parsed = tryBehaviourSchema.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json({ error: 'invalid_body' }, 400);
-  if (!BEHAVIOUR_TOPICS.some((t) => t.id === parsed.data.topic))
+  const menu = await loadMenu(deps.db);
+  if (!behaviourTopics(menu).some((t) => t.id === parsed.data.topic))
     return c.json({ error: 'unknown_topic' }, 400);
 
   const rules = await fetchScopedRules(
     deps.db,
     resolveKbCategories(parsed.data.topic, menu),
-    resolveIdPrefixes(parsed.data.topic, await loadMenu(deps.db)),
+    resolveIdPrefixes(parsed.data.topic, menu),
   );
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TEST_TIMEOUT_MS);
@@ -334,7 +337,7 @@ export async function tryBehaviour(c: Context<AppEnv>): Promise<Response> {
       history: [{ sender: 'customer', body: parsed.data.question }],
       language: 'en',
       topic: resolveTopicLabel(parsed.data.topic, menu),
-      topics: BEHAVIOUR_TOPICS,
+      topics: assignableTopics(menu),
       behaviour: { common: parsed.data.common_behaviour, topic: parsed.data.topic_text },
       llm: deps.llm,
       signal: controller.signal,
