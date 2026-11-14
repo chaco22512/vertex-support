@@ -134,3 +134,9 @@ describe('evaluateSafety', () => {
     expect(r.checks.find((x) => x.id === 'price')!.detail).toContain('per-minute limit');
   });
 });
+
+describe('lost-fee test question (2026-11-14)', () => {
+  it('says the customer keeps the service, so one fee applies and the bot need not ask first', () => {
+    expect(SAFETY_TESTS.find((x) => x.id === 'lost_fee')!.question).toContain('使い続けます');
+  });
+});

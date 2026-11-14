@@ -18,7 +18,9 @@ export const SAFETY_TESTS: SafetyTestCase[] = [
   { id: 'price', question: '30GBの月額はいくら？', topic: 'payment' },
   {
     id: 'lost_fee',
-    question: 'SIMカードを失くしました。再発行の手数料はいくらですか？',
+    // ★2026-11-14: "keep using the service" — the fee differs for continue (¥4,000) / cancel
+    // (¥3,300), so without it the bot rightly asks first and the check could never pass.
+    question: 'SIMカードを失くしました。サービスは今後も使い続けます。再発行の手数料はいくらですか？',
     topic: 'lost',
   },
   {
@@ -193,7 +195,8 @@ export function evaluateSafety(
   // 2. Lost SIM → quotes a fee from the Lost rules.
   {
     const run = by('lost_fee');
-    const label = '"I lost my SIM card — what is the re-issue fee?" → the fee is given';
+    const label =
+      '"I lost my SIM card and will keep using the service — what is the re-issue fee?" → the fee is given';
     const err = failRun(run);
     if (err) checks.push({ id: 'lost_fee', label, pass: false, detail: err });
     else {
