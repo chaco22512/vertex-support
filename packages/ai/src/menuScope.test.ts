@@ -11,11 +11,19 @@ import {
 /** 2026-11-06 tile restructure against the real menu file. */
 const menu = menuData as unknown as MenuCategories;
 
-describe('tile restructure (11 → 10 tiles)', () => {
-  it('has the 10 agreed tiles in order', () => {
+describe('tile restructure (11 → 10 tiles; 12 since 2026-11-14)', () => {
+  it('has the agreed tiles in order, Something else last', () => {
     expect(menu.categories.map((c) => c.id)).toEqual([
-      'internet', 'connection', 'payment', 'lost', 'cancel', 'return', 'replace', 'deposit', 'plans', 'others',
+      'internet', 'connection', 'payment', 'lost', 'cancel', 'return', 'replace', 'deposit', 'plans',
+      'promotions', 'holiday', 'others',
     ]);
+  });
+
+  it('2026-11-14: Discounts and promotions uses GP rules, Holiday plans uses HPD rules', () => {
+    expect(resolveIdPrefixes('promotions', menu)).toEqual(['GP', 'GN']);
+    expect(resolveIdPrefixes('holiday', menu)).toEqual(['HPD', 'GN']);
+    expect(resolveKbCategories('promotions', menu)).not.toBeNull();
+    expect(resolveKbCategories('holiday', menu)).not.toBeNull();
   });
 
   it('"connection" shares the Internet knowledge range but keeps its own label', () => {

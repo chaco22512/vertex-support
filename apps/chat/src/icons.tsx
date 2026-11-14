@@ -26,6 +26,8 @@ const CATEGORY_ICON_PATHS: Record<string, string[]> = {
     'M12 7v10',
   ],
   'ti-file-description': ['M14 3v4a1 1 0 0 0 1 1h4', 'M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2z', 'M9 17h6', 'M9 13h6'],
+  'ti-discount': ['M9 15l6 -6', 'M9.5 9.5m-.5 0a.5 .5 0 1 0 1 0a.5 .5 0 1 0 -1 0', 'M14.5 14.5m-.5 0a.5 .5 0 1 0 1 0a.5 .5 0 1 0 -1 0', 'M12 12m-9 0a9 9 0 1 0 18 0a9 9 0 1 0 -18 0'],
+  'ti-plane': ['M16 10h4a2 2 0 0 1 0 4h-4l-4 7h-3l2 -7h-4l-2 2h-3l2 -4l-2 -4h3l2 2h4l-2 -7h3z'],
   'ti-message-circle': ['M3 20l1.3 -3.9a9 8 0 1 1 3.4 2.9l-4.7 1', 'M12 12l0 .01', 'M8 12l0 .01', 'M16 12l0 .01'],
 };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { KbRule } from '@vertex/shared';
-import { buildLlmMessages, buildSystemPrompt, formatRule } from './prompt';
+import { buildLlmMessages, buildSystemPrompt, formatRule, SAFETY_RULES_TEXT } from './prompt';
 
 function rule(partial: Partial<KbRule> & Pick<KbRule, 'id' | 'category' | 'rule_text'>): KbRule {
   return {
@@ -195,5 +195,19 @@ describe('buildSystemPrompt — three layers (v1.8 Phase 2, §4.2.1)', () => {
     const p = buildSystemPrompt(r, { behaviour: { common: '', topic: '' } });
     expect(p).not.toContain('guidance from our support team');
     expect(p).not.toContain('Ask ONE question at a time. Never send a checklist');
+  });
+});
+
+describe('safety rules — discounts and promotions (2026-11-14)', () => {
+  it('allows conditions / eligibility / how to apply / rates, forbids money amounts and discounted prices', () => {
+    expect(SAFETY_RULES_TEXT).toContain("conditions, who is eligible, how to apply, and its discount RATE");
+    expect(SAFETY_RULES_TEXT).toContain('NEVER state a discount AMOUNT in money');
+    expect(SAFETY_RULES_TEXT).toContain('a price after a discount');
+    expect(SAFETY_RULES_TEXT).toMatch(/discount AMOUNT[\s\S]*price_question/);
+  });
+
+  it('is part of the fixed layer that overrides CS guidance (placed last)', () => {
+    const sys = buildSystemPrompt([], { behaviour: { common: 'BE NICE', topic: '' } });
+    expect(sys.indexOf('NEVER state a discount AMOUNT')).toBeGreaterThan(sys.indexOf('BE NICE'));
   });
 });

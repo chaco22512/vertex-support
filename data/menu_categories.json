@@ -204,6 +204,44 @@
    ]
   },
   {
+   "id": "promotions",
+   "icon": "ti-discount",
+   "label_en": "Discounts and promotions",
+   "kb_categories": [
+    "CS AI DOC: AI_Gifts_Promotions_Discounts_Referral"
+   ],
+   "id_prefixes": [
+    "GP",
+    "GN"
+   ],
+   "note": "2026-11-14: Gifts, promotions, multi-SIM and referral discounts (GP). The AI explains a campaign's conditions, who is eligible and how to apply; discount amounts (yen) and discounted prices are never stated (fixed safety rules → price_question). Discount rates (e.g. 30%) may be answered.",
+   "sub_questions": [
+    "Is there a discount if I order more than one SIM?",
+    "How does the referral discount work?",
+    "Can I use more than one discount together?",
+    "Is this promotion still available?"
+   ]
+  },
+  {
+   "id": "holiday",
+   "icon": "ti-plane",
+   "label_en": "Holiday plans",
+   "kb_categories": [
+    "CS AI DOC: AI_Holiday_Plan_Discount"
+   ],
+   "id_prefixes": [
+    "HPD",
+    "GN"
+   ],
+   "note": "2026-11-14: Holiday Plan Discount for customers leaving Japan (HPD). Same money policy as promotions.",
+   "sub_questions": [
+    "How do I apply for the holiday plan discount?",
+    "What do I need to qualify?",
+    "I already left Japan. Can I still apply?",
+    "Is my plan eligible?"
+   ]
+  },
+  {
    "id": "others",
    "icon": "ti-message-circle",
    "label_en": "Something else",

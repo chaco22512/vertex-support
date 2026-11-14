@@ -67,6 +67,8 @@ export const tl: Messages = {
     replace: 'Baguhin o palitan ang aking plan',
     deposit: 'Tanong tungkol sa refund ng deposito o cashback',
     plans: 'Tingnan ang mga plan at kinakailangan',
+    promotions: 'Mga diskwento at promo',
+    holiday: 'Mga holiday plan',
     others: 'Iba pa',
   },
   subQuestions: {
@@ -118,6 +120,18 @@ export const tl: Messages = {
       'Anong mga plan ang available?',
       'Ano ang kailangan ko para mag-apply?',
       'Aling mga plan ang may kasamang tawag?',
+    ],
+    promotions: [
+      'May diskwento ba kung mag-order ako ng higit sa isang SIM?',
+      'Paano gumagana ang referral discount?',
+      'Puwede ko bang pagsabayin ang higit sa isang diskwento?',
+      'Available pa ba ang promo na ito?',
+    ],
+    holiday: [
+      'Paano ako mag-a-apply para sa holiday plan discount?',
+      'Ano ang kailangan ko para maging qualified?',
+      'Nakaalis na ako ng Japan. Puwede pa ba akong mag-apply?',
+      'Qualified ba ang plan ko?',
     ],
   },
 };

@@ -6,6 +6,7 @@ v1.7→v1.8 の変更（CS要望3件＋取得上限の調査。指示書 `docs/c
 - **Phase 2（AI behaviour タブ）**: プロンプトを ①安全ルール(固定)／②共通の振る舞い(編集可)／③トピック別の指示(編集可) の3層に分け、下書き→セーフティテスト→Publish、版管理・ロールバック、Try it（§4.2.1, §7.8）。
 - **Phase 3（ナレッジ一括操作の安全版）**: CSV「Replace all」モード（対象外は archived、物理削除なし）、「Disable all in this view」、自動スナップショット3世代＋復元、アクティブ0件時は全質問をエスカレ（§3, §4.1.0, §7.4.2）。
 - 受け入れ基準 52–64 を追加（§10）。
+- **2026-11-14 新トピック（GP / HPD）と割引の回答境界**: (A) タイル「Discounts and promotions」(`promotions`, GP) と「Holiday plans」(`holiday`, HPD) を追加（12タイル、Something else は最後）。① 安全ルールに「キャンペーンの条件・対象・申し込み方法・**割引率**は回答可。**割引額（円）・割引後価格**は答えず計算もせず price_question」を追加（割引率は回答可＝オーナー決定。CS が適宜変更するため）。セーフティテストに割引額の問い（`discount`）を追加（Publish 1回あたり AI 5回）。金額を含む GP002–GP005・GP010 を pending_review に（バックアップ・変更履歴あり）。internal の GP/HPD ルール（AI 向けの指示。Hard rule 3 により AI に渡らない）は Topic instructions の下書きに移す（HPD007 は本文欠落のため CS に差し戻し）。(B) タイル管理の CS 開放（Topics タブ）は別途。受け入れ基準 87–89。
 - **2026-11-07 CS フィードバック対応**: ① Gemini 上限 — ai_call_log に用途（purpose）を記録、Dashboard に「AI requests this minute n / 5」と直近1時間の分単位グラフ（`GEMINI_RPM_LIMIT`、既定5）、diagnostics で RPM（rate_limited）と RPD（daily_limit）を区別、AI 不調時の顧客文言を自然な「混み合っています」に（5言語）、Translate は会話1件につき AI 1回＋保存、安全テストは1件ずつ実行。② チャットのヘッダーに「New chat」（確認あり）、resolved/closed の会話は端末から復元しない（`?t=` リンクは従来どおり復元）。④ Rule ID を「英大文字2〜4＋数字3〜4桁」に拡大、未登録の記号も取り込み可（プレビューで警告）、admin「Topic codes」画面で記号→タイルを CS が紐付け（`kb_topic_codes`）。Answer text がスプレッドシートのエラー値（`#NAME?` 等）の行はエラー。⑤ Knowledge で行を選択して Archive / Disable / Activate（バックアップ・Undo・変更履歴・Slack）。受け入れ基準 78–86。
 - **2026-11-06 タイル再編（11→10）**: (a) Internet を「Set up APN or mobile internet」(`internet`) と「Report a signal or connection issue」(`connection`, `scope_of: internet`＝同じナレッジ範囲。違いは定型質問のみ。将来 scope_of を外せば分離可) に表示分割。(c) Signal stopped / re-issue を Lost/damaged に、Refund/deposit/cashback を Deposit refund に統合（範囲の付け替えで、ルールは無効化しない。旧 topic id は menu の `aliases` で統合先の範囲・ラベルに読み替え）。Plans は AI 回答タイルに変更（PL ルールを範囲に。月額・割引・COD は安全ルールで引き続き price_question）。(b) Holiday Plans／Discounts and Promo はナレッジ待ちで保留（docs/pending-cs-assets.md）。遅延による電波停止の説明は CS に GN001 として追加依頼（現状 PY007）。受け入れ基準 74–77。
 - **CS管理CSVによるナレッジ運用（2026-10-31）**: CS が作る CSV を唯一の正とし、更新のたびに取り込む。旧 2,886 件（R/P/F/C）は 10/30 の Replace all で archived のまま保持（復元しない）。Rule ID 規約（§3.1）、ID 記号によるトピック範囲（§4.1）、両モードで新規追加・1トランザクション適用（§7.4.1）、Dashboard の空ナレッジ警告（§7.1）。受け入れ基準 65–70。
@@ -203,6 +204,8 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 | RF | Refund / cashback | Deposit refund（2026-11-06 Refund タイルを統合） |
 | DR | Deposit refund | Deposit refund |
 | PL | Plans & requirements | Plans（2026-11-06 から AI が回答。月額・割引・COD 価格は引き続き回答しない） |
+| GP | Gifts, promotions & referral discounts | Discounts and promotions（2026-11-14。条件・対象・申し込み方法・割引率は回答、割引額・割引後価格は回答しない） |
+| HPD | Holiday plan discount | Holiday plans（2026-11-14。同上） |
 | GN | General（全トピック共通） | 全タイル |
 | OT | Other | Others と全マニュアル検索のみ |
 - 旧 ID（R/P/F/C…、archived）は規約チェックの対象外（更新は可能）。
@@ -255,6 +258,7 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 - Answer ONLY based on the rules provided below. Never invent rules, fees, or procedures
 - Reply in the customer's language (the language of their latest message)
 - NEVER state monthly plan prices, unlimited-plan prices, COD prices, or discount amounts. If asked, escalate（price_question）
+- **割引・キャンペーン（★2026-11-14）**: キャンペーンの条件・対象・申し込み方法・割引率（例 30% OFF）はルールにあれば回答可。割引額（円）・割引後価格は述べず、率と価格から計算もしない（price_question）。割引の適用を約束・確定しない（可否はサポートチームが確認）
 - **価格の段階解禁（★v1.6 Phase 5）**: 通話/SMSの単価、対応ネットワーク(Rakuten/Docomo)、5G/eSIM対応、SIMロック要件、プラン仕様（データ量・通話可否）は、ルールがあれば回答してよい（上記の禁止価格には当たらない）
 - **手数料付記の条件分岐（★v1.6 Phase 5）**: `(fees: … — fixed)` と示された規約/冊子固定額（延滞金・再発行・解約金 等）は付記**不要**。未マークまたは顧客ごとに変動する額（未払い残高・最終請求額・割引後額）を述べる時のみ "Final amount will be confirmed by our staff."（顧客の言語で）を付す
 - **契約グループ（★v1.7 CS更新・解約/デポジット/返金で最重要）**: ルールは **2024年12月11日** に変更。CURRENT=同日以降開始 / PREVIOUS=それ以前。**契約開始日が分かるまで解約・デポジットのルールを断定しない**（不明なら action="ask" で開始日のみ1問尋ねる）。開始日は顧客の自己申告＝未確認（最終確認は support team）。**PREVIOUS のSIMデポジット額は文書に無い＝絶対に金額を述べない**。**CURRENT のみ ¥800・次回請求からの割引で返金（銀行振込/現金ではない）・未払い充当不可**（返金可否は通知期間に従う）。**内部の節番号（Section 3/18 等）を顧客に出さない**
@@ -709,6 +713,11 @@ CS フィードバック対応（★2026-11-07）:
 84. ESP001・CN0001 のような新形式の ID が取り込め、未登録の記号は警告付きで取り込まれる。エラーは形式違反と CSV 内重複のみで、エラー文に許可される形式が書かれている
 85. Topic codes 画面で記号をタイルに紐付けると、その記号のルールがそのタイルの AI 範囲に入る（admin のみ）
 86. Knowledge で選んだルールだけを Archive / Disable / Activate でき、確認ダイアログに件数と「元に戻せる」旨が出て、実行後に Undo・Backups・変更履歴・Slack 通知がある。Activate しても internal / Bot may use=No のルールは AI に渡らない
+
+新トピック GP / HPD（★2026-11-14）:
+87. メニューに「Discounts and promotions」「Holiday plans」が5言語で表示され（Something else は最後）、それぞれ GP / HPD のルールで AI が回答する
+88. 割引について、条件・対象・申し込み方法・割引率は回答し、割引額（円）・割引後価格を聞かれたら金額を出さず price_question でスタッフへ回す。Publish 前のセーフティテストに割引額の問いが含まれ、円の金額が出ると公開できない
+89. 金額を含む GP002–GP005・GP010 は pending_review で AI に渡らず、Review queue に理由付きで表示される
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 

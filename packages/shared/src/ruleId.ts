@@ -22,6 +22,8 @@ export const RULE_ID_CODES: Record<string, string> = {
   RF: 'Refund / cashback',
   DR: 'Deposit refund',
   PL: 'Plans & requirements',
+  GP: 'Gifts, promotions & referral discounts',
+  HPD: 'Holiday plan discount',
   GN: 'General (used on every topic)',
   OT: 'Other',
 };

@@ -94,7 +94,7 @@ describe('AI behaviour — read', () => {
       latest: unknown;
     };
     expect(body.fixed.safety_rules).toContain('override EVERY other instruction');
-    expect(body.topics).toHaveLength(10);
+    expect(body.topics).toHaveLength(12);
     expect(body.topics.map((t) => t.id)).toEqual(expect.arrayContaining(['plans', 'connection']));
     expect(body.limits.max).toBe(12_000);
     expect(body.latest).toBeNull();
@@ -135,7 +135,7 @@ describe('AI behaviour — publish with safety tests', () => {
     const res = await s.post(`/api/admin/ai-behaviour/versions/${second}/publish`, {});
     const body = (await res.json()) as { published: boolean; report: { passed: boolean; checks: unknown[] } };
     expect(body.published).toBe(true);
-    expect(body.report.checks).toHaveLength(5);
+    expect(body.report.checks).toHaveLength(6);
     const states = Object.fromEntries(s.db.tables.ai_prompt_versions!.map((v) => [v.id, v.state]));
     expect(states).toEqual({ [first]: 'superseded', [second]: 'published' });
     expect(s.slack.calls.at(-1)).toContain('AI behaviour published');
@@ -170,7 +170,7 @@ describe('AI behaviour — publish with safety tests', () => {
     const s = setup('admin', llm);
     const id = await saveDraft(s, { ...draft, common_behaviour: 'DRAFT-MARKER' });
     await s.post(`/api/admin/ai-behaviour/versions/${id}/publish`, {});
-    expect(llm.systems).toHaveLength(4);
+    expect(llm.systems).toHaveLength(5);
     for (const sys of llm.systems) {
       expect(sys).toContain('DRAFT-MARKER');
       expect(sys.indexOf('DRAFT-MARKER')).toBeLessThan(sys.indexOf('SAFETY RULES'));

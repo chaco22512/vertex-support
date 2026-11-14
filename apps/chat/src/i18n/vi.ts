@@ -67,6 +67,8 @@ export const vi: Messages = {
     replace: 'Đổi hoặc thay gói cước của tôi',
     deposit: 'Hỏi về hoàn tiền cọc hoặc cashback',
     plans: 'Xem các gói cước và yêu cầu',
+    promotions: 'Giảm giá và khuyến mãi',
+    holiday: 'Gói kỳ nghỉ',
     others: 'Vấn đề khác',
   },
   subQuestions: {
@@ -111,5 +113,17 @@ export const vi: Messages = {
       'Tiền cọc có được hoàn vào tài khoản ngân hàng của tôi không?',
     ],
     plans: ['Có những gói cước nào?', 'Tôi cần gì để đăng ký?', 'Gói nào có gọi điện?'],
+    promotions: [
+      'Có giảm giá nếu tôi đặt nhiều hơn một SIM không?',
+      'Giảm giá giới thiệu hoạt động như thế nào?',
+      'Tôi có thể dùng nhiều ưu đãi cùng lúc không?',
+      'Chương trình khuyến mãi này còn áp dụng không?',
+    ],
+    holiday: [
+      'Làm sao để đăng ký giảm giá gói kỳ nghỉ?',
+      'Tôi cần điều kiện gì để được áp dụng?',
+      'Tôi đã rời Nhật Bản. Tôi còn đăng ký được không?',
+      'Gói của tôi có đủ điều kiện không?',
+    ],
   },
 };

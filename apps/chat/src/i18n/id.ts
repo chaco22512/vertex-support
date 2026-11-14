@@ -66,6 +66,8 @@ export const id: Messages = {
     replace: 'Ganti atau ubah paket saya',
     deposit: 'Pertanyaan pengembalian deposit atau cashback',
     plans: 'Lihat paket dan persyaratan',
+    promotions: 'Diskon dan promosi',
+    holiday: 'Paket liburan',
     others: 'Hal lain',
   },
   subQuestions: {
@@ -113,6 +115,18 @@ export const id: Messages = {
       'Paket apa saja yang tersedia?',
       'Apa yang saya perlukan untuk mendaftar?',
       'Paket mana yang termasuk panggilan?',
+    ],
+    promotions: [
+      'Apakah ada diskon jika saya memesan lebih dari satu SIM?',
+      'Bagaimana cara kerja diskon referral?',
+      'Bisakah saya menggabungkan lebih dari satu diskon?',
+      'Apakah promosi ini masih berlaku?',
+    ],
+    holiday: [
+      'Bagaimana cara mengajukan diskon paket liburan?',
+      'Apa saja syarat untuk mendapatkannya?',
+      'Saya sudah meninggalkan Jepang. Apakah saya masih bisa mengajukan?',
+      'Apakah paket saya memenuhi syarat?',
     ],
   },
 };

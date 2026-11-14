@@ -63,6 +63,8 @@ export const en: Messages = {
     replace: 'Change or replace my plan',
     deposit: 'Deposit refund or cashback inquiry',
     plans: 'View plans and requirements',
+    promotions: 'Discounts and promotions',
+    holiday: 'Holiday plans',
     others: 'Something else',
   },
   subQuestions: {
@@ -107,5 +109,17 @@ export const en: Messages = {
       'Is the deposit paid back to my bank account?',
     ],
     plans: ['What plans are available?', 'What do I need to apply?', 'Which plans include calls?'],
+    promotions: [
+      'Is there a discount if I order more than one SIM?',
+      'How does the referral discount work?',
+      'Can I use more than one discount together?',
+      'Is this promotion still available?',
+    ],
+    holiday: [
+      'How do I apply for the holiday plan discount?',
+      'What do I need to qualify?',
+      'I already left Japan. Can I still apply?',
+      'Is my plan eligible?',
+    ],
   },
 };

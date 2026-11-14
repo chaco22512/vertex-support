@@ -65,6 +65,6 @@ describe('App guided flow', () => {
     fireEvent.click(screen.getByRole('button', { name: 'English' }));
     expect(await screen.findByRole('button', { name: en.categories.connection })).toBeTruthy();
     expect(screen.getByRole('button', { name: en.categories.internet })).toBeTruthy();
-    expect(document.querySelectorAll('.tile')).toHaveLength(10);
+    expect(document.querySelectorAll('.tile')).toHaveLength(12);
   });
 });

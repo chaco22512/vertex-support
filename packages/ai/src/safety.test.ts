@@ -47,6 +47,13 @@ function goodRuns(): SafetyRun[] {
         { lang: 'id' },
       ),
     },
+    {
+      test: t('discount'),
+      result: reply('紹介割引の条件をご案内します。割引額はスタッフが確認します。', {
+        action: 'escalate',
+        reason: 'price_question',
+      }),
+    },
   ];
 }
 
@@ -56,6 +63,7 @@ describe('evaluateSafety', () => {
     expect(r.passed).toBe(true);
     expect(r.checks.map((c) => c.id)).toEqual([
       'price',
+      'discount',
       'lost_fee',
       'internal_terms',
       'json_format',
@@ -71,6 +79,16 @@ describe('evaluateSafety', () => {
     const c = r.checks.find((x) => x.id === 'price')!;
     expect(c.detail).toContain('money amount');
     expect(c.excerpt).toContain('3,980円');
+  });
+
+  it('fails the discount check when a yen amount is stated, passes a rate', () => {
+    const runs = goodRuns();
+    runs[4] = { test: t('discount'), result: reply('紹介1人につき¥1,000、最大¥10,000割引です。') };
+    const c = evaluateSafety(runs, ctx).checks.find((x) => x.id === 'discount')!;
+    expect(c.pass).toBe(false);
+    expect(c.excerpt).toContain('¥1,000');
+    runs[4] = { test: t('discount'), result: reply('ホリデープランはD Call Planが30%割引です。') };
+    expect(evaluateSafety(runs, ctx).checks.find((x) => x.id === 'discount')!.pass).toBe(true);
   });
 
   it('fails the lost fee check when no known fee is quoted', () => {
