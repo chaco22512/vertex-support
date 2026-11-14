@@ -59,7 +59,13 @@ async function main(): Promise<void> {
   const note = `Added topic guidance for ${added.join(', ')} (from CS internal GP/HPD rules) on top of #${base.id}`;
   const { data, error: e2 } = await db
     .from('ai_prompt_versions')
-    .insert({ state: 'draft', common_behaviour: base.common_behaviour, topic_instructions: topics, note })
+    .insert({
+      state: 'draft',
+      common_behaviour: base.common_behaviour,
+      topic_instructions: topics,
+      note,
+      based_on: base.id,
+    })
     .select('id')
     .single();
   if (e2 || !data) throw new Error(e2?.message ?? 'insert failed');
@@ -67,8 +73,7 @@ async function main(): Promise<void> {
   await db.from('ai_prompt_change_log').insert({
     version_id: id,
     action: 'save_draft',
-    before: { from_version: base.id },
-    after: { added_topics: added },
+    detail: { note, based_on: base.id, added_topics: added },
   });
   console.log(`Created draft #${id} (copy of #${base.id} + ${added.join(', ')}). Publish it in AI behaviour.`);
 }
