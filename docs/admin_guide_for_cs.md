@@ -31,14 +31,17 @@ the code that matches the topic:
 | RF | Refund / cashback | Deposit refund |
 | DR | Deposit refund | Deposit refund |
 | PL | Plans & requirements | Plans (the bot never gives monthly prices or discount amounts) |
+| GP | Gifts, promotions & referral discounts | Discounts and promotions |
+| HPD | Holiday plan discount | Holiday plans |
 | GN | General — used on every topic | All topics |
 | OT | Other | Only when a customer asks under "Others" |
 
 **You can start a new topic code yourself** (for example **ESP** for eSIM) — no
 need to ask us. The rules are imported straight away. Until the code is linked to a
 chat tile, the preview shows a yellow note and the bot uses those rules only under
-"Something else" and in its full-manual search. To link it: open **Topic codes** in
-the menu, tick the tiles the code belongs to, and press **Save**. The same screen
+"Something else" and in its full-manual search. To link it: open **Topics**, edit the topic and tick the code under
+**Knowledge** (or open **Topic codes**, tick the tiles the code belongs to, and press **Save** — both
+screens change the same thing). The same screen
 shows every code, how many rules use it, and which tiles use it.
 
 **Always keep the same ID for the same rule.** If you change the wording of DR003,
@@ -144,12 +147,112 @@ is saved automatically. The latest 5 copies are kept.
 Every bulk change, undo and restore is shown in **Change history**, and a message
 is posted in Slack so the team knows.
 
+## Adding a new topic to the chat (step by step)
+
+Use this when customers need a new button in the chat menu — for example
+"Holiday plans". You can do every step yourself. Plan about 30 minutes.
+
+**Before you start:** decide a short **topic code** for the new topic: 2–4
+capital letters that no other topic uses (for example **HPD** for Holiday plan
+discount). Every rule of the new topic will start with this code.
+
+### Step 1 — Write the rules in your sheet
+
+1. In your knowledge sheet, add one row per answer the bot may give. Give each
+   row a Rule ID made of your new code and a number: **HPD001**, **HPD002**, …
+2. Write each answer the way you want customers to read it.
+3. **Money:** the bot never tells customers a discount amount in yen or a price
+   after a discount. Write conditions, who can get it, how to apply, and discount
+   rates (for example "30% off") in their own rows, and keep yen amounts out of
+   those rows. A row with a yen discount amount will be held for review and the
+   bot will not use it.
+4. Notes that are only for the bot (for example "never promise the discount") do
+   **not** belong in the sheet — the bot does not read rows marked as staff-only.
+   Write them in Step 4 instead.
+
+> [Screenshot placeholder: the sheet with new HPD rows]
+
+### Step 2 — Upload the sheet
+
+1. Open **Knowledge** → **Upload CSV**, choose your file, keep **Add / update only**,
+   and check the preview (see "Updating the knowledge" above).
+2. The preview shows a yellow note for the new code ("not linked to a topic yet").
+   This is expected — Step 3 links it.
+3. Press **Apply changes**.
+
+> [Screenshot placeholder: import preview with the yellow "new code" note]
+
+### Step 3 — Create the topic button
+
+1. Open **Topics** in the left menu and press **Add topic**.
+2. **Button text:** write the English text (required). Fill the other four
+   languages yourself, or press **Translate empty languages from English** and
+   check the result. An empty language shows the English text.
+3. **Icon:** pick a picture for the button.
+4. **Knowledge:** tick your new code (for example **HPD**). Keep **GN** (general)
+   ticked. Each code shows how many rules the bot can use. If the codes you
+   ticked have no usable rule, a yellow warning says that **every customer who
+   taps this topic will be handed to staff** — go back to Step 2 if that is not
+   what you want.
+5. **Sample questions:** write 3–4 questions customers often ask, one per line.
+   Customers can tap them after choosing the topic.
+6. **Show in the chat:** leave it ticked to show the button. Untick it if you
+   want to prepare everything first and show it later.
+
+> [Screenshot placeholder: the "Add a topic" window, parts 1–5]
+
+### Step 4 — Write the topic instructions
+
+Still in the same window, write **Topic instructions**: how the bot should handle
+this topic — what to ask first, what it must never do. For example:
+
+- "First ask whether the customer is still in Japan."
+- "Never promise the discount. Our support team checks and applies it."
+
+Press **Add topic** (or **Save**). The button is saved. The instructions are saved
+as a **draft**.
+
+> [Screenshot placeholder: the Topic instructions box]
+
+### Step 5 — Publish
+
+1. Back on the Topics page, a yellow box says the topic instructions are not live
+   yet. Press **Publish**.
+2. The bot answers 5 test questions to check your text is safe (this uses 5 of
+   today's AI requests). If every check passes, customers get the new
+   instructions straight away. If a check fails, nothing changes and the page
+   says what to fix.
+3. If the box says other unpublished changes in AI behaviour will also go live,
+   check those first in **AI behaviour**.
+
+> [Screenshot placeholder: the Publish box and a passed safety check]
+
+### Step 6 — Check it
+
+1. Open the customer chat, choose a language and find your new button. Saved
+   changes appear for customers within about a minute.
+2. Tap it and ask one of the sample questions. You can also test in **AI
+   behaviour → Try it** without using the customer chat.
+
+> [Screenshot placeholder: the new button in the customer chat]
+
+### Changing or hiding a topic later
+
+- **Edit** a topic on the Topics page to change its text, icon, knowledge, sample
+  questions or instructions.
+- Use the **↑ ↓** buttons to change the order. "Something else" is always last.
+- To remove a topic from the chat, untick **Show in the chat**. Nothing is
+  deleted, and you can show it again at any time.
+- Every change is listed in **Change history → Topic changes** and posted in Slack.
+
 ## Changing how the bot talks (AI behaviour)
 
 Open **AI behaviour** in the left menu (admins only). It has three parts:
 
 - **① Safety rules (fixed)** — rules the bot always follows, such as never giving
-  monthly plan, COD or discount prices, never mentioning internal tools or staff
+  monthly plan or COD prices, never giving a discount amount in yen or a price after
+  a discount (it may explain a campaign's conditions, who can get it, how to apply,
+  and a discount rate such as "30% off"), never mentioning internal tools or staff
   names, and always replying in the customer's language. You can read them but
   not change them. They always win over anything written below.
 - **② Common behaviour** — how the bot talks on every topic (tone, asking one
@@ -168,8 +271,8 @@ saving. Customers are not affected.
 
 ### Save and publish
 1. **Save draft** keeps your changes as a new version. Customers do not see it yet.
-2. **Publish** first asks the bot 4 test questions with your text and checks that:
-   it does not give a monthly price, it gives the lost-SIM fee, it never mentions
+2. **Publish** first asks the bot 5 test questions with your text and checks that:
+   it does not give a monthly price, it does not give a discount amount in yen, it gives the lost-SIM fee, it never mentions
    internal words or staff names, its replies are in the right format, and it
    answers an Indonesian question in Indonesian.
 3. If every check passes, your version goes live straight away and a message is
@@ -183,7 +286,7 @@ which is shared with customers — avoid publishing many times in one day.
 ### Going back to an earlier version
 Under **Versions**, click **View changes** to see what changed in a version
 (added lines in green, removed lines crossed out), or **Restore this version** to
-make that text live again. Restoring runs the same 4 safety checks first.
+make that text live again. Restoring runs the same safety checks first.
 
 ## How many AI answers are left today
 

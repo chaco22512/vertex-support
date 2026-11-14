@@ -6,7 +6,7 @@ v1.7→v1.8 の変更（CS要望3件＋取得上限の調査。指示書 `docs/c
 - **Phase 2（AI behaviour タブ）**: プロンプトを ①安全ルール(固定)／②共通の振る舞い(編集可)／③トピック別の指示(編集可) の3層に分け、下書き→セーフティテスト→Publish、版管理・ロールバック、Try it（§4.2.1, §7.8）。
 - **Phase 3（ナレッジ一括操作の安全版）**: CSV「Replace all」モード（対象外は archived、物理削除なし）、「Disable all in this view」、自動スナップショット3世代＋復元、アクティブ0件時は全質問をエスカレ（§3, §4.1.0, §7.4.2）。
 - 受け入れ基準 52–64 を追加（§10）。
-- **2026-11-14 新トピック（GP / HPD）と割引の回答境界**: (A) タイル「Discounts and promotions」(`promotions`, GP) と「Holiday plans」(`holiday`, HPD) を追加（12タイル、Something else は最後）。① 安全ルールに「キャンペーンの条件・対象・申し込み方法・**割引率**は回答可。**割引額（円）・割引後価格**は答えず計算もせず price_question」を追加（割引率は回答可＝オーナー決定。CS が適宜変更するため）。セーフティテストに割引額の問い（`discount`）を追加（Publish 1回あたり AI 5回）。金額を含む GP002–GP005・GP010 を pending_review に（バックアップ・変更履歴あり）。internal の GP/HPD ルール（AI 向けの指示。Hard rule 3 により AI に渡らない）は Topic instructions の下書きに移す（HPD007 は本文欠落のため CS に差し戻し）。(B) タイル管理の CS 開放（Topics タブ）は別途。受け入れ基準 87–89。
+- **2026-11-14 新トピック（GP / HPD）と割引の回答境界**: (A) タイル「Discounts and promotions」(`promotions`, GP) と「Holiday plans」(`holiday`, HPD) を追加（12タイル、Something else は最後）。① 安全ルールに「キャンペーンの条件・対象・申し込み方法・**割引率**は回答可。**割引額（円）・割引後価格**は答えず計算もせず price_question」を追加（割引率は回答可＝オーナー決定。CS が適宜変更するため）。セーフティテストに割引額の問い（`discount`）を追加（Publish 1回あたり AI 5回）。金額を含む GP002–GP005・GP010 を pending_review に（バックアップ・変更履歴あり）。internal の GP/HPD ルール（AI 向けの指示。Hard rule 3 により AI に渡らない）は Topic instructions の下書きに移す（HPD007 は本文欠落のため CS に差し戻し）。(B) **タイル管理の CS 開放（admin「Topics」、§7.10）**: タイルを表 `menu_tiles` で管理（追加・編集・並べ替え・表示/非表示、adminのみ）。チャットは起動時に `GET /api/menu` を読み（失敗時は同梱メニュー）、AI のトピック範囲・トピック一覧・トピック切替・AI behaviour のタブも同じタイルを使う。Topic instructions は同じ画面で書けるが**下書き保存→Publish（セーフティテスト）で反映**（§7.8 を維持、オーナー決定）。(C) CS ガイドに「新しいトピックを追加する手順」。受け入れ基準 87–95。
 - **2026-11-07 CS フィードバック対応**: ① Gemini 上限 — ai_call_log に用途（purpose）を記録、Dashboard に「AI requests this minute n / 5」と直近1時間の分単位グラフ（`GEMINI_RPM_LIMIT`、既定5）、diagnostics で RPM（rate_limited）と RPD（daily_limit）を区別、AI 不調時の顧客文言を自然な「混み合っています」に（5言語）、Translate は会話1件につき AI 1回＋保存、安全テストは1件ずつ実行。② チャットのヘッダーに「New chat」（確認あり）、resolved/closed の会話は端末から復元しない（`?t=` リンクは従来どおり復元）。④ Rule ID を「英大文字2〜4＋数字3〜4桁」に拡大、未登録の記号も取り込み可（プレビューで警告）、admin「Topic codes」画面で記号→タイルを CS が紐付け（`kb_topic_codes`）。Answer text がスプレッドシートのエラー値（`#NAME?` 等）の行はエラー。⑤ Knowledge で行を選択して Archive / Disable / Activate（バックアップ・Undo・変更履歴・Slack）。受け入れ基準 78–86。
 - **2026-11-06 タイル再編（11→10）**: (a) Internet を「Set up APN or mobile internet」(`internet`) と「Report a signal or connection issue」(`connection`, `scope_of: internet`＝同じナレッジ範囲。違いは定型質問のみ。将来 scope_of を外せば分離可) に表示分割。(c) Signal stopped / re-issue を Lost/damaged に、Refund/deposit/cashback を Deposit refund に統合（範囲の付け替えで、ルールは無効化しない。旧 topic id は menu の `aliases` で統合先の範囲・ラベルに読み替え）。Plans は AI 回答タイルに変更（PL ルールを範囲に。月額・割引・COD は安全ルールで引き続き price_question）。(b) Holiday Plans／Discounts and Promo はナレッジ待ちで保留（docs/pending-cs-assets.md）。遅延による電波停止の説明は CS に GN001 として追加依頼（現状 PY007）。受け入れ基準 74–77。
 - **CS管理CSVによるナレッジ運用（2026-10-31）**: CS が作る CSV を唯一の正とし、更新のたびに取り込む。旧 2,886 件（R/P/F/C）は 10/30 の Replace all で archived のまま保持（復元しない）。Rule ID 規約（§3.1）、ID 記号によるトピック範囲（§4.1）、両モードで新規追加・1トランザクション適用（§7.4.1）、Dashboard の空ナレッジ警告（§7.1）。受け入れ基準 65–70。
@@ -184,6 +184,11 @@ create table ai_prompt_change_log (               -- kb_change_log と同様の�
 -- kb_rule_snapshots(id, kind, created_by, created_at, rule_count, affected_ids text[], rows jsonb, undone, note)
 -- 実体: supabase/migrations/20261025120013_add_archived_status.sql / 20261025120014_kb_bulk_ops.sql
 ```
+-- ★2026-11-14 CS管理タイル（admin「Topics」）。menu_tiles が空/読めない場合は data/menu_categories.json にフォールバック
+-- menu_tiles(id, position, enabled, icon, labels jsonb{en必須,id,tl,ne,vi}, sub_questions jsonb{lang:[..]}, id_prefixes text[],
+--            kb_categories text[](旧マニュアル、読み取り専用), scope_of, behavior('free_text'=Something else), updated_by, updated_at)
+-- menu_tile_change_log(id, tile_id, action create|update|enable|disable|reorder|link_codes, changed_by, changed_at, before, after)
+-- 実体: supabase/migrations/20261114120020_menu_tiles.sql（現行12タイル＋kb_topic_codes の紐付けを取り込んでシード。以後 kb_topic_codes は記号名のみ使用）
 ※ 詳細スキーマは各Phaseの計画で確定し、マイグレーションとして追加する（既存データの削除・型変更を伴わない追加のみ）。
 
 ### 3.1 Rule ID 規約（★v1.8、CS管理CSV）
@@ -526,6 +531,14 @@ CSの目的は「新しいシートでまるごと入れ替える」ことであ
 - API（adminのみ）: `GET /api/admin/ai-behaviour`、`GET /ai-behaviour/versions/:id`、`POST /ai-behaviour/versions`、`POST /ai-behaviour/versions/:id/publish`（不合格は 422＋report）、`POST /ai-behaviour/versions/:id/restore`、`POST /ai-behaviour/try`。
 - DB: `supabase/migrations/20261025120015_ai_prompt_versions.sql`（公開中は部分ユニークインデックスで最大1件）。
 
+### 7.10 Topics（★2026-11-14、adminのみ）
+- 顧客チャットのタイルを CS が管理する。1タイルの設定: 表示ラベル（5言語、英語必須・空欄は英語で表示。「Translate」で AI に下書きさせ可＝AI 1回）、アイコン（固定ライブラリのインラインSVG、§5.3）、接続するナレッジ（Rule ID 記号の複数選択。記号ごとに AI が使えるルール件数を表示）、定型質問（言語別、各6件まで）、表示/非表示、Topic instructions。
+- 並べ替えは ↑↓。**Something else は常に最後・非表示不可・全ナレッジ**。範囲共有タイル（scope_of）は記号を編集しない。削除はせず非表示のみ（非表示タイルも既存会話の範囲には使う。新規選択・AI のトピック割当からは除外）。
+- **保存時の警告**: 接続した記号（GN を除く）に AI が使えるルールが0件なら「このタイルを押した顧客は全員スタッフ対応になります」と確認（保存は可能）。一覧にも警告表示、Slack にも付記。
+- **反映**: タイル設定は保存で即反映（チャットは次回起動時。`/api/menu` は30秒キャッシュ）。Topic instructions は AI behaviour の最新版をコピーした**下書き**として保存し、同画面の Publish（セーフティテスト）で反映。他の未公開変更も一緒に公開される場合は明示。
+- 変更は `menu_tile_change_log`（Change history の「Topic changes」）と Slack に記録。Topic codes 画面の紐付けも同じ `id_prefixes` を編集する（一元化）。
+- 新規タイルは旧カテゴリを持たないため、AI 範囲は「GENERAL RULES＋接続した記号」（空の kb_categories を全件扱いしない）。
+
 ### 7.9 AI diagnostics（★v1.8 Phase 1、adminのみ）
 左メニュー「AI diagnostics」。`ai_meta.diag` を持つAIメッセージ（最新500件）を新しい順に一覧（`GET /api/admin/ai-diagnostics?result=`）。
 - 結果別の件数サマリ（クリックで絞り込み）、各行に顧客の質問・トピック（→推定トピック）・結果・所要時間。
@@ -718,6 +731,14 @@ CS フィードバック対応（★2026-11-07）:
 87. メニューに「Discounts and promotions」「Holiday plans」が5言語で表示され（Something else は最後）、それぞれ GP / HPD のルールで AI が回答する
 88. 割引について、条件・対象・申し込み方法・割引率は回答し、割引額（円）・割引後価格を聞かれたら金額を出さず price_question でスタッフへ回す。Publish 前のセーフティテストに割引額の問いが含まれ、円の金額が出ると公開できない
 89. 金額を含む GP002–GP005・GP010 は pending_review で AI に渡らず、Review queue に理由付きで表示される
+
+タイル管理（★2026-11-14、admin「Topics」）:
+90. Topics でタイルを追加すると、顧客チャットを開き直すと（1分以内）新しいタイルが Something else の直前に5言語で表示され、未翻訳の言語は英語で出る
+91. タイルの編集・並べ替え・非表示がチャットに反映され、Something else は常に最後で非表示にできない
+92. 接続した記号に AI が使えるルールが0件（GN を除く）のタイルを保存しようとすると「顧客は全員スタッフ対応になります」の確認が出る
+93. 新規タイルを選んだ会話では、AI はそのタイルの記号＋GN（＋GENERAL RULES）のルールだけを使い、トピック切替の候補にも新タイルが入る。非表示タイルは候補に入らない
+94. Topics で書いた Topic instructions は下書きで保存され、Publish（セーフティテスト合格）まで顧客の回答に影響しない。AI behaviour にも新タイルのタブが出る
+95. タイルの変更は Change history の Topic changes と Slack に記録される
 
 ## 11. 納品ドキュメント要件（★v1.4新設）
 
