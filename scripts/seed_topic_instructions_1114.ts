@@ -23,7 +23,7 @@ const FILES: Record<string, string> = { promotions: 'promotions.md', holiday: 'h
 
 function body(file: string): string {
   return readFileSync(resolve(REPO_ROOT, 'data/cs_prompts', file), 'utf8')
-    .replace(/^s*<!--[\s\S]*?-->\s*/, '')
+    .replace(/^\s*<!--[\s\S]*?-->\s*/, '')
     .trim();
 }
 
